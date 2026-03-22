@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "For page transitions and interactive animations"
+  "date-fns": "For beautiful date formatting"
+  "@hookform/resolvers": "Zod validation for forms"
+  "react-hook-form": "Form state management"
+  "zod": "Schema validation"
+  "lucide-react": "Icons"
+
+images:
+  - path: "artifacts/tutor-hub/public/images/hero-bg.png"
+    description: "Abstract, modern educational background with subtle floating geometric math shapes in deep indigo and soft teal, professional and friendly, 3d rendered style, blurred depth of field"
+    aspect_ratio: "16:9"
+  - path: "artifacts/tutor-hub/public/images/avatar-placeholder.png"
+    description: "Minimalist abstract profile avatar placeholder, soft pastel gradient background, friendly educational feel"
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated Orval hooks from @workspace/api-client-react
+  - Using @workspace/replit-auth-web for authentication
