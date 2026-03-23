@@ -41,10 +41,20 @@ export const videosTable = pgTable("videos", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const submissionsTable = pgTable("submissions", {
+  id: serial("id").primaryKey(),
+  assignmentId: integer("assignment_id").notNull(),
+  studentId: varchar("student_id").notNull(),
+  content: text("content").notNull(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
 export const insertTutoringSessionSchema = createInsertSchema(tutoringSessionsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMessageSchema = createInsertSchema(messagesTable).omit({ id: true, createdAt: true });
 export const insertAssignmentSchema = createInsertSchema(assignmentsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertVideoSchema = createInsertSchema(videosTable).omit({ id: true, createdAt: true });
+export const insertSubmissionSchema = createInsertSchema(submissionsTable).omit({ id: true, submittedAt: true, updatedAt: true });
 
 export type TutoringSession = typeof tutoringSessionsTable.$inferSelect;
 export type InsertTutoringSession = z.infer<typeof insertTutoringSessionSchema>;
@@ -54,3 +64,5 @@ export type Assignment = typeof assignmentsTable.$inferSelect;
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type Video = typeof videosTable.$inferSelect;
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
+export type Submission = typeof submissionsTable.$inferSelect;
+export type InsertSubmission = z.infer<typeof insertSubmissionSchema>;

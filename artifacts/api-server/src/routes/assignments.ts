@@ -1,6 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, assignmentsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { submissionsTable } from "@workspace/db/schema";
+import { eq, desc, and } from "drizzle-orm";
+import { z } from "zod";
 import {
   ListAssignmentsResponse,
   CreateAssignmentBody,
@@ -108,6 +110,70 @@ router.delete("/assignments/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   await db.delete(assignmentsTable).where(eq(assignmentsTable.id, id));
   res.json(DeleteAssignmentResponse.parse({ success: true }));
+});
+
+// Submit work for an assignment (students only)
+const SubmitBody = z.object({ content: z.string().min(1) });
+
+router.post("/assignments/:id/submit", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (req.user.role !== "student") { res.status(403).json({ error: "Only students can submit" }); return; }
+
+  const assignmentId = Number(req.params.id);
+  const parsed = SubmitBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "content is required" }); return; }
+
+  // Upsert: update if exists, otherwise insert
+  const existing = await db
+    .select()
+    .from(submissionsTable)
+    .where(and(eq(submissionsTable.assignmentId, assignmentId), eq(submissionsTable.studentId, req.user.id)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    const [updated] = await db
+      .update(submissionsTable)
+      .set({ content: parsed.data.content })
+      .where(and(eq(submissionsTable.assignmentId, assignmentId), eq(submissionsTable.studentId, req.user.id)))
+      .returning();
+    res.json(updated);
+  } else {
+    const [created] = await db
+      .insert(submissionsTable)
+      .values({ assignmentId, studentId: req.user.id, content: parsed.data.content })
+      .returning();
+    res.status(201).json(created);
+  }
+});
+
+// Get student's own submission for an assignment
+router.get("/assignments/:id/my-submission", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (req.user.role !== "student") { res.status(403).json({ error: "Students only" }); return; }
+
+  const assignmentId = Number(req.params.id);
+  const rows = await db
+    .select()
+    .from(submissionsTable)
+    .where(and(eq(submissionsTable.assignmentId, assignmentId), eq(submissionsTable.studentId, req.user.id)))
+    .limit(1);
+
+  res.json(rows[0] ?? null);
+});
+
+// Tutor views all submissions for an assignment
+router.get("/assignments/:id/submissions", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (req.user.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
+
+  const assignmentId = Number(req.params.id);
+  const rows = await db
+    .select()
+    .from(submissionsTable)
+    .where(eq(submissionsTable.assignmentId, assignmentId))
+    .orderBy(desc(submissionsTable.submittedAt));
+
+  res.json(rows);
 });
 
 export default router;
