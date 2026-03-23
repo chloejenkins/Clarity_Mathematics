@@ -60,7 +60,7 @@ export function AppLayout({ children }: LayoutProps) {
                 <GraduationCap className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="font-bold text-lg leading-none">Math Tutor Hub</h1>
+                <h1 className="font-bold text-lg leading-none">Tutoring for Understanding</h1>
                 <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
                   {isTutor ? "Tutor Portal" : "Student Portal"}
                 </span>

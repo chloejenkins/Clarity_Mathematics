@@ -23,7 +23,7 @@ export default function LandingPage() {
           <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-lg shadow-primary/25">
             <GraduationCap className="h-6 w-6" />
           </div>
-          <span className="font-bold text-2xl tracking-tight text-foreground">Math Tutor Hub</span>
+          <span className="font-bold text-2xl tracking-tight text-foreground">Tutoring for Understanding</span>
         </div>
         <Button onClick={login} variant="ghost" className="font-semibold text-base">
           Sign In
