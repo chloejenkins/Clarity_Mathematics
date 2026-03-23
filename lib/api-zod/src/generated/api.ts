@@ -22,10 +22,10 @@ export const GetCurrentAuthUserResponse = zod.object({
   user: zod
     .object({
       id: zod.string(),
-      username: zod.string().optional(),
-      firstName: zod.string().optional(),
-      lastName: zod.string().optional(),
-      profileImageUrl: zod.string().optional(),
+      username: zod.string().nullish(),
+      firstName: zod.string().nullish(),
+      lastName: zod.string().nullish(),
+      profileImageUrl: zod.string().nullish(),
       role: zod.enum(["tutor", "student"]),
       createdAt: zod.date().optional(),
     })
@@ -58,10 +58,10 @@ export const MobileLogoutResponse = zod.object({
  */
 export const ListUsersResponseItem = zod.object({
   id: zod.string(),
-  username: zod.string().optional(),
-  firstName: zod.string().optional(),
-  lastName: zod.string().optional(),
-  profileImageUrl: zod.string().optional(),
+  username: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  profileImageUrl: zod.string().nullish(),
   role: zod.enum(["tutor", "student"]),
   createdAt: zod.date().optional(),
 });
