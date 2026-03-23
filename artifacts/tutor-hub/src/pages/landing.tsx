@@ -42,7 +42,7 @@ export default function LandingPage() {
           </div>
           <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
             Reach Your{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500">
               Math Goals
             </span>
           </h1>
