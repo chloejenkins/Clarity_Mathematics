@@ -12,7 +12,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -41,7 +40,7 @@ export function AppLayout({ children }: LayoutProps) {
   ];
 
   const style = {
-    "--sidebar-width": "18rem",
+    "--sidebar-width": "17rem",
     "--sidebar-width-icon": "4rem",
   };
 
@@ -53,26 +52,27 @@ export function AppLayout({ children }: LayoutProps) {
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full bg-background overflow-hidden">
-        <Sidebar className="border-r border-border/50 bg-card">
+        <Sidebar className="border-r-0 bg-sidebar">
           <SidebarContent>
-            <div className="p-6 flex items-center gap-3 border-b border-border/50">
-              <div className="bg-primary/10 p-2 rounded-xl text-primary">
-                <GraduationCap className="h-6 w-6" />
+            {/* Logo */}
+            <div className="px-6 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
+              <div className="bg-indigo-500 text-white p-1.5 rounded-lg shrink-0">
+                <GraduationCap className="h-4 w-4" />
               </div>
-              <div>
-                <h1 className="font-bold text-lg leading-none">Tutoring for Understanding</h1>
-                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-sidebar-foreground leading-none truncate">
+                  Tutoring for Understanding
+                </p>
+                <p className="text-[11px] text-sidebar-foreground/50 mt-0.5 uppercase tracking-wider">
                   {isTutor ? "Tutor Portal" : "Student Portal"}
-                </span>
+                </p>
               </div>
             </div>
 
-            <SidebarGroup className="mt-4">
-              <SidebarGroupLabel className="px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Navigation
-              </SidebarGroupLabel>
-              <SidebarGroupContent className="px-4 mt-2">
-                <SidebarMenu className="gap-1">
+            {/* Nav */}
+            <SidebarGroup className="mt-3 px-3">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0.5">
                   {navigationItems.map((item) => {
                     const isActive = location === item.url;
                     return (
@@ -80,15 +80,13 @@ export function AppLayout({ children }: LayoutProps) {
                         <SidebarMenuButton asChild isActive={isActive}>
                           <Link
                             href={item.url}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 ${
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                               isActive
-                                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                                : "text-foreground hover:bg-secondary/50"
+                                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                                : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                             }`}
                           >
-                            <item.icon
-                              className={`h-5 w-5 ${isActive ? "text-primary-foreground" : "text-muted-foreground"}`}
-                            />
+                            <item.icon className="h-4 w-4 shrink-0" />
                             <span className="font-medium">{item.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -100,38 +98,42 @@ export function AppLayout({ children }: LayoutProps) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="p-4 border-t border-border/50 bg-card/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar className="h-10 w-10 border border-border shadow-sm shrink-0">
+          <SidebarFooter className="p-4 border-t border-sidebar-border">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Avatar className="h-8 w-8 shrink-0 ring-1 ring-white/10">
                   <AvatarImage src={user?.profileImageUrl ?? undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                  <AvatarFallback className="bg-indigo-500/20 text-indigo-200 text-xs font-bold">
                     {displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-bold leading-none truncate">{displayName}</span>
-                  <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-sidebar-foreground leading-none truncate">
+                    {displayName}
+                  </p>
+                  <p className="text-[11px] text-sidebar-foreground/50 capitalize mt-0.5">
+                    {user?.role}
+                  </p>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={logout}
-                className="text-muted-foreground hover:text-destructive shrink-0"
-                title="Log out"
+                className="h-8 w-8 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent shrink-0"
+                title="Sign out"
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </SidebarFooter>
         </Sidebar>
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="h-14 flex items-center px-4 md:px-6 bg-background/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-10 shrink-0">
-            <SidebarTrigger className="text-muted-foreground hover-elevate" />
+          <header className="h-14 flex items-center px-4 bg-background border-b border-border sticky top-0 z-10 shrink-0">
+            <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors" />
           </header>
-          <main className="flex-1 overflow-auto bg-slate-50/50 dark:bg-transparent p-4 md:p-6">
+          <main className="flex-1 overflow-auto bg-background p-5 md:p-8">
             <div className="max-w-5xl mx-auto h-full">
               {children}
             </div>

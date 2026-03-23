@@ -1,118 +1,209 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
-import { GraduationCap, ArrowRight, BookOpen, MessageSquare, CalendarDays, Lock } from "lucide-react";
+import {
+  GraduationCap,
+  ArrowRight,
+  BookOpen,
+  MessageSquare,
+  CalendarDays,
+  ShieldCheck,
+  CheckCircle,
+} from "lucide-react";
 import { motion } from "framer-motion";
+
+const features = [
+  {
+    icon: CalendarDays,
+    title: "Session Scheduling",
+    desc: "Students request sessions with a preferred time and topic. You approve, decline, or reschedule — all in one place.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Private Messaging",
+    desc: "A secure, direct chat between student and tutor. No third-party apps, no public threads.",
+  },
+  {
+    icon: BookOpen,
+    title: "Assignment Tracking",
+    desc: "Post homework with instructions and due dates. Students can optionally submit their work directly in the portal.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Safe & Controlled",
+    desc: "Only enrolled students and the tutor have access. Every conversation is private and logged.",
+  },
+];
+
+const trustPoints = [
+  "No social features or public profiles",
+  "Parent-approved student access only",
+  "All sessions tracked and recorded",
+];
 
 export default function LandingPage() {
   const { login } = useAuth();
 
-  const features = [
-    { icon: CalendarDays, title: "Session Scheduling", desc: "Request and manage tutoring sessions." },
-    { icon: MessageSquare, title: "Secure Chat", desc: "Private messages with your tutor." },
-    { icon: BookOpen, title: "Assignments", desc: "View and submit homework." },
-    { icon: Lock, title: "Private & Secure", desc: "Only you and your tutor can access." },
-  ];
-
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[100px] pointer-events-none" />
-
-      <header className="px-6 lg:px-12 py-6 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-lg shadow-primary/25">
-            <GraduationCap className="h-6 w-6" />
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Nav */}
+      <header className="px-6 lg:px-16 py-5 flex items-center justify-between border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <div className="bg-indigo-600 text-white p-1.5 rounded-lg">
+            <GraduationCap className="h-5 w-5" />
           </div>
-          <span className="font-bold text-2xl tracking-tight text-foreground">Tutoring for Understanding</span>
+          <span className="font-semibold text-lg text-slate-800 tracking-tight">
+            Tutoring for Understanding
+          </span>
         </div>
-        <Button onClick={login} variant="ghost" className="font-semibold text-base">
+        <Button
+          onClick={login}
+          variant="outline"
+          className="font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
+        >
           Sign In
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 px-6 lg:px-12 max-w-7xl mx-auto w-full relative z-10 py-12">
-        <motion.div
-          className="flex-1 flex flex-col items-start text-left"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 font-semibold text-sm mb-6 border border-primary/20 shadow-sm text-primary">
-            <span>Making Math Make Sense</span>
-          </div>
-          <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
-            Reach Your{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500">
-              Math Goals
-            </span>
-          </h1>
-          <p className="text-lg text-muted-foreground mb-10 max-w-xl leading-relaxed">
-            Schedule tutoring sessions, chat securely with your tutor, and track your assignments — all in one place.
-          </p>
-          <Button
-            onClick={login}
-            size="lg"
-            className="h-14 px-8 text-lg rounded-full shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 transition-all hover:-translate-y-1"
+      {/* Hero */}
+      <main className="flex-1">
+        <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            Enter Portal <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+            <span className="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-indigo-50 text-indigo-600 border border-indigo-100 mb-6">
+              Private One-on-One Tutoring
+            </span>
 
-          <div className="grid grid-cols-2 gap-6 mt-16 w-full max-w-lg">
-            {features.map((f, i) => (
-              <motion.div
-                key={i}
-                className="flex items-start gap-3"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-              >
-                <div className="bg-card p-2 rounded-lg border border-border shadow-sm shrink-0">
-                  <f.icon className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm">{f.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+            <h1 className="font-display text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1] mb-6">
+              Reach Your{" "}
+              <span className="text-indigo-600">
+                Math Goals
+              </span>
+            </h1>
 
-        <motion.div
-          className="flex-1 w-full max-w-lg lg:max-w-none relative"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-        >
-          <div className="relative rounded-[2rem] overflow-hidden shadow-2xl shadow-primary/10 border-8 border-background/50 bg-gradient-to-br from-primary/5 to-secondary/10">
-            <div className="p-8 space-y-4 min-h-[300px] flex flex-col justify-center">
-              {/* Mock schedule card */}
-              <div className="bg-card rounded-2xl border border-border shadow-md p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Next Session</p>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">APPROVED</span>
+            <p className="text-lg text-slate-500 leading-relaxed mb-8 max-w-md">
+              A structured, professional portal connecting students with their tutor — for scheduling, communication, and homework, all in one private space.
+            </p>
+
+            <Button
+              onClick={login}
+              size="lg"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white h-14 px-8 text-base rounded-xl shadow-lg shadow-indigo-200 hover:-translate-y-0.5 transition-all duration-200"
+            >
+              Access the Portal <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+
+            <ul className="mt-10 space-y-2.5">
+              {trustPoints.map((point) => (
+                <li key={point} className="flex items-center gap-2.5 text-sm text-slate-500">
+                  <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Preview cards */}
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
+          >
+            {/* Session card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+                  <CalendarDays className="h-4 w-4 text-indigo-500" />
+                  Upcoming Session
                 </div>
-                <p className="font-bold text-lg">Tomorrow, 4:00 PM</p>
-                <p className="text-sm text-muted-foreground">Algebra — 60 min</p>
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <GraduationCap className="h-4 w-4" />
-                  <span>With your tutor</span>
-                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
+                  Confirmed
+                </span>
               </div>
-              {/* Mock chat preview */}
-              <div className="bg-card rounded-2xl border border-border shadow-md p-5">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recent Message</p>
-                <div className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/15 shrink-0 flex items-center justify-center text-primary font-bold text-sm">T</div>
-                  <div className="bg-secondary/50 rounded-xl rounded-tl-sm px-3 py-2 text-sm">
-                    Great work on the fractions! See you tomorrow.
-                  </div>
+              <p className="text-xl font-semibold text-slate-800">Tomorrow · 4:00 PM</p>
+              <p className="text-sm text-slate-400 mt-0.5">Linear Equations — 60 minutes</p>
+              <div className="mt-4 h-px bg-slate-100" />
+              <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
+                <GraduationCap className="h-3.5 w-3.5" /> With your tutor
+              </p>
+            </div>
+
+            {/* Chat card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <p className="text-sm font-medium text-slate-500 mb-4 flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-indigo-500" /> Private Message
+              </p>
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-full bg-indigo-100 shrink-0 flex items-center justify-center text-indigo-700 font-bold text-sm">
+                  T
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl rounded-tl-sm px-4 py-3 text-sm text-slate-700 leading-relaxed">
+                  Great work today — you really understood the concept. I've posted a few practice problems for you.
                 </div>
               </div>
             </div>
+
+            {/* Assignment card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-indigo-500" /> New Assignment
+                  </p>
+                  <p className="font-semibold text-slate-800">Chapter 5 Practice Problems</p>
+                  <p className="text-sm text-slate-400 mt-0.5">Due Friday · Algebra</p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100">
+                  Due Soon
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Feature section */}
+        <section className="bg-slate-50 border-t border-slate-100 py-20">
+          <div className="max-w-6xl mx-auto px-6 lg:px-16">
+            <div className="text-center mb-14">
+              <h2 className="font-display text-3xl font-bold text-slate-900 mb-3">
+                Everything in one place
+              </h2>
+              <p className="text-slate-500 max-w-lg mx-auto">
+                Designed to keep students accountable and parents informed — without the noise of general-purpose apps.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {features.map((f, i) => (
+                <motion.div
+                  key={i}
+                  className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * i, duration: 0.5 }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center mb-4">
+                    <f.icon className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <h3 className="font-semibold text-slate-800 text-sm mb-2">{f.title}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </motion.div>
+        </section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-100 py-6 px-6 lg:px-16 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-slate-400">
+          <GraduationCap className="h-4 w-4" />
+          Tutoring for Understanding
+        </div>
+        <p className="text-xs text-slate-400">Private · Secure · Focused</p>
+      </footer>
     </div>
   );
 }
