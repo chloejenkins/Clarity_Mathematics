@@ -41,9 +41,9 @@ export default function LandingPage() {
             <span>✨ Making Math Make Sense</span>
           </div>
           <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
-            Master Middle School{" "}
+            Reach Your{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-              Math
+              Math Goals
             </span>
           </h1>
           <p className="text-lg text-muted-foreground mb-10 max-w-xl leading-relaxed">
