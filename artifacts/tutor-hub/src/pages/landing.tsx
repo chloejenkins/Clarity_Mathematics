@@ -84,7 +84,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg text-slate-500 leading-relaxed mb-8 max-w-md">
-              A structured, professional portal connecting students with their tutor — for scheduling, communication, and homework, all in one private space.
+              Book sessions, message your tutor, and track assignments — all in one private space.
             </p>
 
             <Button

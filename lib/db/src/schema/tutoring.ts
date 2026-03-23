@@ -41,6 +41,17 @@ export const videosTable = pgTable("videos", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const availabilitySlotsTable = pgTable("availability_slots", {
+  id: serial("id").primaryKey(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  topic: varchar("topic"),
+  isBooked: varchar("is_booked").notNull().default("false"),
+  bookedByStudentId: varchar("booked_by_student_id"),
+  sessionId: integer("session_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const submissionsTable = pgTable("submissions", {
   id: serial("id").primaryKey(),
   assignmentId: integer("assignment_id").notNull(),
@@ -54,6 +65,7 @@ export const insertTutoringSessionSchema = createInsertSchema(tutoringSessionsTa
 export const insertMessageSchema = createInsertSchema(messagesTable).omit({ id: true, createdAt: true });
 export const insertAssignmentSchema = createInsertSchema(assignmentsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertVideoSchema = createInsertSchema(videosTable).omit({ id: true, createdAt: true });
+export const insertAvailabilitySlotSchema = createInsertSchema(availabilitySlotsTable).omit({ id: true, createdAt: true });
 export const insertSubmissionSchema = createInsertSchema(submissionsTable).omit({ id: true, submittedAt: true, updatedAt: true });
 
 export type TutoringSession = typeof tutoringSessionsTable.$inferSelect;

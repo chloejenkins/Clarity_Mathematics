@@ -1,0 +1,109 @@
+import { Router, type IRouter, type Request, type Response } from "express";
+import { db } from "@workspace/db";
+import { availabilitySlotsTable, tutoringSessionsTable } from "@workspace/db/schema";
+import { eq, gte, asc } from "drizzle-orm";
+import { z } from "zod";
+
+const router: IRouter = Router();
+
+const CreateSlotBody = z.object({
+  startsAt: z.string().min(1, "Date/time required"),
+  durationMinutes: z.coerce.number().min(15).max(240).default(60),
+  topic: z.string().optional(),
+});
+
+// GET /api/availability — list slots
+// Tutor sees all; students see only future unbooked slots
+router.get("/availability", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const now = new Date();
+
+  if (req.user.role === "tutor") {
+    const slots = await db
+      .select()
+      .from(availabilitySlotsTable)
+      .where(gte(availabilitySlotsTable.startsAt, now))
+      .orderBy(asc(availabilitySlotsTable.startsAt));
+    res.json(slots);
+  } else {
+    const slots = await db
+      .select()
+      .from(availabilitySlotsTable)
+      .where(gte(availabilitySlotsTable.startsAt, now))
+      .orderBy(asc(availabilitySlotsTable.startsAt));
+    res.json(slots);
+  }
+});
+
+// POST /api/availability — tutor creates a slot (or multiple)
+router.post("/availability", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (req.user.role !== "tutor") { res.status(403).json({ error: "Only tutors can create slots" }); return; }
+
+  // Support single or array
+  const bodyArray = Array.isArray(req.body) ? req.body : [req.body];
+  const parsed = z.array(CreateSlotBody).safeParse(bodyArray);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid slot data", details: parsed.error.issues }); return; }
+
+  const inserted = await db
+    .insert(availabilitySlotsTable)
+    .values(parsed.data.map(s => ({
+      startsAt: new Date(s.startsAt),
+      durationMinutes: s.durationMinutes,
+      topic: s.topic ?? null,
+      isBooked: "false",
+    })))
+    .returning();
+
+  res.status(201).json(inserted);
+});
+
+// DELETE /api/availability/:id — tutor removes an unbooked slot
+router.delete("/availability/:id", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (req.user.role !== "tutor") { res.status(403).json({ error: "Only tutors can delete slots" }); return; }
+
+  const id = Number(req.params.id);
+  const [slot] = await db.select().from(availabilitySlotsTable).where(eq(availabilitySlotsTable.id, id)).limit(1);
+  if (!slot) { res.status(404).json({ error: "Slot not found" }); return; }
+  if (slot.isBooked === "true") { res.status(400).json({ error: "Cannot delete a booked slot" }); return; }
+
+  await db.delete(availabilitySlotsTable).where(eq(availabilitySlotsTable.id, id));
+  res.json({ success: true });
+});
+
+// POST /api/availability/:id/book — student books a slot
+router.post("/availability/:id/book", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (req.user.role !== "student") { res.status(403).json({ error: "Only students can book slots" }); return; }
+
+  const id = Number(req.params.id);
+  const [slot] = await db.select().from(availabilitySlotsTable).where(eq(availabilitySlotsTable.id, id)).limit(1);
+  if (!slot) { res.status(404).json({ error: "Slot not found" }); return; }
+  if (slot.isBooked === "true") { res.status(409).json({ error: "This slot is already booked" }); return; }
+
+  const topic = (req.body as { topic?: string }).topic;
+
+  // Create a session (auto-approved since tutor already offered this time)
+  const [session] = await db
+    .insert(tutoringSessionsTable)
+    .values({
+      studentId: req.user.id,
+      scheduledAt: slot.startsAt,
+      durationMinutes: slot.durationMinutes,
+      topic: topic ?? slot.topic ?? null,
+      status: "approved",
+    })
+    .returning();
+
+  // Mark slot as booked
+  await db
+    .update(availabilitySlotsTable)
+    .set({ isBooked: "true", bookedByStudentId: req.user.id, sessionId: session.id })
+    .where(eq(availabilitySlotsTable.id, id));
+
+  res.status(201).json({ session, slotId: id });
+});
+
+export default router;

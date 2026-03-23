@@ -6,6 +6,7 @@ import messagesRouter from "./messages";
 import assignmentsRouter from "./assignments";
 import videosRouter from "./videos";
 import usersRouter from "./users";
+import availabilityRouter from "./availability";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(messagesRouter);
 router.use(assignmentsRouter);
 router.use(videosRouter);
 router.use(usersRouter);
+router.use(availabilityRouter);
 
 export default router;
