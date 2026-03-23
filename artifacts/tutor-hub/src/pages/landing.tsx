@@ -37,8 +37,8 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 text-secondary-foreground font-semibold text-sm mb-6 border border-secondary/20 shadow-sm">
-            <span>✨ Making Math Make Sense</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 font-semibold text-sm mb-6 border border-primary/20 shadow-sm text-primary">
+            <span>Making Math Make Sense</span>
           </div>
           <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
             Reach Your{" "}
