@@ -46,7 +46,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Nav */}
-      <header className="px-6 lg:px-16 py-5 flex items-center justify-between border-b border-slate-100">
+      <header className="px-6 md:px-10 py-5 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-2.5">
           <div className="bg-indigo-600 text-white p-1.5 rounded-lg">
             <GraduationCap className="h-5 w-5" />
@@ -66,7 +66,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <main className="flex-1">
-        <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
+        <section className="max-w-6xl mx-auto px-6 md:px-10 py-12 md:py-20 grid md:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -76,7 +76,7 @@ export default function LandingPage() {
               Private One-on-One Tutoring
             </span>
 
-            <h1 className="font-display text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1] mb-6">
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-slate-900 leading-[1.1] mb-6">
               Reach Your{" "}
               <span className="text-indigo-600">
                 Math Goals
@@ -166,16 +166,16 @@ export default function LandingPage() {
 
         {/* Feature section */}
         <section className="bg-slate-50 border-t border-slate-100 py-20">
-          <div className="max-w-6xl mx-auto px-6 lg:px-16">
+          <div className="max-w-6xl mx-auto px-6 md:px-10">
             <div className="text-center mb-14">
-              <h2 className="font-display text-3xl font-bold text-slate-900 mb-3">
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-900 mb-3">
                 Everything in one place
               </h2>
               <p className="text-slate-500 max-w-lg mx-auto">
                 Designed to keep students accountable and parents informed — without the noise of general-purpose apps.
               </p>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
               {features.map((f, i) => (
                 <motion.div
                   key={i}
@@ -197,7 +197,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100 py-6 px-6 lg:px-16 flex items-center justify-between">
+      <footer className="border-t border-slate-100 py-6 px-6 md:px-10 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <GraduationCap className="h-4 w-4" />
           Tutoring for Understanding
