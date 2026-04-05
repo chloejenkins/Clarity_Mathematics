@@ -76,7 +76,7 @@ export default function LandingPage() {
               Private One-on-One Tutoring
             </span>
 
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-slate-900 leading-[1.1] mb-6">
+            <h1 className="font-display text-4xl md:text-5xl font-extrabold text-slate-900 leading-[1.1] mb-6">
               Reach Your{" "}
               <span className="text-indigo-600">
                 Math Goals
