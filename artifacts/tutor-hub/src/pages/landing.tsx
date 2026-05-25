@@ -84,7 +84,7 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 mb-7">
                 <Sparkles className="h-3.5 w-3.5" />
-                Private One-on-One Tutoring
+                Private Mathematics Tutoring
               </div>
 
               <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-[1.1] mb-5">
