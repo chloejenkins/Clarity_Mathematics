@@ -4,7 +4,7 @@ import {
   MessageSquare,
   CalendarDays,
   LogOut,
-  GraduationCap,
+  Sigma,
   BookOpen,
 } from "lucide-react";
 import {
@@ -57,7 +57,7 @@ export function AppLayout({ children }: LayoutProps) {
             {/* Logo */}
             <div className="px-6 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
               <div className="bg-indigo-500 text-white p-1.5 rounded-lg shrink-0">
-                <GraduationCap className="h-4 w-4" />
+                <Sigma className="h-4 w-4" />
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm text-sidebar-foreground leading-none truncate">

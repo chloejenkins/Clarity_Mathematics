@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
-  GraduationCap,
+  Sigma,
   ArrowRight,
   BookOpen,
   MessageSquare,
@@ -67,7 +67,7 @@ export default function LandingPage() {
       <header className="px-6 md:px-10 py-4 flex items-center justify-between bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200">
         <div className="flex items-center gap-2.5">
           <div className="bg-blue-900 text-amber-400 p-1.5 rounded-xl">
-            <GraduationCap className="h-5 w-5" />
+            <Sigma className="h-5 w-5" />
           </div>
           <span className="font-bold text-slate-900 tracking-tight">Clarity Mathematics</span>
         </div>
@@ -147,7 +147,7 @@ export default function LandingPage() {
                 <p className="text-sm text-slate-400 mt-0.5">Linear Equations — 60 minutes</p>
                 <div className="mt-4 h-px bg-slate-100" />
                 <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
-                  <GraduationCap className="h-3.5 w-3.5 text-blue-700" /> With your tutor
+                  <Sigma className="h-3.5 w-3.5 text-blue-700" /> With your tutor
                 </p>
               </div>
 
@@ -261,7 +261,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 py-5 px-6 md:px-10 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-400">
-          <GraduationCap className="h-4 w-4" />
+          <Sigma className="h-4 w-4" />
           Clarity Mathematics
         </div>
         <p className="text-xs text-slate-400">Private · Secure · Focused</p>
