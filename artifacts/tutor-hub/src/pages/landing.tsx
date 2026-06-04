@@ -69,7 +69,7 @@ export default function LandingPage() {
           <div className="bg-blue-900 text-amber-400 p-1.5 rounded-xl">
             <GraduationCap className="h-5 w-5" />
           </div>
-          <span className="font-bold text-slate-900 tracking-tight">Tutoring for Understanding</span>
+          <span className="font-bold text-slate-900 tracking-tight">Clarity Mathematics</span>
         </div>
         <Button
           onClick={login}
@@ -262,7 +262,7 @@ export default function LandingPage() {
       <footer className="border-t border-slate-200 py-5 px-6 md:px-10 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <GraduationCap className="h-4 w-4" />
-          Tutoring for Understanding
+          Clarity Mathematics
         </div>
         <p className="text-xs text-slate-400">Private · Secure · Focused</p>
       </footer>

@@ -61,7 +61,7 @@ export function AppLayout({ children }: LayoutProps) {
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm text-sidebar-foreground leading-none truncate">
-                  Tutoring for Understanding
+                  Clarity Mathematics
                 </p>
                 <p className="text-[11px] text-sidebar-foreground/50 mt-0.5 uppercase tracking-wider">
                   {isTutor ? "Tutor Portal" : "Student Portal"}
