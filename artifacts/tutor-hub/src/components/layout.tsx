@@ -20,6 +20,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useClerk } from "@clerk/clerk-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
@@ -28,7 +29,8 @@ interface LayoutProps {
 }
 
 export function AppLayout({ children }: LayoutProps) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { signOut } = useClerk();
   const [location] = useLocation();
 
   const isTutor = user?.role === "tutor";
@@ -119,7 +121,7 @@ export function AppLayout({ children }: LayoutProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={logout}
+                onClick={() => signOut({ redirectUrl: "/" })}
                 className="h-8 w-8 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent shrink-0"
                 title="Sign out"
               >

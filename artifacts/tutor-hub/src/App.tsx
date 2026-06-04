@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth as useClerkAuth, useSession } from "@clerk/clerk-react";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import NotFound from "@/pages/not-found";
 import { AppLayout } from "@/components/layout";
 import LandingPage from "@/pages/landing";
@@ -12,10 +14,24 @@ import AssignmentsPage from "@/pages/assignments";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, isLoading } = useAuth();
+function ClerkTokenProvider() {
+  const { session } = useSession();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (session) {
+      setAuthTokenGetter(() => session.getToken());
+    } else {
+      setAuthTokenGetter(null);
+    }
+  }, [session]);
+
+  return null;
+}
+
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isLoaded, isSignedIn } = useClerkAuth();
+
+  if (!isLoaded) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -26,7 +42,9 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
-  if (!isAuthenticated) return <LandingPage />;
+  if (!isSignedIn) {
+    return <LandingPage />;
+  }
 
   return (
     <AppLayout>
@@ -50,6 +68,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ClerkTokenProvider />
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>

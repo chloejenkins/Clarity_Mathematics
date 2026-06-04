@@ -1,7 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
-import type { AuthUser } from "@workspace/api-client-react";
+import { useUser, useClerk } from "@clerk/clerk-react";
+import { useCallback } from "react";
 
-export type { AuthUser };
+export interface AuthUser {
+  id: string;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
+  role: "tutor" | "student";
+}
+
+export type { AuthUser as AuthUser };
 
 interface AuthState {
   user: AuthUser | null;
@@ -12,49 +21,35 @@ interface AuthState {
 }
 
 export function useAuth(): AuthState {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch("/api/auth/user", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{ user: AuthUser | null }>;
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setUser(data.user ?? null);
-          setIsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setUser(null);
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { user: clerkUser, isLoaded, isSignedIn } = useUser();
+  const { openSignIn, signOut } = useClerk();
 
   const login = useCallback(() => {
-    const base = import.meta.env.BASE_URL.replace(/\/+$/, "") || "/";
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
-  }, []);
+    openSignIn();
+  }, [openSignIn]);
 
   const logout = useCallback(() => {
-    window.location.href = "/api/logout";
-  }, []);
+    signOut();
+  }, [signOut]);
 
-  return {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    login,
-    logout,
+  if (!isLoaded) {
+    return { user: null, isLoading: true, isAuthenticated: false, login, logout };
+  }
+
+  if (!isSignedIn || !clerkUser) {
+    return { user: null, isLoading: false, isAuthenticated: false, login, logout };
+  }
+
+  const role = (clerkUser.publicMetadata?.role as "tutor" | "student") ?? "student";
+
+  const user: AuthUser = {
+    id: clerkUser.id,
+    username: clerkUser.username,
+    firstName: clerkUser.firstName,
+    lastName: clerkUser.lastName,
+    profileImageUrl: clerkUser.imageUrl ?? null,
+    role,
   };
+
+  return { user, isLoading: false, isAuthenticated: true, login, logout };
 }
