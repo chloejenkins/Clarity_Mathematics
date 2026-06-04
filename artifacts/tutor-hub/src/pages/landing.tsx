@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
@@ -52,6 +53,14 @@ const trustPoints = [
 export default function LandingPage() {
   const { login } = useAuth();
 
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://assets.calendly.com/assets/external/widget.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Nav */}
@@ -60,7 +69,7 @@ export default function LandingPage() {
           <div className="bg-blue-900 text-amber-400 p-1.5 rounded-xl">
             <GraduationCap className="h-5 w-5" />
           </div>
-          <span className="font-bold text-slate-900 tracking-tight">Clarity Mathematics</span>
+          <span className="font-bold text-slate-900 tracking-tight">Tutoring for Understanding</span>
         </div>
         <Button
           onClick={login}
@@ -204,6 +213,25 @@ export default function LandingPage() {
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Calendly booking section */}
+        <section className="py-20 bg-white border-t border-slate-200">
+          <div className="max-w-4xl mx-auto px-6 md:px-10">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3">
+                Book a Session
+              </h2>
+              <p className="text-slate-500 max-w-md mx-auto">
+                Pick a time that works for you — sessions are confirmed instantly.
+              </p>
+            </div>
+            <div
+              className="calendly-inline-widget rounded-2xl overflow-hidden border border-slate-200 shadow-sm"
+              data-url="https://calendly.com/chloejenkins-claritymathematics"
+              style={{ minWidth: "320px", height: "700px" }}
+            />
           </div>
         </section>
 
