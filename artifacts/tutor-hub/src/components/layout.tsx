@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useClerk } from "@clerk/clerk-react";
-import { ExternalLink } from "lucide-react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
@@ -101,25 +101,7 @@ export function AppLayout({ children }: LayoutProps) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="p-4 border-t border-sidebar-border space-y-3">
-            {/* Venmo */}
-            <a
-              href="https://venmo.com/denise-burke-8"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg bg-[#008CFF]/10 hover:bg-[#008CFF]/20 transition-colors group"
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 fill-[#008CFF]" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19.014 2.002c.394 1.18.569 2.398.569 3.95C19.583 11.2 14.72 18.3 10.8 22H3.985L1 3.23l6.02-.567 1.567 12.634c1.46-2.48 3.26-6.386 3.26-9.048 0-1.458-.25-2.449-.622-3.277l7.79-.97z"/>
-              </svg>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-[#008CFF] leading-none">Pay via Venmo</p>
-                <p className="text-[11px] text-sidebar-foreground/40 mt-0.5">@denise-burke-8</p>
-              </div>
-              <ExternalLink className="h-3 w-3 text-[#008CFF]/40 group-hover:text-[#008CFF]/70 shrink-0" />
-            </a>
-
-            {/* User */}
+          <SidebarFooter className="p-4 border-t border-sidebar-border">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar className="h-8 w-8 shrink-0 ring-1 ring-white/10">
