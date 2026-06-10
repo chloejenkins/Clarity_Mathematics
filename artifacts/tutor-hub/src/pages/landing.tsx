@@ -141,7 +141,6 @@ export default function LandingPage() {
                   {[
                     { icon: CalendarDays, text: "View &amp; book upcoming sessions" },
                     { icon: MessageSquare, text: "Message your tutor directly" },
-                    { icon: BookOpen, text: "Track and submit assignments" },
                   ].map(({ icon: Icon, text }, i) => (
                     <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
                       <Icon className="h-4 w-4 text-amber-400 shrink-0" />
