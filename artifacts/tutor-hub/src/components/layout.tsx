@@ -59,7 +59,7 @@ export function AppLayout({ children }: LayoutProps) {
           <SidebarContent>
             {/* Logo */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-sidebar-border">
-              <img src="/logo-transparent.png" alt="Clarity Mathematics" className="h-14 w-auto" style={{ filter: "invert(1) brightness(10)" }} />
+              <span className="font-serif text-2xl font-bold tracking-widest text-amber-400 select-none">C M</span>
               <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider shrink-0">
                 {isTutor ? "Tutor" : "Student"}
               </p>
