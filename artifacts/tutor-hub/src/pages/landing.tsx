@@ -232,77 +232,63 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Pricing + Policy cards */}
-            <div className="grid sm:grid-cols-3 gap-4 mb-10">
-              {/* First session free */}
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="bg-emerald-100 p-2 rounded-lg">
-                    <Gift className="h-4 w-4 text-emerald-700" />
-                  </div>
-                  <span className="font-bold text-emerald-800 text-sm">First Session Free</span>
-                </div>
-                <p className="text-xs text-emerald-700 leading-relaxed">
-                  Your first session is completely free — no payment needed to get started.
-                </p>
-              </div>
-
-              {/* 24hr cancellation */}
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="bg-amber-100 p-2 rounded-lg">
-                    <Clock className="h-4 w-4 text-amber-700" />
-                  </div>
-                  <span className="font-bold text-amber-800 text-sm">Cancel Within 24 hrs</span>
-                </div>
-                <p className="text-xs text-amber-700 leading-relaxed">
-                  Cancellations made less than 24 hours before a session receive a <strong>50% refund</strong>.
-                </p>
-              </div>
-
-              {/* Full refund */}
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <RefreshCcw className="h-4 w-4 text-blue-700" />
-                  </div>
-                  <span className="font-bold text-blue-800 text-sm">Full Refund Otherwise</span>
-                </div>
-                <p className="text-xs text-blue-700 leading-relaxed">
-                  Cancel more than 24 hours in advance and receive a <strong>100% refund</strong>.
-                </p>
-              </div>
-            </div>
-
-            {/* Payment methods */}
+            {/* Policy + Payment row */}
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-10">
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="h-4 w-4 text-slate-500" />
-                <p className="text-sm font-semibold text-slate-700">Payment Methods</p>
+              {/* Policy */}
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Pricing &amp; Policy</p>
+              <div className="grid sm:grid-cols-3 gap-3 mb-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+                  <div className="bg-emerald-100 p-1.5 rounded-lg shrink-0 mt-0.5">
+                    <Gift className="h-3.5 w-3.5 text-emerald-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 leading-snug">First session free</p>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">No payment needed to get started.</p>
+                  </div>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+                  <div className="bg-amber-100 p-1.5 rounded-lg shrink-0 mt-0.5">
+                    <Clock className="h-3.5 w-3.5 text-amber-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 leading-snug">50% refund</p>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">If cancelled within 24 hours of session.</p>
+                  </div>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+                  <div className="bg-blue-100 p-1.5 rounded-lg shrink-0 mt-0.5">
+                    <RefreshCcw className="h-3.5 w-3.5 text-blue-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 leading-snug">100% refund</p>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">If cancelled more than 24 hours in advance.</p>
+                  </div>
+                </div>
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {/* Venmo */}
+
+              {/* Payment methods */}
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Payment Methods</p>
+              <div className="grid sm:grid-cols-2 gap-3">
                 <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-[#008CFF]/10 flex items-center justify-center shrink-0">
-                    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-[#008CFF]" xmlns="http://www.w3.org/2000/svg">
+                  <div className="h-8 w-8 rounded-lg bg-[#008CFF]/10 flex items-center justify-center shrink-0">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#008CFF]" xmlns="http://www.w3.org/2000/svg">
                       <path d="M19.014 2.002c.394 1.18.569 2.398.569 3.95C19.583 11.2 14.72 18.3 10.8 22H3.985L1 3.23l6.02-.567 1.567 12.634c1.46-2.48 3.26-6.386 3.26-9.048 0-1.458-.25-2.449-.622-3.277l7.79-.97z"/>
                     </svg>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800">Venmo</p>
-                    <p className="text-xs text-slate-400 italic">Handle coming soon</p>
+                    <p className="text-xs text-slate-400">Handle coming soon</p>
                   </div>
                 </div>
-                {/* Zelle */}
                 <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-[#6D1ED4]/10 flex items-center justify-center shrink-0">
-                    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-[#6D1ED4]" xmlns="http://www.w3.org/2000/svg">
+                  <div className="h-8 w-8 rounded-lg bg-[#6D1ED4]/10 flex items-center justify-center shrink-0">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#6D1ED4]" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.25 16.5H9.362l5.513-8.25H8.75v-1.5h8.138L11.375 15H17.25v1.5z"/>
                     </svg>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800">Zelle</p>
-                    <p className="text-xs text-slate-400 italic">Details coming soon</p>
+                    <p className="text-xs text-slate-400">Details coming soon</p>
                   </div>
                 </div>
               </div>
