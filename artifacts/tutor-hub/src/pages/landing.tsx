@@ -60,7 +60,10 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Nav */}
       <header className="px-6 md:px-10 py-4 flex items-center justify-between bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200">
-        <span className="font-serif text-3xl font-bold tracking-tight select-none text-[#c9a227]">CM</span>
+        <div className="flex flex-col leading-none select-none">
+          <span className="font-serif text-3xl font-bold tracking-tight text-[#c9a227]">CM</span>
+          <span className="text-[10px] font-semibold tracking-widest uppercase text-slate-400 mt-0.5">Clarity Mathematics</span>
+        </div>
         <Button
           onClick={login}
           className="bg-blue-900 hover:bg-blue-800 text-white text-sm h-9 px-5 rounded-lg"
@@ -123,7 +126,10 @@ export default function LandingPage() {
             >
               <div className="bg-blue-900 rounded-3xl p-8 text-white shadow-2xl shadow-blue-900/30 flex flex-col gap-7">
                 <div className="flex items-center gap-3">
-                  <span className="font-serif text-4xl font-bold tracking-tight select-none text-[#c9a227]">CM</span>
+                  <div className="flex flex-col leading-none select-none">
+                    <span className="font-serif text-4xl font-bold tracking-tight text-[#c9a227]">CM</span>
+                    <span className="text-[9px] font-semibold tracking-widest uppercase text-blue-300 mt-1">Clarity Mathematics</span>
+                  </div>
                   <p className="text-blue-300 text-xs">Student &amp; Parent Portal</p>
                 </div>
 
