@@ -60,12 +60,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Nav */}
       <header className="px-6 md:px-10 py-4 flex items-center justify-between bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200">
-        <div className="flex items-center gap-2.5">
-          <div className="bg-blue-900 text-amber-400 p-1.5 rounded-xl">
-            <Sigma className="h-5 w-5" />
-          </div>
-          <span className="font-bold text-slate-900 tracking-tight">Clarity Mathematics</span>
-        </div>
+        <img src="/logo-transparent.png" alt="Clarity Mathematics" className="h-12 w-auto" />
         <Button
           onClick={login}
           className="bg-blue-900 hover:bg-blue-800 text-white text-sm h-9 px-5 rounded-lg"
@@ -128,13 +123,8 @@ export default function LandingPage() {
             >
               <div className="bg-blue-900 rounded-3xl p-8 text-white shadow-2xl shadow-blue-900/30 flex flex-col gap-7">
                 <div className="flex items-center gap-3">
-                  <div className="bg-amber-400 text-blue-900 p-2 rounded-xl">
-                    <Sigma className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-base leading-none">Clarity Mathematics</p>
-                    <p className="text-blue-300 text-xs mt-1">Student &amp; Parent Portal</p>
-                  </div>
+                  <img src="/logo-transparent.png" alt="Clarity Mathematics" className="h-16 w-auto" style={{ filter: "invert(1) brightness(10)" }} />
+                  <p className="text-blue-300 text-xs">Student &amp; Parent Portal</p>
                 </div>
 
                 <div className="space-y-3">

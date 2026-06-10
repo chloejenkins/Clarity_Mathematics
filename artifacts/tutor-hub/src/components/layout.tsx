@@ -58,18 +58,11 @@ export function AppLayout({ children }: LayoutProps) {
         <Sidebar className="border-r-0 bg-sidebar">
           <SidebarContent>
             {/* Logo */}
-            <div className="px-6 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
-              <div className="bg-indigo-500 text-white p-1.5 rounded-lg shrink-0">
-                <Sigma className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-sm text-sidebar-foreground leading-none truncate">
-                  Clarity Mathematics
-                </p>
-                <p className="text-[11px] text-sidebar-foreground/50 mt-0.5 uppercase tracking-wider">
-                  {isTutor ? "Tutor Portal" : "Student Portal"}
-                </p>
-              </div>
+            <div className="px-5 py-4 flex items-center justify-between border-b border-sidebar-border">
+              <img src="/logo-transparent.png" alt="Clarity Mathematics" className="h-10 w-auto" style={{ filter: "invert(1) brightness(10)" }} />
+              <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider shrink-0">
+                {isTutor ? "Tutor" : "Student"}
+              </p>
             </div>
 
             {/* Nav */}
