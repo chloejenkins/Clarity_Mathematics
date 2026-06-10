@@ -120,61 +120,42 @@ export default function LandingPage() {
               </ul>
             </motion.div>
 
-            {/* Preview cards */}
+            {/* Portal card */}
             <motion.div
-              className="space-y-3.5"
               initial={{ opacity: 0, y: 36 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: "easeOut", delay: 0.18 }}
             >
-              {/* Session card */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-                    <CalendarDays className="h-4 w-4 text-blue-700" />
-                    Upcoming Session
+              <div className="bg-blue-900 rounded-3xl p-8 text-white shadow-2xl shadow-blue-900/30 flex flex-col gap-7">
+                <div className="flex items-center gap-3">
+                  <div className="bg-amber-400 text-blue-900 p-2 rounded-xl">
+                    <Sigma className="h-5 w-5" />
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
-                    Confirmed
-                  </span>
-                </div>
-                <p className="text-xl font-bold text-slate-800">Tomorrow · 4:00 PM</p>
-                <p className="text-sm text-slate-400 mt-0.5">Linear Equations — 60 minutes</p>
-                <div className="mt-4 h-px bg-slate-100" />
-                <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
-                  <Sigma className="h-3.5 w-3.5 text-blue-700" /> With your tutor
-                </p>
-              </div>
-
-              {/* Chat card */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                <p className="text-sm font-medium text-slate-500 mb-4 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-blue-700" /> Private Message
-                </p>
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-full bg-blue-900 shrink-0 flex items-center justify-center text-amber-400 font-bold text-sm">
-                    T
-                  </div>
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl rounded-tl-sm px-4 py-3 text-sm text-slate-700 leading-relaxed">
-                    Great work today — you really understood the concept. I've posted a few practice problems for you.
-                  </div>
-                </div>
-              </div>
-
-              {/* Assignment card */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-blue-700" /> New Assignment
-                    </p>
-                    <p className="font-semibold text-slate-800">Chapter 5 Practice Problems</p>
-                    <p className="text-sm text-slate-400 mt-0.5">Due Friday · Algebra</p>
+                    <p className="font-bold text-base leading-none">Clarity Mathematics</p>
+                    <p className="text-blue-300 text-xs mt-1">Student &amp; Parent Portal</p>
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100">
-                    Due Soon
-                  </span>
                 </div>
+
+                <div className="space-y-3">
+                  {[
+                    { icon: CalendarDays, text: "View &amp; book upcoming sessions" },
+                    { icon: MessageSquare, text: "Message your tutor directly" },
+                    { icon: BookOpen, text: "Track and submit assignments" },
+                  ].map(({ icon: Icon, text }, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+                      <Icon className="h-4 w-4 text-amber-400 shrink-0" />
+                      <span className="text-sm text-blue-100" dangerouslySetInnerHTML={{ __html: text }} />
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  onClick={login}
+                  className="w-full bg-amber-400 text-blue-900 hover:bg-amber-300 font-bold rounded-xl h-11 text-sm shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  Sign in to your portal <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
             </motion.div>
           </div>
