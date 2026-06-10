@@ -60,7 +60,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Nav */}
       <header className="px-6 md:px-10 py-4 flex items-center justify-between bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200">
-        <span className="font-serif text-3xl font-bold tracking-widest text-amber-400 select-none">C M</span>
+        <span className="font-serif text-3xl font-bold tracking-wide text-amber-400 select-none">C · M</span>
         <Button
           onClick={login}
           className="bg-blue-900 hover:bg-blue-800 text-white text-sm h-9 px-5 rounded-lg"
@@ -123,7 +123,7 @@ export default function LandingPage() {
             >
               <div className="bg-blue-900 rounded-3xl p-8 text-white shadow-2xl shadow-blue-900/30 flex flex-col gap-7">
                 <div className="flex items-center gap-3">
-                  <span className="font-serif text-4xl font-bold tracking-widest text-amber-400 select-none">C M</span>
+                  <span className="font-serif text-4xl font-bold tracking-wide text-amber-400 select-none">C · M</span>
                   <p className="text-blue-300 text-xs">Student &amp; Parent Portal</p>
                 </div>
 
