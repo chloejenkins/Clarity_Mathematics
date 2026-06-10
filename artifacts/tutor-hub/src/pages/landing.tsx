@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
@@ -56,14 +55,6 @@ const trustPoints = [
 
 export default function LandingPage() {
   const { login } = useAuth();
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://assets.calendly.com/assets/external/widget.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
-  }, []);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -294,12 +285,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Calendly */}
-            <div
-              className="calendly-inline-widget rounded-2xl overflow-hidden border border-slate-200 shadow-sm"
-              data-url="https://calendly.com/chloejenkins-claritymathematics"
-              style={{ minWidth: "320px", height: "700px" }}
-            />
           </div>
         </section>
 
