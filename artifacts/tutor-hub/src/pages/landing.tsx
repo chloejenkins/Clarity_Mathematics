@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
   ArrowRight,
-  BookOpen,
   MessageSquare,
   CalendarDays,
   ShieldCheck,
@@ -31,9 +30,9 @@ const features = [
     text: "text-slate-700",
   },
   {
-    icon: BookOpen,
-    title: "Assignment Tracking",
-    desc: "Post homework with due dates. Students submit their work directly in the portal.",
+    icon: CreditCard,
+    title: "Direct Payments",
+    desc: "Pay simply via Venmo or Zelle. No third-party billing platforms or hidden fees.",
     bg: "bg-amber-50",
     text: "text-amber-700",
   },
@@ -96,7 +95,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-lg text-slate-500 leading-relaxed mb-9 max-w-md">
-                Book sessions, message your tutor, and track assignments — all in one private space.
+                Book sessions, message your tutor, and pay directly — all in one private space.
               </p>
 
               <Button
