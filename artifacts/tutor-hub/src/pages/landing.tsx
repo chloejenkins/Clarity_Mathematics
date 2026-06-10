@@ -298,9 +298,7 @@ export default function LandingPage() {
             <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
               Ready to get started?
             </h2>
-            <p className="text-blue-300 mb-8 max-w-sm mx-auto">
-              Sign in with your Replit account — takes under a minute.
-            </p>
+            <p className="text-blue-300 mb-8 max-w-sm mx-auto">Sign in with your account — it takes under a minute.</p>
             <Button
               onClick={login}
               size="lg"
