@@ -59,7 +59,7 @@ export function AppLayout({ children }: LayoutProps) {
           <SidebarContent>
             {/* Logo */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-sidebar-border">
-              <span className="font-serif text-2xl font-bold tracking-wide text-amber-500 select-none">C · M</span>
+              <span className="font-serif text-2xl font-bold tracking-tight text-amber-500 select-none">CM</span>
               <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider shrink-0">
                 {isTutor ? "Tutor" : "Student"}
               </p>
