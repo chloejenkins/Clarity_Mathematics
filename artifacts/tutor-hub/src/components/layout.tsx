@@ -4,7 +4,6 @@ import {
   MessageSquare,
   CalendarDays,
   LogOut,
-  Sigma,
   BookOpen,
 } from "lucide-react";
 import {

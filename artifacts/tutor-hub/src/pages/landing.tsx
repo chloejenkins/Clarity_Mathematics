@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
-  Sigma,
   ArrowRight,
   BookOpen,
   MessageSquare,
@@ -288,7 +287,6 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 py-5 px-6 md:px-10 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Sigma className="h-4 w-4" />
           Clarity Mathematics
         </div>
         <p className="text-xs text-slate-400">Private · Secure · Focused</p>
