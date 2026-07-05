@@ -5,6 +5,7 @@ import {
   CalendarDays,
   LogOut,
   BookOpen,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Schedule", url: "/", icon: CalendarDays },
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
+    { title: "Payments", url: "/payments", icon: CreditCard },
   ];
 
   const style = {

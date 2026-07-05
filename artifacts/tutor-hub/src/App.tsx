@@ -11,6 +11,7 @@ import LandingPage from "@/pages/landing";
 import SchedulePage from "@/pages/sessions";
 import ChatPage from "@/pages/chat";
 import AssignmentsPage from "@/pages/assignments";
+import PaymentsPage from "@/pages/payments";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/"><ProtectedRoute component={SchedulePage} /></Route>
       <Route path="/chat"><ProtectedRoute component={ChatPage} /></Route>
       <Route path="/assignments"><ProtectedRoute component={AssignmentsPage} /></Route>
+      <Route path="/payments"><ProtectedRoute component={PaymentsPage} /></Route>
       <Route component={NotFound} />
     </Switch>
   );
