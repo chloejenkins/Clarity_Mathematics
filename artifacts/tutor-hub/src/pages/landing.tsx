@@ -253,7 +253,8 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800">Zelle</p>
-                    <p className="text-xs text-slate-400">Details coming soon</p>
+                    <p className="text-xs text-slate-400">chloejenkins@claritymathematics.com</p>
+                    <p className="text-xs text-slate-400">(862) 357-1374</p>
                   </div>
                 </div>
               </div>
