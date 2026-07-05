@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth as useClerkAuth, useSession } from "@clerk/clerk-react";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { useAuth } from "@workspace/replit-auth-web";
 import NotFound from "@/pages/not-found";
 import { AppLayout } from "@/components/layout";
 import LandingPage from "@/pages/landing";
@@ -13,6 +14,8 @@ import ChatPage from "@/pages/chat";
 import AssignmentsPage from "@/pages/assignments";
 import PaymentsPage from "@/pages/payments";
 import ParentReportsPage from "@/pages/parent-reports";
+import ParentFeedbackViewPage from "@/pages/parent-feedback-view";
+import OnboardingPage from "@/pages/onboarding";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +35,14 @@ function ClerkTokenProvider() {
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isLoaded, isSignedIn } = useClerkAuth();
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user?.role === "pending") {
+      navigate("/onboarding");
+    }
+  }, [isLoaded, isSignedIn, user?.role, navigate]);
 
   if (!isLoaded) {
     return (
@@ -46,6 +57,10 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (!isSignedIn) {
     return <LandingPage />;
+  }
+
+  if (user?.role === "pending") {
+    return null;
   }
 
   return (
@@ -63,6 +78,8 @@ function Router() {
       <Route path="/assignments"><ProtectedRoute component={AssignmentsPage} /></Route>
       <Route path="/payments"><ProtectedRoute component={PaymentsPage} /></Route>
       <Route path="/parent-reports"><ProtectedRoute component={ParentReportsPage} /></Route>
+      <Route path="/parent-feedback"><ProtectedRoute component={ParentFeedbackViewPage} /></Route>
+      <Route path="/onboarding"><OnboardingPage /></Route>
       <Route component={NotFound} />
     </Switch>
   );

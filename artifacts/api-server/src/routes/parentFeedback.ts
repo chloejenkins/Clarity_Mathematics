@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { parentFeedbackTable } from "@workspace/db/schema";
+import { parentFeedbackTable, parentStudentLinksTable } from "@workspace/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 
@@ -33,13 +33,36 @@ router.get("/parent-feedback", async (req: Request, res: Response) => {
 });
 
 router.get("/parent-feedback/:studentId", async (req: Request, res: Response) => {
-  if (!tutorOnly(req, res)) return;
-  const rows = await db
-    .select()
-    .from(parentFeedbackTable)
-    .where(eq(parentFeedbackTable.studentId, req.params.studentId))
-    .orderBy(desc(parentFeedbackTable.updatedAt));
-  res.json(rows);
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  if (req.user.role === "tutor") {
+    const rows = await db
+      .select()
+      .from(parentFeedbackTable)
+      .where(eq(parentFeedbackTable.studentId, req.params.studentId))
+      .orderBy(desc(parentFeedbackTable.updatedAt));
+    res.json(rows);
+    return;
+  }
+
+  if (req.user.role === "parent") {
+    const links = await db
+      .select()
+      .from(parentStudentLinksTable)
+      .where(eq(parentStudentLinksTable.parentId, req.user.id));
+    const linked = links.some(l => l.studentId === req.params.studentId);
+    if (!linked) { res.status(403).json({ error: "Not linked to this student" }); return; }
+
+    const rows = await db
+      .select()
+      .from(parentFeedbackTable)
+      .where(eq(parentFeedbackTable.studentId, req.params.studentId))
+      .orderBy(desc(parentFeedbackTable.updatedAt));
+    res.json(rows);
+    return;
+  }
+
+  res.status(403).json({ error: "Access denied" });
 });
 
 router.put("/parent-feedback/:studentId", async (req: Request, res: Response) => {

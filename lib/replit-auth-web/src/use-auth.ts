@@ -7,7 +7,7 @@ export interface AuthUser {
   firstName?: string | null;
   lastName?: string | null;
   profileImageUrl?: string | null;
-  role: "tutor" | "student";
+  role: "tutor" | "student" | "parent" | "pending";
 }
 
 export type { AuthUser as AuthUser };
@@ -40,7 +40,7 @@ export function useAuth(): AuthState {
     return { user: null, isLoading: false, isAuthenticated: false, login, logout };
   }
 
-  const role = (clerkUser.publicMetadata?.role as "tutor" | "student") ?? "student";
+  const role = (clerkUser.publicMetadata?.role as "tutor" | "student" | "parent" | "pending") ?? "pending";
 
   const user: AuthUser = {
     id: clerkUser.id,

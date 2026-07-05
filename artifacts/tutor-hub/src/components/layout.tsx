@@ -37,13 +37,31 @@ export function AppLayout({ children }: LayoutProps) {
 
   const isTutor = user?.role === "tutor";
 
-  const navigationItems = [
+  const isParent = user?.role === "parent";
+
+  const tutorNav = [
     { title: "Schedule", url: "/", icon: CalendarDays },
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
     { title: "Payments", url: "/payments", icon: CreditCard },
-    ...(isTutor ? [{ title: "Parent Reports", url: "/parent-reports", icon: ClipboardList }] : []),
+    { title: "Parent Reports", url: "/parent-reports", icon: ClipboardList },
   ];
+
+  const parentNav = [
+    { title: "Schedule", url: "/", icon: CalendarDays },
+    { title: "Chat", url: "/chat", icon: MessageSquare },
+    { title: "Assignments", url: "/assignments", icon: BookOpen },
+    { title: "Payments", url: "/payments", icon: CreditCard },
+    { title: "Feedback", url: "/parent-feedback", icon: ClipboardList },
+  ];
+
+  const studentNav = [
+    { title: "Schedule", url: "/", icon: CalendarDays },
+    { title: "Chat", url: "/chat", icon: MessageSquare },
+    { title: "Assignments", url: "/assignments", icon: BookOpen },
+  ];
+
+  const navigationItems = isTutor ? tutorNav : isParent ? parentNav : studentNav;
 
   const style = {
     "--sidebar-width": "17rem",

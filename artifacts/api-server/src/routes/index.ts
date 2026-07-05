@@ -8,6 +8,7 @@ import videosRouter from "./videos";
 import usersRouter from "./users";
 import availabilityRouter from "./availability";
 import parentFeedbackRouter from "./parentFeedback";
+import parentLinksRouter from "./parentLinks";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(videosRouter);
 router.use(usersRouter);
 router.use(availabilityRouter);
 router.use(parentFeedbackRouter);
+router.use(parentLinksRouter);
 
 export default router;

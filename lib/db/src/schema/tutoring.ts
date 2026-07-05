@@ -61,6 +61,16 @@ export const submissionsTable = pgTable("submissions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const parentStudentLinksTable = pgTable("parent_student_links", {
+  id: serial("id").primaryKey(),
+  parentId: varchar("parent_id").notNull(),
+  studentId: varchar("student_id"),
+  studentName: varchar("student_name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ParentStudentLink = typeof parentStudentLinksTable.$inferSelect;
+
 export const parentFeedbackTable = pgTable("parent_feedback", {
   id: serial("id").primaryKey(),
   studentId: varchar("student_id").notNull(),
