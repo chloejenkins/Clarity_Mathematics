@@ -6,6 +6,7 @@ import {
   LogOut,
   BookOpen,
   CreditCard,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +42,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
     { title: "Payments", url: "/payments", icon: CreditCard },
+    ...(isTutor ? [{ title: "Parent Reports", url: "/parent-reports", icon: ClipboardList }] : []),
   ];
 
   const style = {

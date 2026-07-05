@@ -61,6 +61,17 @@ export const submissionsTable = pgTable("submissions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const parentFeedbackTable = pgTable("parent_feedback", {
+  id: serial("id").primaryKey(),
+  studentId: varchar("student_id").notNull(),
+  content: text("content").notNull(),
+  period: varchar("period"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export type ParentFeedback = typeof parentFeedbackTable.$inferSelect;
+
 export const insertTutoringSessionSchema = createInsertSchema(tutoringSessionsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMessageSchema = createInsertSchema(messagesTable).omit({ id: true, createdAt: true });
 export const insertAssignmentSchema = createInsertSchema(assignmentsTable).omit({ id: true, createdAt: true, updatedAt: true });
