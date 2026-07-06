@@ -71,7 +71,7 @@ export default function LandingPage() {
       </header>
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden" style={{ background: "radial-gradient(ellipse at center, #ffffff 0%, #ffffff 72%, #e0edff 100%)" }}>
+        <section className="relative overflow-hidden" style={{ background: "radial-gradient(ellipse at center, #ffffff 0%, #ffffff 85%, #f5f8ff 100%)" }}>
 
           <div className="relative max-w-6xl mx-auto px-6 md:px-10 py-16 md:py-24 grid md:grid-cols-2 gap-14 items-center">
             <motion.div
