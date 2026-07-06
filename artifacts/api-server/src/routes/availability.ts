@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db } from "@workspace/db";
+import { db, usersTable } from "@workspace/db";
 import { availabilitySlotsTable, tutoringSessionsTable } from "@workspace/db/schema";
 import { eq, gte, asc, and } from "drizzle-orm";
 import { z } from "zod";
@@ -13,7 +13,7 @@ const CreateSlotBody = z.object({
 });
 
 // GET /api/availability — list slots
-// Tutor sees their own; students/parents see their tutor's
+// Tutors see their own; students/parents see ALL tutors' unbooked slots with tutor info
 router.get("/availability", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -32,21 +32,35 @@ router.get("/availability", async (req: Request, res: Response) => {
     return;
   }
 
-  // student or parent: show their tutor's slots
-  const tutorId = req.user.tutorId;
-  if (!tutorId) {
-    res.json([]);
-    return;
-  }
+  // students/parents: show all unbooked slots from all tutors, enriched with tutor name
   const slots = await db
     .select()
     .from(availabilitySlotsTable)
     .where(and(
-      eq(availabilitySlotsTable.tutorId, tutorId),
+      eq(availabilitySlotsTable.isBooked, "false"),
       gte(availabilitySlotsTable.startsAt, now),
     ))
     .orderBy(asc(availabilitySlotsTable.startsAt));
-  res.json(slots);
+
+  // Fetch tutor info for each unique tutorId
+  const tutorIds = [...new Set(slots.map(s => s.tutorId).filter(Boolean) as string[])];
+  const tutors = tutorIds.length
+    ? await db.select().from(usersTable).then(rows => rows.filter(r => tutorIds.includes(r.id)))
+    : [];
+  const tutorMap = new Map(tutors.map(t => [t.id, t]));
+
+  const enriched = slots.map(slot => {
+    const tutor = slot.tutorId ? tutorMap.get(slot.tutorId) : null;
+    return {
+      ...slot,
+      tutorName: tutor
+        ? `${tutor.firstName ?? ""} ${tutor.lastName ?? ""}`.trim() || tutor.username || "Tutor"
+        : "Tutor",
+      tutorProfileImageUrl: tutor?.profileImageUrl ?? null,
+    };
+  });
+
+  res.json(enriched);
 });
 
 // POST /api/availability — tutor creates slots
@@ -105,7 +119,7 @@ router.post("/availability/:id/book", async (req: Request, res: Response) => {
   const [session] = await db
     .insert(tutoringSessionsTable)
     .values({
-      tutorId: slot.tutorId ?? req.user.tutorId ?? null,
+      tutorId: slot.tutorId ?? null,
       studentId: req.user.id,
       scheduledAt: slot.startsAt,
       durationMinutes: slot.durationMinutes,

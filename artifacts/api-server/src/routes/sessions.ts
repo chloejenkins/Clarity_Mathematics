@@ -34,18 +34,11 @@ router.get("/sessions", async (req: Request, res: Response) => {
         .orderBy(desc(tutoringSessionsTable.scheduledAt));
     }
   } else {
-    const tutorId = req.user.tutorId;
-    if (!tutorId) {
-      res.json([]);
-      return;
-    }
+    // students/parents see all their own sessions regardless of which tutor
     sessions = await db
       .select()
       .from(tutoringSessionsTable)
-      .where(and(
-        eq(tutoringSessionsTable.tutorId, tutorId),
-        eq(tutoringSessionsTable.studentId, req.user.id),
-      ))
+      .where(eq(tutoringSessionsTable.studentId, req.user.id))
       .orderBy(desc(tutoringSessionsTable.scheduledAt));
   }
 

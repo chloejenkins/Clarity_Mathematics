@@ -23,15 +23,10 @@ router.get("/assignments", async (req: Request, res: Response) => {
       .where(eq(assignmentsTable.tutorId, req.user.id))
       .orderBy(desc(assignmentsTable.createdAt));
   } else {
-    const tutorId = req.user.tutorId;
-    if (!tutorId) {
-      res.json([]);
-      return;
-    }
+    // students/parents see all assignments from all tutors
     assignments = await db
       .select()
       .from(assignmentsTable)
-      .where(eq(assignmentsTable.tutorId, tutorId))
       .orderBy(desc(assignmentsTable.createdAt));
   }
 
