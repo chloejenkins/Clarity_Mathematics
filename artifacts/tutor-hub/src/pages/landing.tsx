@@ -74,7 +74,6 @@ export default function LandingPage() {
         <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50">
           {/* Decorative blobs */}
           <div className="absolute top-0 right-0 w-[480px] h-[480px] bg-blue-100 rounded-full blur-[110px] opacity-50 -translate-y-1/3 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-100 rounded-full blur-[90px] opacity-40 translate-y-1/3 -translate-x-1/3" />
 
           <div className="relative max-w-6xl mx-auto px-6 md:px-10 py-16 md:py-24 grid md:grid-cols-2 gap-14 items-center">
             <motion.div
