@@ -36,7 +36,15 @@ export default function OnboardingPage() {
     setError(null);
 
     if (role === "tutor") {
-      // Tutors don't pick a tutor — set role and go straight to portal
+      // Check email domain client-side first for instant feedback
+      const email = clerkUser?.primaryEmailAddress?.emailAddress ?? "";
+      if (!email.toLowerCase().endsWith("@claritymathematics.com")) {
+        setError(
+          "Tutor accounts require a @claritymathematics.com email address. If you're a student or parent, please choose the correct role below."
+        );
+        setSelectedRole(null);
+        return;
+      }
       setLoading(true);
       try {
         await customFetch("/api/auth/set-role", {

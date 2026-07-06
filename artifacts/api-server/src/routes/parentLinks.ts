@@ -68,6 +68,22 @@ router.post("/auth/set-role", async (req: Request, res: Response) => {
     return;
   }
 
+  // Tutors must have a @claritymathematics.com email
+  if (role === "tutor") {
+    const { clerkClient: cc } = await import("@clerk/express");
+    const clerkUser = await cc.users.getUser(userId);
+    const hasValidEmail = clerkUser.emailAddresses.some(e =>
+      e.emailAddress.toLowerCase().endsWith("@claritymathematics.com")
+    );
+    if (!hasValidEmail) {
+      res.status(403).json({
+        error: "Tutor accounts require a @claritymathematics.com email address.",
+        code: "INVALID_TUTOR_EMAIL",
+      });
+      return;
+    }
+  }
+
   const updates: Record<string, string | null> = { role };
   if (role !== "tutor" && tutorId) {
     updates.tutorId = tutorId;

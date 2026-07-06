@@ -18,8 +18,7 @@ router.get("/auth/user", async (req: Request, res: Response) => {
 
     if (!dbUser) {
       const clerkUser = await clerkClient.users.getUser(userId);
-      const isFirstUser = (await db.select().from(usersTable)).length === 0;
-      const role = isFirstUser ? "tutor" : "pending";
+      const role = "pending";
 
       const userData = {
         id: userId,
