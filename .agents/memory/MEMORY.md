@@ -1,0 +1,2 @@
+- [Multi-tutor architecture](multi-tutor.md) — tutorId scopes all resources; each table has nullable tutorId for backward compat
+- [Onboarding flow](onboarding-flow.md) — new non-tutor users get role="pending", redirect to /onboarding; tutors go straight to portal after role set

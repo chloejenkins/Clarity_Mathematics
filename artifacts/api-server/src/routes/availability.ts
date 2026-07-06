@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { availabilitySlotsTable, tutoringSessionsTable } from "@workspace/db/schema";
-import { eq, gte, asc } from "drizzle-orm";
+import { eq, gte, asc, and } from "drizzle-orm";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -13,7 +13,7 @@ const CreateSlotBody = z.object({
 });
 
 // GET /api/availability — list slots
-// Tutor sees all; students see only future unbooked slots
+// Tutor sees their own; students/parents see their tutor's
 router.get("/availability", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -23,25 +23,37 @@ router.get("/availability", async (req: Request, res: Response) => {
     const slots = await db
       .select()
       .from(availabilitySlotsTable)
-      .where(gte(availabilitySlotsTable.startsAt, now))
+      .where(and(
+        eq(availabilitySlotsTable.tutorId, req.user.id),
+        gte(availabilitySlotsTable.startsAt, now),
+      ))
       .orderBy(asc(availabilitySlotsTable.startsAt));
     res.json(slots);
-  } else {
-    const slots = await db
-      .select()
-      .from(availabilitySlotsTable)
-      .where(gte(availabilitySlotsTable.startsAt, now))
-      .orderBy(asc(availabilitySlotsTable.startsAt));
-    res.json(slots);
+    return;
   }
+
+  // student or parent: show their tutor's slots
+  const tutorId = req.user.tutorId;
+  if (!tutorId) {
+    res.json([]);
+    return;
+  }
+  const slots = await db
+    .select()
+    .from(availabilitySlotsTable)
+    .where(and(
+      eq(availabilitySlotsTable.tutorId, tutorId),
+      gte(availabilitySlotsTable.startsAt, now),
+    ))
+    .orderBy(asc(availabilitySlotsTable.startsAt));
+  res.json(slots);
 });
 
-// POST /api/availability — tutor creates a slot (or multiple)
+// POST /api/availability — tutor creates slots
 router.post("/availability", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (req.user.role !== "tutor") { res.status(403).json({ error: "Only tutors can create slots" }); return; }
 
-  // Support single or array
   const bodyArray = Array.isArray(req.body) ? req.body : [req.body];
   const parsed = z.array(CreateSlotBody).safeParse(bodyArray);
   if (!parsed.success) { res.status(400).json({ error: "Invalid slot data", details: parsed.error.issues }); return; }
@@ -49,6 +61,7 @@ router.post("/availability", async (req: Request, res: Response) => {
   const inserted = await db
     .insert(availabilitySlotsTable)
     .values(parsed.data.map(s => ({
+      tutorId: req.user.id,
       startsAt: new Date(s.startsAt),
       durationMinutes: s.durationMinutes,
       topic: s.topic ?? null,
@@ -67,16 +80,20 @@ router.delete("/availability/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const [slot] = await db.select().from(availabilitySlotsTable).where(eq(availabilitySlotsTable.id, id)).limit(1);
   if (!slot) { res.status(404).json({ error: "Slot not found" }); return; }
+  if (slot.tutorId !== req.user.id) { res.status(403).json({ error: "You can only delete your own slots" }); return; }
   if (slot.isBooked === "true") { res.status(400).json({ error: "Cannot delete a booked slot" }); return; }
 
   await db.delete(availabilitySlotsTable).where(eq(availabilitySlotsTable.id, id));
   res.json({ success: true });
 });
 
-// POST /api/availability/:id/book — student books a slot
+// POST /api/availability/:id/book — student or parent books a slot
 router.post("/availability/:id/book", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  if (req.user.role !== "student") { res.status(403).json({ error: "Only students can book slots" }); return; }
+  if (req.user.role !== "student" && req.user.role !== "parent") {
+    res.status(403).json({ error: "Only students or parents can book slots" });
+    return;
+  }
 
   const id = Number(req.params.id);
   const [slot] = await db.select().from(availabilitySlotsTable).where(eq(availabilitySlotsTable.id, id)).limit(1);
@@ -85,10 +102,10 @@ router.post("/availability/:id/book", async (req: Request, res: Response) => {
 
   const topic = (req.body as { topic?: string }).topic;
 
-  // Create a session (auto-approved since tutor already offered this time)
   const [session] = await db
     .insert(tutoringSessionsTable)
     .values({
+      tutorId: slot.tutorId ?? req.user.tutorId ?? null,
       studentId: req.user.id,
       scheduledAt: slot.startsAt,
       durationMinutes: slot.durationMinutes,
@@ -97,7 +114,6 @@ router.post("/availability/:id/book", async (req: Request, res: Response) => {
     })
     .returning();
 
-  // Mark slot as booked
   await db
     .update(availabilitySlotsTable)
     .set({ isBooked: "true", bookedByStudentId: req.user.id, sessionId: session.id })

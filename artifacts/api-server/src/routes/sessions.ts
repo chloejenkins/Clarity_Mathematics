@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, tutoringSessionsTable, usersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import {
   ListSessionsResponse,
   CreateSessionBody,
@@ -11,32 +11,41 @@ import {
 const router: IRouter = Router();
 
 router.get("/sessions", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const { studentId } = req.query;
-
   let sessions;
+
   if (req.user.role === "tutor") {
     if (studentId) {
       sessions = await db
         .select()
         .from(tutoringSessionsTable)
-        .where(eq(tutoringSessionsTable.studentId, studentId as string))
+        .where(and(
+          eq(tutoringSessionsTable.tutorId, req.user.id),
+          eq(tutoringSessionsTable.studentId, studentId as string),
+        ))
         .orderBy(desc(tutoringSessionsTable.scheduledAt));
     } else {
       sessions = await db
         .select()
         .from(tutoringSessionsTable)
+        .where(eq(tutoringSessionsTable.tutorId, req.user.id))
         .orderBy(desc(tutoringSessionsTable.scheduledAt));
     }
   } else {
+    const tutorId = req.user.tutorId;
+    if (!tutorId) {
+      res.json([]);
+      return;
+    }
     sessions = await db
       .select()
       .from(tutoringSessionsTable)
-      .where(eq(tutoringSessionsTable.studentId, req.user.id))
+      .where(and(
+        eq(tutoringSessionsTable.tutorId, tutorId),
+        eq(tutoringSessionsTable.studentId, req.user.id),
+      ))
       .orderBy(desc(tutoringSessionsTable.scheduledAt));
   }
 
@@ -57,22 +66,19 @@ router.get("/sessions", async (req: Request, res: Response) => {
 });
 
 router.post("/sessions", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const parsed = CreateSessionBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request body" });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
 
   const { scheduledAt, durationMinutes, topic, notes } = parsed.data;
+
+  const tutorId = req.user.role === "tutor" ? req.user.id : req.user.tutorId ?? null;
 
   const [session] = await db
     .insert(tutoringSessionsTable)
     .values({
+      tutorId,
       studentId: req.user.id,
       scheduledAt: new Date(scheduledAt),
       durationMinutes,
@@ -91,26 +97,15 @@ router.post("/sessions", async (req: Request, res: Response) => {
 });
 
 router.get("/sessions/:id", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const id = Number(req.params.id);
-  const [session] = await db
-    .select()
-    .from(tutoringSessionsTable)
-    .where(eq(tutoringSessionsTable.id, id));
+  const [session] = await db.select().from(tutoringSessionsTable).where(eq(tutoringSessionsTable.id, id));
+  if (!session) { res.status(404).json({ error: "Session not found" }); return; }
 
-  if (!session) {
-    res.status(404).json({ error: "Session not found" });
-    return;
-  }
-
-  if (req.user.role !== "tutor" && session.studentId !== req.user.id) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+  const isTutor = req.user.role === "tutor" && session.tutorId === req.user.id;
+  const isStudent = session.studentId === req.user.id;
+  if (!isTutor && !isStudent) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const student = await db.select().from(usersTable).where(eq(usersTable.id, session.studentId)).then(r => r[0]);
   const studentName = student
@@ -121,32 +116,18 @@ router.get("/sessions/:id", async (req: Request, res: Response) => {
 });
 
 router.patch("/sessions/:id", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const id = Number(req.params.id);
-  const [existing] = await db
-    .select()
-    .from(tutoringSessionsTable)
-    .where(eq(tutoringSessionsTable.id, id));
+  const [existing] = await db.select().from(tutoringSessionsTable).where(eq(tutoringSessionsTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Session not found" }); return; }
 
-  if (!existing) {
-    res.status(404).json({ error: "Session not found" });
-    return;
-  }
-
-  if (req.user.role !== "tutor" && existing.studentId !== req.user.id) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+  const isTutor = req.user.role === "tutor" && (!existing.tutorId || existing.tutorId === req.user.id);
+  const isStudent = existing.studentId === req.user.id;
+  if (!isTutor && !isStudent) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const parsed = UpdateSessionBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request body" });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
 
   const updates: Record<string, unknown> = {};
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
@@ -168,26 +149,15 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/sessions/:id", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const id = Number(req.params.id);
-  const [existing] = await db
-    .select()
-    .from(tutoringSessionsTable)
-    .where(eq(tutoringSessionsTable.id, id));
+  const [existing] = await db.select().from(tutoringSessionsTable).where(eq(tutoringSessionsTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Session not found" }); return; }
 
-  if (!existing) {
-    res.status(404).json({ error: "Session not found" });
-    return;
-  }
-
-  if (req.user.role !== "tutor" && existing.studentId !== req.user.id) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+  const isTutor = req.user.role === "tutor" && (!existing.tutorId || existing.tutorId === req.user.id);
+  const isStudent = existing.studentId === req.user.id;
+  if (!isTutor && !isStudent) { res.status(403).json({ error: "Forbidden" }); return; }
 
   await db.delete(tutoringSessionsTable).where(eq(tutoringSessionsTable.id, id));
   res.json(DeleteSessionResponse.parse({ success: true }));

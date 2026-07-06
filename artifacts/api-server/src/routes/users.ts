@@ -15,6 +15,27 @@ router.get("/users", async (req: Request, res: Response) => {
   res.json(ListUsersResponse.parse(users));
 });
 
+// Public-ish tutor listing for onboarding (requires auth so pending users can call it)
+router.get("/users/tutors", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const tutors = await db
+    .select({
+      id: usersTable.id,
+      firstName: usersTable.firstName,
+      lastName: usersTable.lastName,
+      username: usersTable.username,
+      profileImageUrl: usersTable.profileImageUrl,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.role, "tutor"));
+
+  res.json(tutors);
+});
+
 router.patch("/users/me/role", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });

@@ -28,6 +28,7 @@ router.get("/parent-feedback", async (req: Request, res: Response) => {
   const rows = await db
     .select()
     .from(parentFeedbackTable)
+    .where(eq(parentFeedbackTable.tutorId, req.user.id))
     .orderBy(desc(parentFeedbackTable.updatedAt));
   res.json(rows);
 });
@@ -76,20 +77,27 @@ router.put("/parent-feedback/:studentId", async (req: Request, res: Response) =>
   const existing = await db
     .select()
     .from(parentFeedbackTable)
-    .where(eq(parentFeedbackTable.studentId, req.params.studentId))
+    .where(and(
+      eq(parentFeedbackTable.studentId, req.params.studentId),
+      eq(parentFeedbackTable.tutorId, req.user.id),
+    ))
     .limit(1);
 
   if (existing.length > 0) {
     const [updated] = await db
       .update(parentFeedbackTable)
       .set({ content: parsed.data.content, period: parsed.data.period ?? null })
-      .where(eq(parentFeedbackTable.studentId, req.params.studentId))
+      .where(and(
+        eq(parentFeedbackTable.studentId, req.params.studentId),
+        eq(parentFeedbackTable.tutorId, req.user.id),
+      ))
       .returning();
     res.json(updated);
   } else {
     const [created] = await db
       .insert(parentFeedbackTable)
       .values({
+        tutorId: req.user.id,
         studentId: req.params.studentId,
         content: parsed.data.content,
         period: parsed.data.period ?? null,
@@ -101,7 +109,10 @@ router.put("/parent-feedback/:studentId", async (req: Request, res: Response) =>
 
 router.delete("/parent-feedback/:studentId", async (req: Request, res: Response) => {
   if (!tutorOnly(req, res)) return;
-  await db.delete(parentFeedbackTable).where(eq(parentFeedbackTable.studentId, req.params.studentId));
+  await db.delete(parentFeedbackTable).where(and(
+    eq(parentFeedbackTable.studentId, req.params.studentId),
+    eq(parentFeedbackTable.tutorId, req.user.id),
+  ));
   res.json({ success: true });
 });
 

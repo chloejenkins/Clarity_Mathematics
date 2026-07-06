@@ -6,7 +6,9 @@ import type { AuthUser } from "@workspace/api-zod";
 
 declare global {
   namespace Express {
-    interface User extends AuthUser {}
+    interface User extends AuthUser {
+      tutorId?: string | null;
+    }
     interface Request {
       isAuthenticated(): this is AuthedRequest;
       user?: User | undefined;
@@ -48,6 +50,7 @@ export async function authMiddleware(
         lastName: dbUser.lastName,
         profileImageUrl: dbUser.profileImageUrl,
         role: dbUser.role as "tutor" | "student",
+        tutorId: dbUser.tutorId ?? null,
       };
     }
   } catch {

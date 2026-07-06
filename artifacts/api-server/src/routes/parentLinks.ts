@@ -33,6 +33,7 @@ router.post("/parent-links", async (req: Request, res: Response) => {
   const [link] = await db
     .insert(parentStudentLinksTable)
     .values({
+      tutorId: req.user.tutorId ?? null,
       parentId: req.user.id,
       studentId: parsed.data.studentId ?? null,
       studentName: parsed.data.studentName,
@@ -61,16 +62,23 @@ router.post("/auth/set-role", async (req: Request, res: Response) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-  const { role } = req.body;
-  if (role !== "parent" && role !== "student") {
-    res.status(400).json({ error: "Role must be parent or student" });
+  const { role, tutorId } = req.body;
+  if (role !== "parent" && role !== "student" && role !== "tutor") {
+    res.status(400).json({ error: "Role must be parent, student, or tutor" });
     return;
   }
 
-  await db.update(usersTable).set({ role }).where(eq(usersTable.id, userId));
-  await clerkClient.users.updateUserMetadata(userId, { publicMetadata: { role } });
+  const updates: Record<string, string | null> = { role };
+  if (role !== "tutor" && tutorId) {
+    updates.tutorId = tutorId;
+  }
 
-  res.json({ success: true, role });
+  await db.update(usersTable).set(updates).where(eq(usersTable.id, userId));
+  const metadata: Record<string, string | null> = { role };
+  if (tutorId && role !== "tutor") metadata.tutorId = tutorId;
+  await clerkClient.users.updateUserMetadata(userId, { publicMetadata: metadata });
+
+  res.json({ success: true, role, tutorId: updates.tutorId ?? null });
 });
 
 export default router;

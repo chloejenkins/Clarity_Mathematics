@@ -2,30 +2,71 @@ import { useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserRound, Users, ArrowRight, CheckCircle } from "lucide-react";
+import { UserRound, Users, GraduationCap, ArrowRight, CheckCircle, ChevronLeft } from "lucide-react";
 import { customFetch } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 
-type Step = "role" | "link-student" | "done";
+type Step = "role" | "choose-tutor" | "link-student" | "done";
+
+interface TutorSummary {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  username: string | null;
+  profileImageUrl: string | null;
+}
 
 export default function OnboardingPage() {
   const { user: clerkUser } = useUser();
   const [step, setStep] = useState<Step>("role");
-  const [selectedRole, setSelectedRole] = useState<"parent" | "student" | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"parent" | "student" | "tutor" | null>(null);
+  const [selectedTutorId, setSelectedTutorId] = useState<string | null>(null);
   const [studentName, setStudentName] = useState("");
-  const [studentEmail, setStudentEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleRoleSelect(role: "parent" | "student") {
+  const { data: tutors = [] } = useQuery<TutorSummary[]>({
+    queryKey: ["/api/users/tutors"],
+    queryFn: () => customFetch("/api/users/tutors"),
+    enabled: step === "choose-tutor",
+  });
+
+  async function handleRoleSelect(role: "parent" | "student" | "tutor") {
     setSelectedRole(role);
-    setLoading(true);
     setError(null);
+
+    if (role === "tutor") {
+      // Tutors don't pick a tutor — set role and go straight to portal
+      setLoading(true);
+      try {
+        await customFetch("/api/auth/set-role", {
+          method: "POST",
+          body: JSON.stringify({ role }),
+        });
+        await clerkUser?.reload();
+        window.location.href = "/";
+      } catch {
+        setError("Something went wrong. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Students and parents choose a tutor next
+    setStep("choose-tutor");
+  }
+
+  async function handleTutorSelect(tutorId: string) {
+    setSelectedTutorId(tutorId);
+    setError(null);
+    setLoading(true);
     try {
       await customFetch("/api/auth/set-role", {
         method: "POST",
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ role: selectedRole, tutorId }),
       });
-      if (role === "parent") {
+      if (selectedRole === "parent") {
         setStep("link-student");
       } else {
         await clerkUser?.reload();
@@ -45,10 +86,7 @@ export default function OnboardingPage() {
     try {
       await customFetch("/api/parent-links", {
         method: "POST",
-        body: JSON.stringify({
-          studentName: studentName.trim(),
-          studentEmail: studentEmail.trim() || undefined,
-        }),
+        body: JSON.stringify({ studentName: studentName.trim() }),
       });
       await clerkUser?.reload();
       window.location.href = "/";
@@ -79,35 +117,80 @@ export default function OnboardingPage() {
         {step === "role" && (
           <div className="space-y-4">
             <p className="text-center text-sm font-semibold text-slate-600 mb-6">I am signing up as a…</p>
-            <button
+
+            <RoleCard
+              icon={<GraduationCap className="h-6 w-6 text-[#c9a227]" />}
+              bg="bg-amber-50 group-hover:bg-amber-100/60"
+              title="Tutor"
+              desc="I provide tutoring sessions and manage students"
+              onClick={() => handleRoleSelect("tutor")}
+              disabled={loading}
+            />
+            <RoleCard
+              icon={<Users className="h-6 w-6 text-blue-900" />}
+              bg="bg-blue-50 group-hover:bg-blue-900/10"
+              title="Parent / Guardian"
+              desc="I'm managing sessions and payments for my child"
               onClick={() => handleRoleSelect("parent")}
               disabled={loading}
-              className="w-full bg-white border-2 border-slate-200 hover:border-blue-900 rounded-2xl p-5 text-left flex items-center gap-4 transition-all group shadow-sm hover:shadow-md"
-            >
-              <div className="h-12 w-12 rounded-xl bg-blue-50 group-hover:bg-blue-900/10 flex items-center justify-center shrink-0 transition-colors">
-                <Users className="h-6 w-6 text-blue-900" />
-              </div>
-              <div>
-                <p className="font-bold text-slate-900">Parent / Guardian</p>
-                <p className="text-sm text-slate-500 mt-0.5">I'm managing sessions and payments for my child</p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-blue-900 ml-auto transition-colors" />
-            </button>
-
-            <button
+            />
+            <RoleCard
+              icon={<UserRound className="h-6 w-6 text-slate-700 group-hover:text-blue-900" />}
+              bg="bg-slate-50 group-hover:bg-blue-900/10"
+              title="Student"
+              desc="I'm accessing my own sessions and assignments"
               onClick={() => handleRoleSelect("student")}
               disabled={loading}
-              className="w-full bg-white border-2 border-slate-200 hover:border-blue-900 rounded-2xl p-5 text-left flex items-center gap-4 transition-all group shadow-sm hover:shadow-md"
+            />
+
+            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          </div>
+        )}
+
+        {step === "choose-tutor" && (
+          <div className="space-y-4">
+            <button
+              onClick={() => { setStep("role"); setSelectedRole(null); }}
+              className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-2 transition-colors"
             >
-              <div className="h-12 w-12 rounded-xl bg-slate-50 group-hover:bg-blue-900/10 flex items-center justify-center shrink-0 transition-colors">
-                <UserRound className="h-6 w-6 text-slate-700 group-hover:text-blue-900" />
-              </div>
-              <div>
-                <p className="font-bold text-slate-900">Student</p>
-                <p className="text-sm text-slate-500 mt-0.5">I'm accessing my own sessions and assignments</p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-blue-900 ml-auto transition-colors" />
+              <ChevronLeft className="h-4 w-4" /> Back
             </button>
+            <p className="text-sm font-semibold text-slate-700 mb-4">
+              Choose your tutor
+            </p>
+
+            {tutors.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-slate-500 text-sm shadow-sm">
+                No tutors found. Ask your tutor to sign up first.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tutors.map(tutor => {
+                  const name = [tutor.firstName, tutor.lastName].filter(Boolean).join(" ") || tutor.username || "Tutor";
+                  return (
+                    <button
+                      key={tutor.id}
+                      onClick={() => handleTutorSelect(tutor.id)}
+                      disabled={loading}
+                      className="w-full bg-white border-2 border-slate-200 hover:border-blue-900 rounded-2xl p-4 text-left flex items-center gap-4 transition-all group shadow-sm hover:shadow-md"
+                    >
+                      {tutor.profileImageUrl ? (
+                        <img src={tutor.profileImageUrl} alt={name} className="h-10 w-10 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center shrink-0 text-sm font-bold text-slate-600">
+                          {name.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-bold text-slate-900">{name}</p>
+                        <p className="text-xs text-slate-500">Mathematics Tutor</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-blue-900 ml-auto transition-colors" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
           </div>
@@ -118,34 +201,20 @@ export default function OnboardingPage() {
             <div>
               <h2 className="font-bold text-slate-900 text-lg">Link your student</h2>
               <p className="text-sm text-slate-500 mt-1">
-                Add your child's details so the tutor can associate your account with their sessions.
+                Add your child's name so the tutor can associate your account with their sessions.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1 block">
-                  Student's full name <span className="text-red-400">*</span>
-                </label>
-                <Input
-                  placeholder="e.g. Jamie Smith"
-                  value={studentName}
-                  onChange={e => setStudentName(e.target.value)}
-                  className="rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1 block">
-                  Student's email (optional — if they have an account)
-                </label>
-                <Input
-                  type="email"
-                  placeholder="student@example.com"
-                  value={studentEmail}
-                  onChange={e => setStudentEmail(e.target.value)}
-                  className="rounded-xl"
-                />
-              </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1 block">
+                Student's full name <span className="text-red-400">*</span>
+              </label>
+              <Input
+                placeholder="e.g. Jamie Smith"
+                value={studentName}
+                onChange={e => setStudentName(e.target.value)}
+                className="rounded-xl"
+              />
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
@@ -175,5 +244,33 @@ export default function OnboardingPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function RoleCard({
+  icon, bg, title, desc, onClick, disabled,
+}: {
+  icon: React.ReactNode;
+  bg: string;
+  title: string;
+  desc: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full bg-white border-2 border-slate-200 hover:border-blue-900 rounded-2xl p-5 text-left flex items-center gap-4 transition-all group shadow-sm hover:shadow-md disabled:opacity-50"
+    >
+      <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${bg}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="font-bold text-slate-900">{title}</p>
+        <p className="text-sm text-slate-500 mt-0.5">{desc}</p>
+      </div>
+      <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-blue-900 ml-auto transition-colors" />
+    </button>
   );
 }

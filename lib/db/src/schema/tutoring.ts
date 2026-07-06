@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const tutoringSessionsTable = pgTable("tutoring_sessions", {
   id: serial("id").primaryKey(),
+  tutorId: varchar("tutor_id"),
   studentId: varchar("student_id").notNull(),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
   durationMinutes: integer("duration_minutes").notNull().default(60),
@@ -24,6 +25,7 @@ export const messagesTable = pgTable("messages", {
 
 export const assignmentsTable = pgTable("assignments", {
   id: serial("id").primaryKey(),
+  tutorId: varchar("tutor_id"),
   title: varchar("title").notNull(),
   description: text("description"),
   dueDate: timestamp("due_date", { withTimezone: true }),
@@ -34,6 +36,7 @@ export const assignmentsTable = pgTable("assignments", {
 
 export const videosTable = pgTable("videos", {
   id: serial("id").primaryKey(),
+  tutorId: varchar("tutor_id"),
   title: varchar("title").notNull(),
   description: text("description"),
   url: text("url").notNull(),
@@ -43,6 +46,7 @@ export const videosTable = pgTable("videos", {
 
 export const availabilitySlotsTable = pgTable("availability_slots", {
   id: serial("id").primaryKey(),
+  tutorId: varchar("tutor_id"),
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   durationMinutes: integer("duration_minutes").notNull().default(60),
   topic: varchar("topic"),
@@ -63,6 +67,7 @@ export const submissionsTable = pgTable("submissions", {
 
 export const parentStudentLinksTable = pgTable("parent_student_links", {
   id: serial("id").primaryKey(),
+  tutorId: varchar("tutor_id"),
   parentId: varchar("parent_id").notNull(),
   studentId: varchar("student_id"),
   studentName: varchar("student_name"),
@@ -73,6 +78,7 @@ export type ParentStudentLink = typeof parentStudentLinksTable.$inferSelect;
 
 export const parentFeedbackTable = pgTable("parent_feedback", {
   id: serial("id").primaryKey(),
+  tutorId: varchar("tutor_id"),
   studentId: varchar("student_id").notNull(),
   content: text("content").notNull(),
   period: varchar("period"),
