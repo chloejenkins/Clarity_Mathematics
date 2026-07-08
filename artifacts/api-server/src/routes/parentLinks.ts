@@ -84,17 +84,45 @@ router.post("/auth/set-role", async (req: Request, res: Response) => {
     }
   }
 
-  const updates: Record<string, string | null> = { role };
-  if (role !== "tutor" && tutorId) {
-    updates.tutorId = tutorId;
+  // Students/parents link to a tutor: use the one provided, else the first tutor.
+  let resolvedTutorId: string | null = null;
+  if (role !== "tutor") {
+    resolvedTutorId = tutorId ?? null;
+    if (!resolvedTutorId) {
+      const [firstTutor] = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.role, "tutor"))
+        .limit(1);
+      resolvedTutorId = firstTutor?.id ?? null;
+    }
   }
 
-  await db.update(usersTable).set(updates).where(eq(usersTable.id, userId));
+  // The frontend never calls the row-creating /auth/user endpoint, so create
+  // (or update) the user's row here when they pick a role during onboarding.
+  const clerkUser = await clerkClient.users.getUser(userId);
+  await db
+    .insert(usersTable)
+    .values({
+      id: userId,
+      username: clerkUser.username,
+      email: clerkUser.emailAddresses[0]?.emailAddress ?? null,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName,
+      profileImageUrl: clerkUser.imageUrl ?? null,
+      role,
+      tutorId: resolvedTutorId,
+    })
+    .onConflictDoUpdate({
+      target: usersTable.id,
+      set: { role, tutorId: resolvedTutorId, updatedAt: new Date() },
+    });
+
   const metadata: Record<string, string | null> = { role };
-  if (tutorId && role !== "tutor") metadata.tutorId = tutorId;
+  if (resolvedTutorId && role !== "tutor") metadata.tutorId = resolvedTutorId;
   await clerkClient.users.updateUserMetadata(userId, { publicMetadata: metadata });
 
-  res.json({ success: true, role, tutorId: updates.tutorId ?? null });
+  res.json({ success: true, role, tutorId: resolvedTutorId });
 });
 
 export default router;

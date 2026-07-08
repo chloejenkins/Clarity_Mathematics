@@ -55,7 +55,7 @@ export default function TutorDashboard() {
           title="Active Assignments" 
           value={loadingAssignments ? "-" : assignments?.length} 
           icon={BookOpen} 
-          colorClass="bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400" 
+          colorClass="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
         />
       </div>
 

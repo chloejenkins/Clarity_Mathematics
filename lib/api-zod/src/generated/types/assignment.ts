@@ -9,8 +9,8 @@
 export interface Assignment {
   id: number;
   title: string;
-  description?: string;
-  dueDate?: Date;
-  subject?: string;
+  description?: string | null;
+  dueDate?: Date | null;
+  subject?: string | null;
   createdAt: Date;
 }

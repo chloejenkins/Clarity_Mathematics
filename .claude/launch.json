@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tutor-hub",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"$HOME/.local/bin:$PATH\"; export FNM_DIR=\"$HOME/.local/share/fnm\"; eval \"$(fnm env)\"; cd \"/Users/jenkinsc28/Desktop/Clarity App/Clarity-Mathematics/artifacts/tutor-hub\"; export BASE_PATH=/; export VITE_CLERK_PUBLISHABLE_KEY=pk_test_ZmVhc2libGUtb3JjYS05NC5jbGVyay5hY2NvdW50cy5kZXYk; export PORT=5173; exec pnpm run dev"
+      ],
+      "port": 5173,
+      "autoPort": false
+    }
+  ]
+}

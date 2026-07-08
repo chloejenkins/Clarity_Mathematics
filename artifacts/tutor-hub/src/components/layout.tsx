@@ -7,6 +7,7 @@ import {
   BookOpen,
   CreditCard,
   ClipboardList,
+  ChevronRight,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,6 +26,8 @@ import { useClerk } from "@clerk/clerk-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { PaymentBanner } from "@/components/payment-banner";
 
 interface LayoutProps {
   children: ReactNode;
@@ -63,6 +66,9 @@ export function AppLayout({ children }: LayoutProps) {
 
   const navigationItems = isTutor ? tutorNav : isParent ? parentNav : studentNav;
 
+  const currentPage =
+    navigationItems.find((item) => item.url === location)?.title ?? "";
+
   const style = {
     "--sidebar-width": "17rem",
     "--sidebar-width-icon": "4rem",
@@ -80,9 +86,9 @@ export function AppLayout({ children }: LayoutProps) {
           <SidebarContent>
             {/* Logo */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-sidebar-border">
-              <span className="font-serif text-2xl font-bold tracking-tight text-amber-500 select-none">CM</span>
+              <span className="font-display text-2xl font-bold tracking-tight text-[#c9a227] select-none">CM</span>
               <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider shrink-0">
-                {isTutor ? "Tutor" : "Student"}
+                {isTutor ? "Tutor" : isParent ? "Parent" : "Student"}
               </p>
             </div>
 
@@ -120,7 +126,7 @@ export function AppLayout({ children }: LayoutProps) {
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar className="h-8 w-8 shrink-0 ring-1 ring-white/10">
                   <AvatarImage src={user?.profileImageUrl ?? undefined} />
-                  <AvatarFallback className="bg-indigo-500/20 text-indigo-200 text-xs font-bold">
+                  <AvatarFallback className="bg-[#c9a227]/20 text-[#e6c65c] text-xs font-bold">
                     {displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -147,11 +153,25 @@ export function AppLayout({ children }: LayoutProps) {
         </Sidebar>
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="h-14 flex items-center px-4 bg-background border-b border-border sticky top-0 z-10 shrink-0">
+          <header className="h-14 flex items-center gap-3 px-4 bg-background border-b border-border sticky top-0 z-10 shrink-0">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors" />
+            <nav className="flex items-center gap-2 min-w-0 text-sm" aria-label="Breadcrumb">
+              <span className="font-display font-bold text-[#c9a227] shrink-0">CM</span>
+              <span className="hidden sm:inline text-muted-foreground shrink-0">Clarity Mathematics</span>
+              {currentPage && (
+                <>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                  <span className="font-semibold text-foreground truncate">{currentPage}</span>
+                </>
+              )}
+            </nav>
+            <div className="ml-auto flex items-center">
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-1 overflow-auto bg-background p-5 md:p-8">
             <div className="max-w-5xl mx-auto h-full">
+              <PaymentBanner />
               {children}
             </div>
           </main>

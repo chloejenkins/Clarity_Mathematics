@@ -15,13 +15,33 @@ export const tutoringSessionsTable = pgTable("tutoring_sessions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const conversationsTable = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  type: varchar("type").notNull().default("direct"), // "direct" | "group"
+  title: varchar("title"),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const conversationParticipantsTable = pgTable("conversation_participants", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const messagesTable = pgTable("messages", {
   id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id"),
   senderId: varchar("sender_id").notNull(),
-  recipientId: varchar("recipient_id").notNull(),
+  recipientId: varchar("recipient_id"),
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export type Conversation = typeof conversationsTable.$inferSelect;
+export type ConversationParticipant = typeof conversationParticipantsTable.$inferSelect;
 
 export const assignmentsTable = pgTable("assignments", {
   id: serial("id").primaryKey(),
@@ -65,6 +85,21 @@ export const submissionsTable = pgTable("submissions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const attachmentsTable = pgTable("attachments", {
+  id: serial("id").primaryKey(),
+  assignmentId: integer("assignment_id"), // null = file sent directly to the tutor
+  uploadedBy: varchar("uploaded_by").notNull(),
+  tutorId: varchar("tutor_id"), // recipient tutor (for routing direct sends)
+  filename: varchar("filename").notNull(), // original file name
+  storageKey: varchar("storage_key").notNull(), // on-disk file name
+  mimeType: varchar("mime_type"),
+  sizeBytes: integer("size_bytes"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type Attachment = typeof attachmentsTable.$inferSelect;
+
 export const parentStudentLinksTable = pgTable("parent_student_links", {
   id: serial("id").primaryKey(),
   tutorId: varchar("tutor_id"),
@@ -87,6 +122,23 @@ export const parentFeedbackTable = pgTable("parent_feedback", {
 });
 
 export type ParentFeedback = typeof parentFeedbackTable.$inferSelect;
+
+export const paymentsTable = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  tutorId: varchar("tutor_id").notNull(),
+  studentId: varchar("student_id").notNull(),
+  sessionId: integer("session_id"), // the session this charge is for (null = manual/other)
+  amount: integer("amount").notNull(), // whole dollars
+  description: varchar("description"),
+  // "due" | "sent" | "received" | "void" | "refund_due" | "refunded"
+  status: varchar("status").notNull().default("due"),
+  refundDue: integer("refund_due").notNull().default(0), // amount the tutor should refund
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  receivedAt: timestamp("received_at", { withTimezone: true }),
+});
+
+export type Payment = typeof paymentsTable.$inferSelect;
 
 export const insertTutoringSessionSchema = createInsertSchema(tutoringSessionsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMessageSchema = createInsertSchema(messagesTable).omit({ id: true, createdAt: true });

@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { EmptyState } from "@/components/empty-state";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -292,9 +293,25 @@ export default function SchedulePage() {
 
   const handleSessionStatus = (id: number, status: "completed" | "cancelled") => {
     updateMutation.mutate({ id, data: { status } }, {
-      onSuccess: () => {
+      onSuccess: (res) => {
         queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-        toast({ title: `Session marked as ${status}` });
+        queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+        const cancellation = (res as { cancellation?: { policy: string; feeOwed: number; refundOwed: number } })?.cancellation;
+        if (status === "cancelled" && cancellation) {
+          const { policy, feeOwed, refundOwed } = cancellation;
+          let desc =
+            policy === "tutor_cancel"
+              ? "Full refund — the student owes nothing."
+              : policy === "full_refund"
+                ? "Cancelled more than 24h ahead — no charge."
+                : feeOwed
+                  ? `Within 24h — a 50% fee ($${feeOwed}) applies.`
+                  : "Within 24h — 50% fee applies.";
+          if (refundOwed) desc += ` Refund $${refundOwed} to the student.`;
+          toast({ title: "Session cancelled", description: desc });
+        } else {
+          toast({ title: `Session marked as ${status}` });
+        }
       },
     });
   };
@@ -385,7 +402,7 @@ export default function SchedulePage() {
             {sessionsLoading ? (
               <div className="h-24 bg-muted animate-pulse rounded-2xl" />
             ) : upcomingSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No sessions booked yet.</p>
+              <EmptyState icon={CalendarCheck} title="No sessions booked yet" compact />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {upcomingSessions.map(session => {
@@ -422,9 +439,14 @@ export default function SchedulePage() {
                           {session.topic && <p className="text-muted-foreground text-xs mt-0.5">{session.topic}</p>}
                         </div>
                         {session.status === "approved" && (
-                          <Button size="sm" variant="outline" className="w-full rounded-xl" onClick={() => handleSessionStatus(session.id, "completed")}>
-                            Mark Completed
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" className="flex-1 rounded-xl" onClick={() => handleSessionStatus(session.id, "completed")}>
+                              Mark Completed
+                            </Button>
+                            <Button size="sm" variant="outline" className="flex-1 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleSessionStatus(session.id, "cancelled")}>
+                              Cancel
+                            </Button>
+                          </div>
                         )}
                       </CardContent>
                     </Card>
@@ -524,7 +546,7 @@ export default function SchedulePage() {
             {sessionsLoading ? (
               <div className="h-24 bg-muted animate-pulse rounded-2xl" />
             ) : upcomingSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No sessions booked yet. Pick a time above!</p>
+              <EmptyState icon={CalendarCheck} title="No sessions booked yet" description="Pick a time above to book your first session." compact />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {upcomingSessions.map(session => {

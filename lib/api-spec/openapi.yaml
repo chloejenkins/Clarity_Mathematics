@@ -423,15 +423,19 @@ components:
           type: string
         username:
           type: string
+          nullable: true
         firstName:
           type: string
+          nullable: true
         lastName:
           type: string
+          nullable: true
         profileImageUrl:
           type: string
+          nullable: true
         role:
           type: string
-          enum: [tutor, student]
+          enum: [tutor, student, parent, pending]
         createdAt:
           type: string
           format: date-time
@@ -455,11 +459,13 @@ components:
           type: integer
         topic:
           type: string
+          nullable: true
         status:
           type: string
           enum: [pending, approved, cancelled, completed]
         notes:
           type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -507,10 +513,13 @@ components:
           type: string
         senderName:
           type: string
+          nullable: true
         senderImageUrl:
           type: string
+          nullable: true
         recipientId:
           type: string
+          nullable: true
         content:
           type: string
         createdAt:
@@ -519,7 +528,6 @@ components:
       required:
         - id
         - senderId
-        - recipientId
         - content
         - createdAt
 
@@ -543,11 +551,14 @@ components:
           type: string
         description:
           type: string
+          nullable: true
         dueDate:
           type: string
           format: date-time
+          nullable: true
         subject:
           type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -593,10 +604,12 @@ components:
           type: string
         description:
           type: string
+          nullable: true
         url:
           type: string
         subject:
           type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time

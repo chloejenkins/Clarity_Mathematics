@@ -26,7 +26,7 @@ export const GetCurrentAuthUserResponse = zod.object({
       firstName: zod.string().nullish(),
       lastName: zod.string().nullish(),
       profileImageUrl: zod.string().nullish(),
-      role: zod.enum(["tutor", "student"]),
+      role: zod.enum(["tutor", "student", "parent", "pending"]),
       createdAt: zod.date().optional(),
     })
     .optional(),
@@ -62,7 +62,7 @@ export const ListUsersResponseItem = zod.object({
   firstName: zod.string().nullish(),
   lastName: zod.string().nullish(),
   profileImageUrl: zod.string().nullish(),
-  role: zod.enum(["tutor", "student"]),
+  role: zod.enum(["tutor", "student", "parent", "pending"]),
   createdAt: zod.date().optional(),
 });
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
@@ -80,9 +80,9 @@ export const ListSessionsResponseItem = zod.object({
   studentName: zod.string().optional(),
   scheduledAt: zod.date(),
   durationMinutes: zod.number(),
-  topic: zod.string().optional(),
+  topic: zod.string().nullish(),
   status: zod.enum(["pending", "approved", "cancelled", "completed"]),
-  notes: zod.string().optional(),
+  notes: zod.string().nullish(),
   createdAt: zod.date().optional(),
 });
 export const ListSessionsResponse = zod.array(ListSessionsResponseItem);
@@ -110,9 +110,9 @@ export const GetSessionResponse = zod.object({
   studentName: zod.string().optional(),
   scheduledAt: zod.date(),
   durationMinutes: zod.number(),
-  topic: zod.string().optional(),
+  topic: zod.string().nullish(),
   status: zod.enum(["pending", "approved", "cancelled", "completed"]),
-  notes: zod.string().optional(),
+  notes: zod.string().nullish(),
   createdAt: zod.date().optional(),
 });
 
@@ -137,9 +137,9 @@ export const UpdateSessionResponse = zod.object({
   studentName: zod.string().optional(),
   scheduledAt: zod.date(),
   durationMinutes: zod.number(),
-  topic: zod.string().optional(),
+  topic: zod.string().nullish(),
   status: zod.enum(["pending", "approved", "cancelled", "completed"]),
-  notes: zod.string().optional(),
+  notes: zod.string().nullish(),
   createdAt: zod.date().optional(),
 });
 
@@ -164,9 +164,9 @@ export const ListMessagesQueryParams = zod.object({
 export const ListMessagesResponseItem = zod.object({
   id: zod.number(),
   senderId: zod.string(),
-  senderName: zod.string().optional(),
-  senderImageUrl: zod.string().optional(),
-  recipientId: zod.string(),
+  senderName: zod.string().nullish(),
+  senderImageUrl: zod.string().nullish(),
+  recipientId: zod.string().nullish(),
   content: zod.string(),
   createdAt: zod.date(),
 });
@@ -186,9 +186,9 @@ export const SendMessageBody = zod.object({
 export const ListAssignmentsResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
-  description: zod.string().optional(),
-  dueDate: zod.date().optional(),
-  subject: zod.string().optional(),
+  description: zod.string().nullish(),
+  dueDate: zod.date().nullish(),
+  subject: zod.string().nullish(),
   createdAt: zod.date(),
 });
 export const ListAssignmentsResponse = zod.array(ListAssignmentsResponseItem);
@@ -220,9 +220,9 @@ export const UpdateAssignmentBody = zod.object({
 export const UpdateAssignmentResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
-  description: zod.string().optional(),
-  dueDate: zod.date().optional(),
-  subject: zod.string().optional(),
+  description: zod.string().nullish(),
+  dueDate: zod.date().nullish(),
+  subject: zod.string().nullish(),
   createdAt: zod.date(),
 });
 
@@ -243,9 +243,9 @@ export const DeleteAssignmentResponse = zod.object({
 export const ListVideosResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
-  description: zod.string().optional(),
+  description: zod.string().nullish(),
   url: zod.string(),
-  subject: zod.string().optional(),
+  subject: zod.string().nullish(),
   createdAt: zod.date(),
 });
 export const ListVideosResponse = zod.array(ListVideosResponseItem);

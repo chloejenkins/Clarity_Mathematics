@@ -4,6 +4,7 @@ import { useListAssignments, useCreateAssignment, useDeleteAssignment } from "@w
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -12,8 +13,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { BookOpen, Calendar, Trash2, Plus, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { BookOpen, Calendar, Trash2, Plus, CheckCircle, ChevronDown, ChevronUp, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FileUploadButton, AttachmentList } from "@/components/attachments";
 
 const createSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -23,7 +25,7 @@ const createSchema = z.object({
 });
 
 const submitSchema = z.object({
-  content: z.string().min(1, "Write something before submitting"),
+  content: z.string().optional(),
 });
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -67,7 +69,7 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
     values: { content: existing?.content ?? "" },
   });
 
-  const onSubmit = (vals: z.infer<typeof submitSchema>) => submitMutation.mutate(vals.content);
+  const onSubmit = (vals: z.infer<typeof submitSchema>) => submitMutation.mutate(vals.content ?? "");
 
   return (
     <div className="mt-4 border-t pt-4">
@@ -94,30 +96,40 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
       </button>
 
       {expanded && (
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-3 space-y-3">
-            <FormField control={form.control} name="content" render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="Write your answer, notes, or attach a description of your work…"
-                    className="rounded-xl min-h-[100px] resize-none text-sm"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <div className="flex gap-2">
-              <Button type="submit" size="sm" className="rounded-xl" disabled={submitMutation.isPending}>
-                {submitMutation.isPending ? "Saving…" : existing ? "Update Submission" : "Submit"}
-              </Button>
-              <Button type="button" size="sm" variant="ghost" className="rounded-xl" onClick={() => setExpanded(false)}>
-                Cancel
-              </Button>
+        <div className="mt-3 space-y-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+              <FormField control={form.control} name="content" render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Add a note for your tutor (optional)…"
+                      className="rounded-xl min-h-[100px] resize-none text-sm"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" className="rounded-xl" disabled={submitMutation.isPending}>
+                  {submitMutation.isPending ? "Saving…" : existing ? "Update Submission" : "Submit"}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="rounded-xl" onClick={() => setExpanded(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
+
+          <div className="border-t pt-3">
+            <div className="flex items-center justify-between mb-2 gap-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Attached files</p>
+              <FileUploadButton assignmentId={assignmentId} label="Attach a file" />
             </div>
-          </form>
-        </Form>
+            <AttachmentList assignmentId={assignmentId} canDelete emptyText="No files attached yet." />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -232,16 +244,46 @@ export default function AssignmentsPage() {
         )}
       </div>
 
+      {!isTutor && (
+        <Card className="border-none shadow-sm rounded-2xl">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Paperclip className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Send a file to your tutor</p>
+                <p className="text-xs text-muted-foreground">Share work that isn't tied to a specific assignment.</p>
+              </div>
+            </div>
+            <FileUploadButton label="Choose a file" />
+          </CardContent>
+        </Card>
+      )}
+
+      {isTutor && (
+        <Card className="border-none shadow-sm rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Paperclip className="h-4 w-4" /> Files sent to you
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <AttachmentList directOnly showUploader emptyText="No files sent to you yet." />
+          </CardContent>
+        </Card>
+      )}
+
       {isLoading ? (
         <div className="space-y-4 animate-pulse">
           {[1, 2, 3].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
         </div>
       ) : sorted.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed rounded-3xl text-muted-foreground">
-          <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-20" />
-          <p className="text-lg font-medium">No assignments yet.</p>
-          {isTutor && <p className="text-sm mt-1">Post your first assignment above.</p>}
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="No assignments yet."
+          description={isTutor ? "Post your first assignment above." : undefined}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {sorted.map(assignment => (
@@ -280,6 +322,14 @@ export default function AssignmentsPage() {
                   <div className="mt-3 inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-900/50 text-sm font-semibold">
                     <Calendar className="h-4 w-4" />
                     Due: {format(new Date(assignment.dueDate), "EEE, MMM d, yyyy")}
+                  </div>
+                )}
+
+                {/* Tutor: files students submitted for this assignment */}
+                {isTutor && (
+                  <div className="mt-4 border-t pt-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Submitted files</p>
+                    <AttachmentList assignmentId={assignment.id} showUploader emptyText="No files submitted yet." />
                   </div>
                 )}
 

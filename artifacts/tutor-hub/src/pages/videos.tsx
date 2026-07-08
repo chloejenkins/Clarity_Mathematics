@@ -4,6 +4,7 @@ import { useListVideos, useCreateVideo, useDeleteVideo } from "@workspace/api-cl
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -203,10 +204,7 @@ export default function VideosPage() {
             );
           })}
           {videos?.length === 0 && (
-             <div className="col-span-full text-center py-20 border-2 border-dashed rounded-3xl text-muted-foreground">
-               <Video className="h-16 w-16 mx-auto mb-4 opacity-20" />
-               <p className="text-lg">No videos added yet.</p>
-             </div>
+             <EmptyState icon={Video} title="No videos added yet." className="col-span-full" />
           )}
         </div>
       )}

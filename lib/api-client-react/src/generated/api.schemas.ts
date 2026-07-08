@@ -14,14 +14,16 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 export const UserRole = {
   tutor: "tutor",
   student: "student",
+  parent: "parent",
+  pending: "pending",
 } as const;
 
 export interface User {
   id: string;
-  username?: string;
-  firstName?: string;
-  lastName?: string;
-  profileImageUrl?: string;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
   role: UserRole;
   createdAt?: string;
 }
@@ -66,9 +68,9 @@ export interface TutoringSession {
   studentName?: string;
   scheduledAt: string;
   durationMinutes: number;
-  topic?: string;
+  topic?: string | null;
   status: TutoringSessionStatus;
-  notes?: string;
+  notes?: string | null;
   createdAt?: string;
 }
 
@@ -98,9 +100,9 @@ export interface UpdateSessionBody {
 export interface Message {
   id: number;
   senderId: string;
-  senderName?: string;
-  senderImageUrl?: string;
-  recipientId: string;
+  senderName?: string | null;
+  senderImageUrl?: string | null;
+  recipientId?: string | null;
   content: string;
   createdAt: string;
 }
@@ -113,9 +115,9 @@ export interface SendMessageBody {
 export interface Assignment {
   id: number;
   title: string;
-  description?: string;
-  dueDate?: string;
-  subject?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  subject?: string | null;
   createdAt: string;
 }
 
@@ -136,9 +138,9 @@ export interface UpdateAssignmentBody {
 export interface Video {
   id: number;
   title: string;
-  description?: string;
+  description?: string | null;
   url: string;
-  subject?: string;
+  subject?: string | null;
   createdAt: string;
 }
 

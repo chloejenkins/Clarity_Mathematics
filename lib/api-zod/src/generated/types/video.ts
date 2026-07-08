@@ -9,8 +9,8 @@
 export interface Video {
   id: number;
   title: string;
-  description?: string;
+  description?: string | null;
   url: string;
-  subject?: string;
+  subject?: string | null;
   createdAt: Date;
 }

@@ -100,7 +100,7 @@ router.delete("/assignments/:id", async (req: Request, res: Response) => {
   res.json(DeleteAssignmentResponse.parse({ success: true }));
 });
 
-const SubmitBody = z.object({ content: z.string().min(1) });
+const SubmitBody = z.object({ content: z.string().optional() });
 
 router.post("/assignments/:id/submit", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
@@ -111,7 +111,8 @@ router.post("/assignments/:id/submit", async (req: Request, res: Response) => {
 
   const assignmentId = Number(req.params.id);
   const parsed = SubmitBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "content is required" }); return; }
+  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
+  const content = parsed.data.content ?? "";
 
   const existing = await db
     .select()
@@ -122,14 +123,14 @@ router.post("/assignments/:id/submit", async (req: Request, res: Response) => {
   if (existing.length > 0) {
     const [updated] = await db
       .update(submissionsTable)
-      .set({ content: parsed.data.content })
+      .set({ content })
       .where(and(eq(submissionsTable.assignmentId, assignmentId), eq(submissionsTable.studentId, req.user.id)))
       .returning();
     res.json(updated);
   } else {
     const [created] = await db
       .insert(submissionsTable)
-      .values({ assignmentId, studentId: req.user.id, content: parsed.data.content })
+      .values({ assignmentId, studentId: req.user.id, content })
       .returning();
     res.status(201).json(created);
   }

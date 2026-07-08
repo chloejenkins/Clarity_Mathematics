@@ -7,6 +7,7 @@ import {
   UpdateSessionBody,
   DeleteSessionResponse,
 } from "@workspace/api-zod";
+import { applyCancellation } from "../lib/billing";
 
 const router: IRouter = Router();
 
@@ -133,12 +134,18 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
     .where(eq(tutoringSessionsTable.id, id))
     .returning();
 
+  // Apply the refund policy the first time a session is cancelled.
+  let cancellation = undefined;
+  if (updates.status === "cancelled" && existing.status !== "cancelled") {
+    cancellation = await applyCancellation(updated, req.user.role);
+  }
+
   const student = await db.select().from(usersTable).where(eq(usersTable.id, updated.studentId)).then(r => r[0]);
   const studentName = student
     ? `${student.firstName ?? ""} ${student.lastName ?? ""}`.trim() || student.username || "Student"
     : "Unknown";
 
-  res.json({ ...updated, studentName });
+  res.json({ ...updated, studentName, cancellation });
 });
 
 router.delete("/sessions/:id", async (req: Request, res: Response) => {

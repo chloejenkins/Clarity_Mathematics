@@ -3,6 +3,7 @@ import { customFetch } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { ClipboardList, User } from "lucide-react";
 import { format } from "date-fns";
+import { EmptyState } from "@/components/empty-state";
 
 interface ParentStudentLink {
   id: number;
@@ -110,9 +111,11 @@ function LinkedStudentFeedback({
       {isLoading ? (
         <div className="h-24 bg-muted rounded-xl animate-pulse" />
       ) : !feedback ? (
-        <div className="bg-muted rounded-xl p-5 text-sm text-muted-foreground">
-          No feedback from your tutor yet.
-        </div>
+        <EmptyState
+          icon={ClipboardList}
+          title="No feedback yet"
+          description="Your tutor hasn't shared any feedback yet. Check back soon."
+        />
       ) : (
         <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
           {feedback.period && (

@@ -98,7 +98,7 @@ export default function OnboardingPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex flex-col leading-none select-none items-center mb-4">
-            <span className="font-serif text-4xl font-bold tracking-tight text-[#c9a227]">CM</span>
+            <span className="font-display text-4xl font-bold tracking-tight text-[#c9a227]">CM</span>
             <span className="text-[10px] font-semibold tracking-widest uppercase text-slate-400 mt-1">Clarity Mathematics</span>
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900">Welcome</h1>

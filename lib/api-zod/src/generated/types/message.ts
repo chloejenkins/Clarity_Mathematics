@@ -9,9 +9,9 @@
 export interface Message {
   id: number;
   senderId: string;
-  senderName?: string;
-  senderImageUrl?: string;
-  recipientId: string;
+  senderName?: string | null;
+  senderImageUrl?: string | null;
+  recipientId?: string | null;
   content: string;
   createdAt: Date;
 }

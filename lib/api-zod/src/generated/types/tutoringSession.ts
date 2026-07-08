@@ -13,8 +13,8 @@ export interface TutoringSession {
   studentName?: string;
   scheduledAt: Date;
   durationMinutes: number;
-  topic?: string;
+  topic?: string | null;
   status: TutoringSessionStatus;
-  notes?: string;
+  notes?: string | null;
   createdAt?: Date;
 }
