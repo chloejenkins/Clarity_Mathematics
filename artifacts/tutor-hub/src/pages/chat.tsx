@@ -14,8 +14,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Send, MessageSquare, Plus, Users, Check } from "lucide-react";
+import { Send, MessageSquare, Plus, Users, Check, ChevronLeft } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Participant {
   id: string;
@@ -166,8 +167,11 @@ export default function ChatPage() {
       </div>
 
       <div className="flex gap-4 flex-1 min-h-0">
-        {/* Conversation list */}
-        <Card className="w-72 flex-shrink-0 border-none shadow-md rounded-2xl flex flex-col overflow-hidden">
+        {/* Conversation list — full-width on mobile, hidden once a chat is open */}
+        <Card className={cn(
+          "w-full md:w-72 flex-shrink-0 border-none shadow-md rounded-2xl flex-col overflow-hidden",
+          activeConv ? "hidden md:flex" : "flex",
+        )}>
           <div className="p-3 border-b bg-card">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Conversations
@@ -228,8 +232,11 @@ export default function ChatPage() {
           </div>
         </Card>
 
-        {/* Chat area */}
-        <Card className="flex-1 border-none shadow-md rounded-2xl flex flex-col overflow-hidden min-h-0">
+        {/* Chat area — hidden on mobile until a conversation is opened */}
+        <Card className={cn(
+          "flex-1 border-none shadow-md rounded-2xl flex-col overflow-hidden min-h-0",
+          activeConv ? "flex" : "hidden md:flex",
+        )}>
           {!activeConv ? (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
               <MessageSquare className="h-16 w-16 opacity-15" />
@@ -239,6 +246,13 @@ export default function ChatPage() {
             <>
               {/* Chat header */}
               <div className="px-5 py-3 border-b border-border/50 bg-card/50 flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => setSelectedId(undefined)}
+                  className="md:hidden -ml-1 text-muted-foreground hover:text-foreground shrink-0"
+                  aria-label="Back to conversations"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
                 <Avatar className="h-9 w-9 border border-border shadow-sm">
                   {activeConv.type === "group" ? (
                     <AvatarFallback className="bg-primary/10 text-primary">
