@@ -4,6 +4,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { ClipboardList, User } from "lucide-react";
 import { format } from "date-fns";
 import { EmptyState } from "@/components/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ParentStudentLink {
   id: number;
@@ -109,7 +110,7 @@ function LinkedStudentFeedback({
       </div>
 
       {isLoading ? (
-        <div className="h-24 bg-muted rounded-xl animate-pulse" />
+        <Skeleton className="h-24 rounded-2xl" />
       ) : !feedback ? (
         <EmptyState
           icon={ClipboardList}

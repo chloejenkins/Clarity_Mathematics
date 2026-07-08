@@ -4,6 +4,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { customFetch } from "@workspace/api-client-react";
 import { ClipboardList, Save, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -158,7 +159,7 @@ export default function ParentReportsPage() {
               </div>
 
               {feedbackLoading ? (
-                <div className="h-40 bg-muted rounded-xl animate-pulse" />
+                <Skeleton className="h-40 rounded-2xl" />
               ) : (
                 <>
                   {feedback && draft === "" && (

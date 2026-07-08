@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -400,7 +401,9 @@ export default function SchedulePage() {
               <Users className="h-4 w-4" /> Booked Sessions ({upcomingSessions.length})
             </h2>
             {sessionsLoading ? (
-              <div className="h-24 bg-muted animate-pulse rounded-2xl" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+              </div>
             ) : upcomingSessions.length === 0 ? (
               <EmptyState icon={CalendarCheck} title="No sessions booked yet" compact />
             ) : (
@@ -544,7 +547,9 @@ export default function SchedulePage() {
               <CalendarDays className="h-4 w-4" /> My Sessions
             </h2>
             {sessionsLoading ? (
-              <div className="h-24 bg-muted animate-pulse rounded-2xl" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+              </div>
             ) : upcomingSessions.length === 0 ? (
               <EmptyState icon={CalendarCheck} title="No sessions booked yet" description="Pick a time above to book your first session." compact />
             ) : (

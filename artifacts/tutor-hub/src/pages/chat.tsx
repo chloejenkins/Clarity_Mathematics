@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -267,8 +268,12 @@ export default function ChatPage() {
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                 {isLoading ? (
-                  <div className="flex justify-center pt-10 text-muted-foreground text-sm animate-pulse">
-                    Loading messages…
+                  <div className="space-y-4">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className={`flex ${i % 2 ? "justify-end" : "justify-start"}`}>
+                        <Skeleton className={`h-10 rounded-2xl ${i % 2 ? "w-40" : "w-52"}`} />
+                      </div>
+                    ))}
                   </div>
                 ) : messages?.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
