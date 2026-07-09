@@ -3,8 +3,8 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth as useClerkAuth, useSession } from "@clerk/clerk-react";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { useAuth as useClerkAuth, useSession, useUser } from "@clerk/clerk-react";
+import { setAuthTokenGetter, customFetch } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import NotFound from "@/pages/not-found";
 import { AppLayout } from "@/components/layout";
@@ -29,6 +29,25 @@ function ClerkTokenProvider() {
       setAuthTokenGetter(null);
     }
   }, [session]);
+
+  return null;
+}
+
+// Keeps our DB copy of the user's name/avatar in sync with Clerk, so profile
+// picture changes propagate to other users (chat, lists, etc.).
+function ProfileSync() {
+  const { isSignedIn, user } = useUser();
+  const imageUrl = user?.imageUrl;
+  const firstName = user?.firstName;
+  const lastName = user?.lastName;
+  const username = user?.username;
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    customFetch("/api/auth/sync-profile", { method: "POST" }).catch(() => {
+      /* not fatal — will retry on next profile change */
+    });
+  }, [isSignedIn, imageUrl, firstName, lastName, username]);
 
   return null;
 }
@@ -90,6 +109,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ClerkTokenProvider />
+        <ProfileSync />
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>

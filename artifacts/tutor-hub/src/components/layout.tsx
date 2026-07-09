@@ -8,6 +8,7 @@ import {
   CreditCard,
   ClipboardList,
   ChevronRight,
+  Camera,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,7 +36,7 @@ interface LayoutProps {
 
 export function AppLayout({ children }: LayoutProps) {
   const { user } = useAuth();
-  const { signOut } = useClerk();
+  const { signOut, openUserProfile } = useClerk();
   const [location] = useLocation();
 
   const isTutor = user?.role === "tutor";
@@ -123,22 +124,32 @@ export function AppLayout({ children }: LayoutProps) {
 
           <SidebarFooter className="p-4 border-t border-sidebar-border">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar className="h-8 w-8 shrink-0 ring-1 ring-white/10">
-                  <AvatarImage src={user?.profileImageUrl ?? undefined} />
-                  <AvatarFallback className="bg-[#c9a227]/20 text-[#e6c65c] text-xs font-bold">
-                    {displayName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+              <button
+                type="button"
+                onClick={() => openUserProfile()}
+                title="Edit profile & photo"
+                className="group flex items-center gap-2.5 min-w-0 -m-1 p-1 rounded-lg hover:bg-sidebar-accent transition-colors text-left"
+              >
+                <div className="relative shrink-0">
+                  <Avatar className="h-8 w-8 ring-1 ring-white/10">
+                    <AvatarImage src={user?.profileImageUrl ?? undefined} />
+                    <AvatarFallback className="bg-[#c9a227]/20 text-[#e6c65c] text-xs font-bold">
+                      {displayName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-sidebar ring-1 ring-sidebar-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="h-2.5 w-2.5 text-sidebar-foreground/80" />
+                  </span>
+                </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-sidebar-foreground leading-none truncate">
                     {displayName}
                   </p>
                   <p className="text-[11px] text-sidebar-foreground/50 capitalize mt-0.5">
-                    {user?.role}
+                    {user?.role} · <span className="group-hover:text-sidebar-foreground/80">Edit</span>
                   </p>
                 </div>
-              </div>
+              </button>
               <Button
                 variant="ghost"
                 size="icon"

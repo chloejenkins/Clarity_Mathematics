@@ -61,4 +61,29 @@ router.get("/auth/user", async (req: Request, res: Response) => {
   }
 });
 
+// Pull the caller's current Clerk profile (name, username, avatar) into our
+// users row, so profile-picture / name changes propagate to other users.
+router.post("/auth/sync-profile", async (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const clerkUser = await clerkClient.users.getUser(userId);
+    await db
+      .update(usersTable)
+      .set({
+        username: clerkUser.username,
+        email: clerkUser.emailAddresses[0]?.emailAddress ?? null,
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+        profileImageUrl: clerkUser.imageUrl ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(usersTable.id, userId));
+    res.json({ success: true, profileImageUrl: clerkUser.imageUrl ?? null });
+  } catch (err) {
+    req.log?.error({ err }, "Failed to sync profile");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
