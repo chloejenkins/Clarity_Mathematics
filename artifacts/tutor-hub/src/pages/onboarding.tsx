@@ -10,7 +10,7 @@ type Step = "role" | "profile-parent" | "profile-student";
 export default function OnboardingPage() {
   const { user: clerkUser } = useUser();
   const [step, setStep] = useState<Step>("role");
-  const [studentName, setStudentName] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,21 +63,21 @@ export default function OnboardingPage() {
     }
   }
 
-  async function handleParentProfile() {
+  async function handleParentProfile(skip = false) {
     setLoading(true);
     setError(null);
     try {
-      if (studentName.trim()) {
+      if (!skip && studentEmail.trim()) {
         await customFetch("/api/parent-links", {
           method: "POST",
-          body: JSON.stringify({ studentName: studentName.trim() }),
+          body: JSON.stringify({ studentEmail: studentEmail.trim() }),
         });
       }
       await clerkUser?.reload();
       window.location.href = "/";
-    } catch {
-      setError("Could not save profile. Please try again.");
-    } finally {
+    } catch (e) {
+      const data = (e as { data?: { error?: string } })?.data;
+      setError(data?.error ?? "Could not link. You can add your child later from the Feedback tab.");
       setLoading(false);
     }
   }
@@ -145,18 +145,20 @@ export default function OnboardingPage() {
             <div>
               <h2 className="font-bold text-slate-900 text-lg">Hi, {displayName}!</h2>
               <p className="text-sm text-slate-500 mt-1">
-                Optionally add your child's name so tutors can link your account to their sessions.
+                Enter your child's email (the one they signed up with) to link your account and see their
+                feedback, schedule, and payments. You can also do this later.
               </p>
             </div>
 
             <div>
               <label className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1.5 block">
-                Student's name
+                Child's email
               </label>
               <Input
-                placeholder="e.g. Jamie Smith"
-                value={studentName}
-                onChange={e => setStudentName(e.target.value)}
+                type="email"
+                placeholder="child@example.com"
+                value={studentEmail}
+                onChange={e => setStudentEmail(e.target.value)}
                 className="rounded-xl"
                 autoFocus
               />
@@ -166,14 +168,14 @@ export default function OnboardingPage() {
 
             <div className="flex gap-2 pt-1">
               <Button
-                onClick={handleParentProfile}
+                onClick={() => handleParentProfile(false)}
                 disabled={loading}
                 className="flex-1 rounded-xl"
               >
-                {loading ? "Saving…" : "Enter Portal"}
+                {loading ? "Saving…" : "Link & Continue"}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
-              <Button variant="outline" onClick={() => { setStudentName(""); handleParentProfile(); }} disabled={loading} className="rounded-xl">
+              <Button variant="outline" onClick={() => handleParentProfile(true)} disabled={loading} className="rounded-xl">
                 Skip
               </Button>
             </div>

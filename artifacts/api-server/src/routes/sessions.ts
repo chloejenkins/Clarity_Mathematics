@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, tutoringSessionsTable, usersTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { db, tutoringSessionsTable, usersTable, parentStudentLinksTable } from "@workspace/db";
+import { eq, desc, and, inArray, isNotNull } from "drizzle-orm";
 import {
   ListSessionsResponse,
   CreateSessionBody,
@@ -34,8 +34,23 @@ router.get("/sessions", async (req: Request, res: Response) => {
         .where(eq(tutoringSessionsTable.tutorId, req.user.id))
         .orderBy(desc(tutoringSessionsTable.scheduledAt));
     }
+  } else if (req.user.role === "parent") {
+    // Parents see the sessions of their linked children.
+    const links = await db
+      .select({ studentId: parentStudentLinksTable.studentId })
+      .from(parentStudentLinksTable)
+      .where(and(eq(parentStudentLinksTable.parentId, req.user.id), isNotNull(parentStudentLinksTable.studentId)));
+    const childIds = links.map((l) => l.studentId).filter((v): v is string => Boolean(v));
+    // Include the parent's own id: a parent who books for a young child as
+    // themselves (no separate child account) should see those sessions too.
+    const ids = Array.from(new Set([req.user.id, ...childIds]));
+    sessions = await db
+      .select()
+      .from(tutoringSessionsTable)
+      .where(inArray(tutoringSessionsTable.studentId, ids))
+      .orderBy(desc(tutoringSessionsTable.scheduledAt));
   } else {
-    // students/parents see all their own sessions regardless of which tutor
+    // students see their own sessions
     sessions = await db
       .select()
       .from(tutoringSessionsTable)

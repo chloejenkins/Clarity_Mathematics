@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { parentFeedbackTable, parentStudentLinksTable } from "@workspace/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -51,7 +51,11 @@ router.get("/parent-feedback/:studentId", async (req: Request, res: Response) =>
       .select()
       .from(parentStudentLinksTable)
       .where(eq(parentStudentLinksTable.parentId, req.user.id));
-    const linked = links.some(l => l.studentId === req.params.studentId);
+    // Allow a parent to read feedback for a linked child, or for themselves
+    // (a parent acting as the family account for a young child).
+    const linked =
+      req.params.studentId === req.user.id ||
+      links.some((l) => l.studentId === req.params.studentId);
     if (!linked) { res.status(403).json({ error: "Not linked to this student" }); return; }
 
     const rows = await db

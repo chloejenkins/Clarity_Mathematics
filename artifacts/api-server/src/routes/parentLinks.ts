@@ -6,21 +6,38 @@ import { z } from "zod";
 
 const router: IRouter = Router();
 
+type UserRow = typeof usersTable.$inferSelect;
+function displayName(u: UserRow | undefined): string {
+  if (!u) return "Student";
+  return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || u.email || "Student";
+}
+
 const CreateLinkBody = z.object({
-  studentId: z.string().optional(),
-  studentName: z.string().min(1),
+  studentEmail: z.string().trim().email("Enter a valid email"),
 });
 
 router.get("/parent-links", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (req.user.role !== "parent") { res.status(403).json({ error: "Parents only" }); return; }
 
-  const links = await db
-    .select()
-    .from(parentStudentLinksTable)
-    .where(eq(parentStudentLinksTable.parentId, req.user.id));
+  const [links, users] = await Promise.all([
+    db.select().from(parentStudentLinksTable).where(eq(parentStudentLinksTable.parentId, req.user.id)),
+    db.select().from(usersTable),
+  ]);
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
-  res.json(links);
+  res.json(
+    links.map((l) => {
+      const student = l.studentId ? userMap.get(l.studentId) : undefined;
+      return {
+        id: l.id,
+        studentId: l.studentId,
+        studentName: student ? displayName(student) : l.studentName,
+        studentEmail: student?.email ?? null,
+        linked: Boolean(l.studentId), // false = a name-only placeholder, not a real connection
+      };
+    }),
+  );
 });
 
 router.post("/parent-links", async (req: Request, res: Response) => {
@@ -28,19 +45,46 @@ router.post("/parent-links", async (req: Request, res: Response) => {
   if (req.user.role !== "parent") { res.status(403).json({ error: "Parents only" }); return; }
 
   const parsed = CreateLinkBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "studentName is required" }); return; }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid email" }); return; }
+  const email = parsed.data.studentEmail.toLowerCase();
+
+  const users = await db.select().from(usersTable);
+  const student = users.find((u) => (u.email ?? "").toLowerCase() === email);
+
+  if (!student) {
+    res.status(404).json({ error: "No student found with that email. Make sure they've signed up first." });
+    return;
+  }
+  if (student.id === req.user.id) {
+    res.status(400).json({ error: "You can't link to your own account." });
+    return;
+  }
+  if (student.role === "tutor" || student.role === "parent") {
+    res.status(400).json({ error: `That email belongs to a ${student.role} account, not a student.` });
+    return;
+  }
+
+  const existing = await db
+    .select()
+    .from(parentStudentLinksTable)
+    .where(and(eq(parentStudentLinksTable.parentId, req.user.id), eq(parentStudentLinksTable.studentId, student.id)))
+    .limit(1);
+  if (existing.length > 0) {
+    res.json({ id: existing[0].id, studentId: student.id, studentName: displayName(student), studentEmail: student.email, linked: true });
+    return;
+  }
 
   const [link] = await db
     .insert(parentStudentLinksTable)
     .values({
-      tutorId: req.user.tutorId ?? null,
+      tutorId: student.tutorId ?? req.user.tutorId ?? null,
       parentId: req.user.id,
-      studentId: parsed.data.studentId ?? null,
-      studentName: parsed.data.studentName,
+      studentId: student.id,
+      studentName: displayName(student),
     })
     .returning();
 
-  res.status(201).json(link);
+  res.status(201).json({ id: link.id, studentId: student.id, studentName: displayName(student), studentEmail: student.email, linked: true });
 });
 
 router.delete("/parent-links/:id", async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { db, paymentsTable, tutoringSessionsTable, usersTable } from "@workspace/db";
-import { eq, and, inArray, desc, asc } from "drizzle-orm";
+import { db, paymentsTable, tutoringSessionsTable, usersTable, parentStudentLinksTable } from "@workspace/db";
+import { eq, and, inArray, desc, asc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -19,6 +19,15 @@ function displayName(u: UserRow | undefined): string {
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   next();
+}
+
+/** Student ids of a parent's linked children. */
+async function linkedStudentIds(parentId: string): Promise<string[]> {
+  const links = await db
+    .select({ studentId: parentStudentLinksTable.studentId })
+    .from(parentStudentLinksTable)
+    .where(and(eq(parentStudentLinksTable.parentId, parentId), isNotNull(parentStudentLinksTable.studentId)));
+  return links.map((l) => l.studentId).filter((v): v is string => Boolean(v));
 }
 
 /**
@@ -112,6 +121,21 @@ router.get("/payments", requireAuth, async (req: Request, res: Response) => {
       .where(eq(paymentsTable.tutorId, req.user.id))
       .orderBy(desc(paymentsTable.createdAt));
     res.json(await hydrate(rows));
+  } else if (req.user.role === "parent") {
+    // Parents see (and can pay) their linked children's charges — plus their
+    // own, for a parent acting as the family account for a young child.
+    const ids = Array.from(new Set([req.user.id, ...(await linkedStudentIds(req.user.id))]));
+    const sessions = await db
+      .select()
+      .from(tutoringSessionsTable)
+      .where(inArray(tutoringSessionsTable.studentId, ids));
+    await ensurePayments(sessions);
+    const rows = await db
+      .select()
+      .from(paymentsTable)
+      .where(inArray(paymentsTable.studentId, ids))
+      .orderBy(desc(paymentsTable.createdAt));
+    res.json(await hydrate(rows));
   } else {
     const sessions = await db
       .select()
@@ -132,7 +156,10 @@ router.post("/payments/:id/mark-sent", requireAuth, async (req: Request, res: Re
   const id = Number(req.params.id);
   const [p] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, id)).limit(1);
   if (!p) { res.status(404).json({ error: "Not found" }); return; }
-  if (p.studentId !== req.user.id) { res.status(403).json({ error: "Forbidden" }); return; }
+  const allowed =
+    p.studentId === req.user.id ||
+    (req.user.role === "parent" && (await linkedStudentIds(req.user.id)).includes(p.studentId));
+  if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
   const [updated] = await db
     .update(paymentsTable)
     .set({ status: "sent", sentAt: new Date() })
