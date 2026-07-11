@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PaymentBanner } from "@/components/payment-banner";
+import { SessionReminderBanner } from "@/components/session-reminder-banner";
 
 interface LayoutProps {
   children: ReactNode;
@@ -182,6 +183,7 @@ export function AppLayout({ children }: LayoutProps) {
           </header>
           <main className="flex-1 overflow-auto bg-background p-5 md:p-8">
             <div className="max-w-5xl mx-auto h-full">
+              <SessionReminderBanner />
               <PaymentBanner />
               {children}
             </div>
