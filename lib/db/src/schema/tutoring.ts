@@ -46,6 +46,7 @@ export type ConversationParticipant = typeof conversationParticipantsTable.$infe
 export const assignmentsTable = pgTable("assignments", {
   id: serial("id").primaryKey(),
   tutorId: varchar("tutor_id"),
+  assignedTo: varchar("assigned_to"), // the student or parent this assignment is for
   title: varchar("title").notNull(),
   description: text("description"),
   dueDate: timestamp("due_date", { withTimezone: true }),

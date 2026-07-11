@@ -7,6 +7,7 @@
  */
 
 export interface CreateAssignmentBody {
+  assignedTo: string;
   title: string;
   description?: string;
   dueDate?: Date;

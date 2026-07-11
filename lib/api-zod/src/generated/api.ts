@@ -185,6 +185,8 @@ export const SendMessageBody = zod.object({
  */
 export const ListAssignmentsResponseItem = zod.object({
   id: zod.number(),
+  assignedTo: zod.string().nullish(),
+  assignedToName: zod.string().nullish(),
   title: zod.string(),
   description: zod.string().nullish(),
   dueDate: zod.date().nullish(),
@@ -197,6 +199,7 @@ export const ListAssignmentsResponse = zod.array(ListAssignmentsResponseItem);
  * @summary Create an assignment (tutor only)
  */
 export const CreateAssignmentBody = zod.object({
+  assignedTo: zod.string(),
   title: zod.string(),
   description: zod.string().optional(),
   dueDate: zod.date().optional(),
@@ -219,6 +222,8 @@ export const UpdateAssignmentBody = zod.object({
 
 export const UpdateAssignmentResponse = zod.object({
   id: zod.number(),
+  assignedTo: zod.string().nullish(),
+  assignedToName: zod.string().nullish(),
   title: zod.string(),
   description: zod.string().nullish(),
   dueDate: zod.date().nullish(),

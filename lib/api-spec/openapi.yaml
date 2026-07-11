@@ -547,6 +547,12 @@ components:
       properties:
         id:
           type: integer
+        assignedTo:
+          type: string
+          nullable: true
+        assignedToName:
+          type: string
+          nullable: true
         title:
           type: string
         description:
@@ -570,6 +576,8 @@ components:
     CreateAssignmentBody:
       type: object
       properties:
+        assignedTo:
+          type: string
         title:
           type: string
         description:
@@ -580,6 +588,7 @@ components:
         subject:
           type: string
       required:
+        - assignedTo
         - title
 
     UpdateAssignmentBody:

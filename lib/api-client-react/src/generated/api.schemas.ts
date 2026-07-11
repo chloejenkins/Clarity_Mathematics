@@ -114,6 +114,8 @@ export interface SendMessageBody {
 
 export interface Assignment {
   id: number;
+  assignedTo?: string | null;
+  assignedToName?: string | null;
   title: string;
   description?: string | null;
   dueDate?: string | null;
@@ -122,6 +124,7 @@ export interface Assignment {
 }
 
 export interface CreateAssignmentBody {
+  assignedTo: string;
   title: string;
   description?: string;
   dueDate?: string;

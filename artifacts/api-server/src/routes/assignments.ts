@@ -1,14 +1,27 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, assignmentsTable } from "@workspace/db";
+import { db, assignmentsTable, usersTable, parentStudentLinksTable } from "@workspace/db";
 import { submissionsTable } from "@workspace/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import {
   ListAssignmentsResponse,
-  CreateAssignmentBody,
   UpdateAssignmentBody,
   DeleteAssignmentResponse,
 } from "@workspace/api-zod";
+
+type UserRow = typeof usersTable.$inferSelect;
+function displayName(u: UserRow | undefined): string {
+  if (!u) return "User";
+  return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || u.email || "User";
+}
+
+const CreateAssignmentInput = z.object({
+  assignedTo: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  dueDate: z.string().optional(), // ISO string; parsed to a Date below
+  subject: z.string().optional(),
+});
 
 const router: IRouter = Router();
 
@@ -22,29 +35,62 @@ router.get("/assignments", async (req: Request, res: Response) => {
       .from(assignmentsTable)
       .where(eq(assignmentsTable.tutorId, req.user.id))
       .orderBy(desc(assignmentsTable.createdAt));
-  } else {
-    // students/parents see all assignments from all tutors
+  } else if (req.user.role === "parent") {
+    // Parents see assignments for their linked children, plus any assigned to
+    // themselves (a parent acting as the account for a young child).
+    const links = await db
+      .select({ studentId: parentStudentLinksTable.studentId })
+      .from(parentStudentLinksTable)
+      .where(and(eq(parentStudentLinksTable.parentId, req.user.id), isNotNull(parentStudentLinksTable.studentId)));
+    const ids = Array.from(
+      new Set([req.user.id, ...links.map((l) => l.studentId).filter((v): v is string => Boolean(v))]),
+    );
     assignments = await db
       .select()
       .from(assignmentsTable)
+      .where(inArray(assignmentsTable.assignedTo, ids))
+      .orderBy(desc(assignmentsTable.createdAt));
+  } else {
+    // students see only assignments assigned to them
+    assignments = await db
+      .select()
+      .from(assignmentsTable)
+      .where(eq(assignmentsTable.assignedTo, req.user.id))
       .orderBy(desc(assignmentsTable.createdAt));
   }
 
-  res.json(ListAssignmentsResponse.parse(assignments));
+  // Attach the recipient's display name (used for the tutor's "assigned to" label).
+  const users = await db.select().from(usersTable);
+  const nameById = new Map(users.map((u) => [u.id, displayName(u)]));
+  const hydrated = assignments.map((a) => ({
+    ...a,
+    assignedToName: a.assignedTo ? nameById.get(a.assignedTo) ?? null : null,
+  }));
+
+  res.json(ListAssignmentsResponse.parse(hydrated));
 });
 
 router.post("/assignments", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (req.user.role !== "tutor") { res.status(403).json({ error: "Only tutors can create assignments" }); return; }
 
-  const parsed = CreateAssignmentBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
+  const parsed = CreateAssignmentInput.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Title and a recipient are required" }); return; }
 
-  const { title, description, dueDate, subject } = parsed.data;
+  const { assignedTo, title, description, dueDate, subject } = parsed.data;
+
+  // The recipient must be a real student or parent.
+  const [recipient] = await db.select().from(usersTable).where(eq(usersTable.id, assignedTo)).limit(1);
+  if (!recipient || (recipient.role !== "student" && recipient.role !== "parent")) {
+    res.status(400).json({ error: "Assign the work to a student or parent" });
+    return;
+  }
+
   const [assignment] = await db
     .insert(assignmentsTable)
     .values({
       tutorId: req.user.id,
+      assignedTo,
       title,
       description: description ?? null,
       dueDate: dueDate ? new Date(dueDate) : null,
@@ -52,7 +98,7 @@ router.post("/assignments", async (req: Request, res: Response) => {
     })
     .returning();
 
-  res.status(201).json(assignment);
+  res.status(201).json({ ...assignment, assignedToName: displayName(recipient) });
 });
 
 router.patch("/assignments/:id", async (req: Request, res: Response) => {

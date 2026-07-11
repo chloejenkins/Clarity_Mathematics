@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListAssignments, useCreateAssignment, useDeleteAssignment } from "@workspace/api-client-react";
+import { useListAssignments, useCreateAssignment, useDeleteAssignment, useListUsers } from "@workspace/api-client-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,15 +10,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { BookOpen, Calendar, Trash2, Plus, CheckCircle, ChevronDown, ChevronUp, Paperclip } from "lucide-react";
+import { BookOpen, Calendar, Trash2, Plus, CheckCircle, ChevronDown, ChevronUp, Paperclip, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FileUploadButton, AttachmentList } from "@/components/attachments";
 
 const createSchema = z.object({
+  assignedTo: z.string().min(1, "Choose who this is for"),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   dueDate: z.string().optional(),
@@ -139,6 +141,7 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
 export default function AssignmentsPage() {
   const { user } = useAuth();
   const isTutor = user?.role === "tutor";
+  const isParent = user?.role === "parent";
   const { data: assignments, isLoading } = useListAssignments();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -146,9 +149,14 @@ export default function AssignmentsPage() {
   const deleteMutation = useDeleteAssignment();
   const [isOpen, setIsOpen] = useState(false);
 
+  const { data: users } = useListUsers();
+  const recipients = (users ?? []).filter((u) => u.role === "student" || u.role === "parent");
+  const recipientLabel = (u: { firstName?: string | null; lastName?: string | null; username?: string | null }) =>
+    [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "User";
+
   const form = useForm<z.infer<typeof createSchema>>({
     resolver: zodResolver(createSchema),
-    defaultValues: { title: "", description: "", subject: "", dueDate: "" },
+    defaultValues: { assignedTo: "", title: "", description: "", subject: "", dueDate: "" },
   });
 
   const onSubmit = (values: z.infer<typeof createSchema>) => {
@@ -200,10 +208,33 @@ export default function AssignmentsPage() {
             <DialogContent className="sm:max-w-[500px] rounded-2xl">
               <DialogHeader>
                 <DialogTitle>Post New Assignment</DialogTitle>
-                <DialogDescription>Students will see this immediately after you post it.</DialogDescription>
+                <DialogDescription>Assign to one student or parent. Only them (and a linked parent) will see it.</DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
+                  <FormField control={form.control} name="assignedTo" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assign to</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="rounded-xl">
+                            <SelectValue placeholder="Choose a student or parent" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {recipients.length === 0 && (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">No students or parents yet</div>
+                          )}
+                          {recipients.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {recipientLabel(u)} · <span className="capitalize text-muted-foreground">{u.role}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Title</FormLabel>
@@ -312,6 +343,11 @@ export default function AssignmentsPage() {
                   </span>
                 </div>
                 <CardTitle className="text-xl font-bold leading-tight pr-6">{assignment.title}</CardTitle>
+                {(isTutor || isParent) && assignment.assignedToName && (
+                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                    <User className="h-3 w-3" /> For {assignment.assignedToName}
+                  </p>
+                )}
               </CardHeader>
               <CardContent className="p-6">
                 {assignment.description && (
