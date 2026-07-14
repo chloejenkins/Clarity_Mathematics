@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useListSessions, useUpdateSession, useDeleteSession } from "@workspace/api-client-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -317,14 +317,6 @@ export default function SchedulePage() {
     });
   };
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://assets.calendly.com/assets/external/widget.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
-  }, []);
-
   const unbooked = slots.filter(s => s.isBooked === "false");
   const booked   = slots.filter(s => s.isBooked === "true");
 
@@ -527,18 +519,6 @@ export default function SchedulePage() {
                 })}
               </div>
             )}
-          </section>
-
-          {/* Calendly booking */}
-          <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" /> Book via Calendly
-            </h2>
-            <div
-              className="calendly-inline-widget rounded-2xl overflow-hidden border border-border"
-              data-url="https://calendly.com/chloejenkins-claritymathematics"
-              style={{ minWidth: "320px", height: "700px" }}
-            />
           </section>
 
           {/* Student's booked sessions */}
