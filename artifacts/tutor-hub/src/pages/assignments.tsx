@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListAssignments, useCreateAssignment, useDeleteAssignment, useListUsers } from "@workspace/api-client-react";
+import { useListAssignments, useCreateAssignment, useDeleteAssignment, useListUsers, customFetch } from "@workspace/api-client-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
     queryFn: async () => {
       const res = await fetch(`${BASE}/api/assignments/${assignmentId}/my-submission`, { credentials: "include" });
       if (!res.ok) return null;
-      return res.json() as Promise<{ id: number; content: string; submittedAt: string } | null>;
+      return res.json() as Promise<{ id: number; content: string; submittedAt: string; tutorComment: string | null; reviewedAt: string | null } | null>;
     },
   });
 
@@ -98,6 +98,17 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
         {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
 
+      {existing && (existing.reviewedAt || existing.tutorComment) && (
+        <div className="mt-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl p-3">
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+            <CheckCircle className="h-3.5 w-3.5" /> Reviewed by your tutor
+          </p>
+          {existing.tutorComment && (
+            <p className="text-sm text-foreground mt-1.5 whitespace-pre-wrap">{existing.tutorComment}</p>
+          )}
+        </div>
+      )}
+
       {expanded && (
         <div className="mt-3 space-y-4">
           <Form {...form}>
@@ -134,6 +145,77 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface TutorSubmission {
+  id: number;
+  studentId: string;
+  studentName: string;
+  content: string;
+  tutorComment: string | null;
+  reviewedAt: string | null;
+  submittedAt: string;
+}
+
+function TutorSubmissionReview({ assignmentId }: { assignmentId: number }) {
+  const { data: submissions = [] } = useQuery({
+    queryKey: [`/api/assignments/${assignmentId}/submissions`],
+    queryFn: () => customFetch<TutorSubmission[]>(`/api/assignments/${assignmentId}/submissions`),
+  });
+
+  return (
+    <div className="mt-4 border-t pt-3 space-y-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Submission &amp; files</p>
+      <AttachmentList assignmentId={assignmentId} showUploader emptyText="No files submitted yet." />
+      {submissions.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No written submission yet.</p>
+      ) : (
+        submissions.map((s) => <SubmissionReviewRow key={s.id} sub={s} assignmentId={assignmentId} />)
+      )}
+    </div>
+  );
+}
+
+function SubmissionReviewRow({ sub, assignmentId }: { sub: TutorSubmission; assignmentId: number }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [comment, setComment] = useState(sub.tutorComment ?? "");
+
+  const review = useMutation({
+    mutationFn: () =>
+      customFetch(`/api/submissions/${sub.id}/review`, { method: "POST", body: JSON.stringify({ comment }) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/assignments/${assignmentId}/submissions`] });
+      toast({ title: "Review saved" });
+    },
+  });
+
+  return (
+    <div className="bg-muted/40 rounded-xl p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold">{sub.studentName}</p>
+        {sub.reviewedAt ? (
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Reviewed</span>
+        ) : (
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Awaiting review</span>
+        )}
+      </div>
+      {sub.content ? (
+        <p className="text-sm text-foreground whitespace-pre-wrap">{sub.content}</p>
+      ) : (
+        <p className="text-xs text-muted-foreground italic">No note — see attached files.</p>
+      )}
+      <Textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Leave feedback for the student…"
+        className="rounded-xl min-h-[70px] text-sm bg-background"
+      />
+      <Button size="sm" className="rounded-lg" disabled={review.isPending} onClick={() => review.mutate()}>
+        {review.isPending ? "Saving…" : sub.reviewedAt ? "Update feedback" : "Save & mark reviewed"}
+      </Button>
     </div>
   );
 }
@@ -362,13 +444,8 @@ export default function AssignmentsPage() {
                   </div>
                 )}
 
-                {/* Tutor: files students submitted for this assignment */}
-                {isTutor && (
-                  <div className="mt-4 border-t pt-3">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Submitted files</p>
-                    <AttachmentList assignmentId={assignment.id} showUploader emptyText="No files submitted yet." />
-                  </div>
-                )}
+                {/* Tutor: the student's submission (text + files) and review */}
+                {isTutor && <TutorSubmissionReview assignmentId={assignment.id} />}
 
                 {/* Student submission panel */}
                 {!isTutor && (

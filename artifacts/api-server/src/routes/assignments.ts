@@ -204,13 +204,44 @@ router.get("/assignments/:id/submissions", async (req: Request, res: Response) =
   if (req.user.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
 
   const assignmentId = Number(req.params.id);
-  const rows = await db
-    .select()
-    .from(submissionsTable)
-    .where(eq(submissionsTable.assignmentId, assignmentId))
-    .orderBy(desc(submissionsTable.submittedAt));
+  const [rows, users] = await Promise.all([
+    db
+      .select()
+      .from(submissionsTable)
+      .where(eq(submissionsTable.assignmentId, assignmentId))
+      .orderBy(desc(submissionsTable.submittedAt)),
+    db.select().from(usersTable),
+  ]);
+  const nameById = new Map(users.map((u) => [u.id, displayName(u)]));
 
-  res.json(rows);
+  res.json(rows.map((r) => ({ ...r, studentName: nameById.get(r.studentId) ?? "Student" })));
+});
+
+// Tutor leaves a review comment on a submission (and marks it reviewed).
+const ReviewBody = z.object({ comment: z.string().optional() });
+router.post("/submissions/:id/review", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (req.user.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
+
+  const id = Number(req.params.id);
+  const parsed = ReviewBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
+
+  const [sub] = await db.select().from(submissionsTable).where(eq(submissionsTable.id, id)).limit(1);
+  if (!sub) { res.status(404).json({ error: "Submission not found" }); return; }
+  const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, sub.assignmentId)).limit(1);
+  if (assignment?.tutorId && assignment.tutorId !== req.user.id) {
+    res.status(403).json({ error: "You can only review your own assignments" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(submissionsTable)
+    .set({ tutorComment: parsed.data.comment?.trim() || null, reviewedAt: new Date() })
+    .where(eq(submissionsTable.id, id))
+    .returning();
+
+  res.json(updated);
 });
 
 export default router;

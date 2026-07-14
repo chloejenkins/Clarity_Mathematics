@@ -82,6 +82,8 @@ export const submissionsTable = pgTable("submissions", {
   assignmentId: integer("assignment_id").notNull(),
   studentId: varchar("student_id").notNull(),
   content: text("content").notNull(),
+  tutorComment: text("tutor_comment"), // tutor's review note
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
