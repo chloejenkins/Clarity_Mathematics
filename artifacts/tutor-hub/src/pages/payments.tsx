@@ -1,4 +1,4 @@
-import { CreditCard, Gift, Clock, RefreshCcw, Copy, CheckCircle, Wallet, Check, Loader2, Pencil } from "lucide-react";
+import { CreditCard, Gift, Clock, RefreshCcw, Copy, CheckCircle, Wallet, Check, Loader2, Pencil, Receipt } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { customFetch } from "@workspace/api-client-react";
@@ -24,6 +24,42 @@ function CopyButton({ text }: { text: string }) {
       {copied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+/** Open a clean, printable receipt in a new window (user can Save as PDF). */
+function openReceipt(p: Payment) {
+  const w = window.open("", "_blank", "width=460,height=680");
+  if (!w) return;
+  const date = new Date(p.receivedAt ?? p.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Receipt — Clarity Mathematics</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;padding:40px;max-width:400px;margin:0 auto;}
+      h1{font-family:Georgia,'Times New Roman',serif;color:#c9a227;font-size:30px;margin:0;letter-spacing:-1px;}
+      .sub{color:#64748b;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+      h2{font-size:15px;margin:28px 0 12px;}
+      .row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid #e2e8f0;font-size:14px;}
+      .row .label{color:#64748b;}
+      .row span:last-child{text-align:right;font-weight:600;}
+      .total{display:flex;justify-content:space-between;font-size:22px;font-weight:800;margin-top:18px;}
+      .paid{display:inline-block;margin-top:14px;background:#dcfce7;color:#166534;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.5px;}
+      .foot{margin-top:36px;color:#94a3b8;font-size:11px;text-align:center;}
+    </style></head><body>
+    <h1>CM</h1><div class="sub">Clarity Mathematics</div>
+    <h2>Payment Receipt</h2>
+    <div class="row"><span class="label">Description</span><span>${escapeHtml(p.description || "Tutoring session")}</span></div>
+    ${p.studentName ? `<div class="row"><span class="label">Student</span><span>${escapeHtml(p.studentName)}</span></div>` : ""}
+    <div class="row"><span class="label">Date paid</span><span>${date}</span></div>
+    <div class="total"><span>Total</span><span>$${p.amount}.00</span></div>
+    <span class="paid">PAID</span>
+    <div class="foot">Thank you — Clarity Mathematics</div>
+    </body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 350);
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -106,6 +142,11 @@ function ChargeRow({ p, isTutor }: { p: Payment; isTutor: boolean }) {
           {markRefunded.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark refunded"}
         </Button>
       )}
+      {p.status === "received" && (
+        <Button size="sm" variant="ghost" className="rounded-lg shrink-0 gap-1 text-muted-foreground hover:text-foreground" onClick={() => openReceipt(p)} title="Receipt">
+          <Receipt className="h-4 w-4" /><span className="hidden sm:inline">Receipt</span>
+        </Button>
+      )}
     </div>
   );
 }
@@ -178,6 +219,12 @@ export default function PaymentsPage() {
     : list.filter((p) => p.status === "due");
   const outstandingTotal = outstanding.reduce((s, p) => s + p.amount, 0);
 
+  const sum = (pred: (p: Payment) => boolean) => list.filter(pred).reduce((s, p) => s + p.amount, 0);
+  const receivedTotal = sum((p) => p.status === "received");
+  const owedTotal = isTutor
+    ? sum((p) => p.status === "due" || p.status === "sent")
+    : sum((p) => p.status === "due");
+
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div className="flex items-start justify-between gap-4">
@@ -192,11 +239,24 @@ export default function PaymentsPage() {
         {isTutor && <RateEditor />}
       </div>
 
+      {list.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <p className="text-xs text-muted-foreground">{isTutor ? "Received" : "Paid"}</p>
+            <p className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">${receivedTotal}</p>
+          </div>
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <p className="text-xs text-muted-foreground">Outstanding</p>
+            <p className="text-2xl font-extrabold text-amber-700 dark:text-amber-400">${owedTotal}</p>
+          </div>
+        </div>
+      )}
+
       {/* Charges */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            {isTutor ? "Payments" : "Your charges"}
+            {isTutor ? "Payment history" : "Your charges"}
           </p>
           {outstanding.length > 0 && (
             <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
