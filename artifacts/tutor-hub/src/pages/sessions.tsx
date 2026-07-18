@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListSessions, useUpdateSession, useDeleteSession } from "@workspace/api-client-react";
+import { useListSessions, useUpdateSession, useDeleteSession, customFetch } from "@workspace/api-client-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -256,6 +256,53 @@ function BookSlotDialog({ slot, onBooked }: { slot: Slot; onBooked: () => void }
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+function RescheduleDialog({ session }: { session: { id: number; scheduledAt: string } }) {
+  const [open, setOpen] = useState(false);
+  const [dt, setDt] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+
+  const reschedule = useMutation({
+    mutationFn: () =>
+      customFetch(`/api/sessions/${session.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ scheduledAt: new Date(dt).toISOString() }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      toast({ title: "Session rescheduled" });
+      setOpen(false);
+    },
+    onError: () => toast({ title: "Couldn't reschedule", variant: "destructive" }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setDt(toLocalInput(session.scheduledAt)); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="flex-1 rounded-xl">Reschedule</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm rounded-2xl">
+        <DialogHeader>
+          <DialogTitle>Reschedule session</DialogTitle>
+          <DialogDescription>Pick a new date and time.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Label>New date &amp; time</Label>
+          <Input type="datetime-local" value={dt} onChange={(e) => setDt(e.target.value)} className="rounded-xl" />
+          <Button className="w-full rounded-xl" disabled={!dt || reschedule.isPending} onClick={() => reschedule.mutate()}>
+            {reschedule.isPending ? "Saving…" : "Confirm new time"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function SchedulePage() {
   const { user } = useAuth();
   const isTutor = user?.role === "tutor";
@@ -434,13 +481,18 @@ export default function SchedulePage() {
                           {session.topic && <p className="text-muted-foreground text-xs mt-0.5">{session.topic}</p>}
                         </div>
                         {session.status === "approved" && (
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" className="flex-1 rounded-xl" onClick={() => handleSessionStatus(session.id, "completed")}>
-                              Mark Completed
-                            </Button>
-                            <Button size="sm" variant="outline" className="flex-1 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleSessionStatus(session.id, "cancelled")}>
-                              Cancel
-                            </Button>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1 rounded-xl" onClick={() => handleSessionStatus(session.id, "completed")}>
+                                Mark Completed
+                              </Button>
+                              <Button size="sm" variant="outline" className="flex-1 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleSessionStatus(session.id, "cancelled")}>
+                                Cancel
+                              </Button>
+                            </div>
+                            <div className="flex">
+                              <RescheduleDialog session={{ id: session.id, scheduledAt: session.scheduledAt }} />
+                            </div>
                           </div>
                         )}
                       </CardContent>
@@ -551,9 +603,14 @@ export default function SchedulePage() {
                         </p>
                         {session.topic && <p className="text-xs text-muted-foreground">{session.topic}</p>}
                         {session.status === "approved" && (
-                          <Button size="sm" variant="outline" className="w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5 mt-2" onClick={() => handleSessionStatus(session.id, "cancelled")}>
-                            Cancel Session
-                          </Button>
+                          <div className="space-y-2 mt-2">
+                            <div className="flex">
+                              <RescheduleDialog session={{ id: session.id, scheduledAt: session.scheduledAt }} />
+                            </div>
+                            <Button size="sm" variant="outline" className="w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleSessionStatus(session.id, "cancelled")}>
+                              Cancel Session
+                            </Button>
+                          </div>
                         )}
                       </CardContent>
                     </Card>

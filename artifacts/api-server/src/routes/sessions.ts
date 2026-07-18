@@ -4,10 +4,16 @@ import { eq, desc, and, inArray, isNotNull } from "drizzle-orm";
 import {
   ListSessionsResponse,
   CreateSessionBody,
-  UpdateSessionBody,
   DeleteSessionResponse,
 } from "@workspace/api-zod";
 import { applyCancellation } from "../lib/billing";
+import { z } from "zod";
+
+const UpdateSessionInput = z.object({
+  status: z.enum(["pending", "approved", "cancelled", "completed"]).optional(),
+  notes: z.string().optional(),
+  scheduledAt: z.string().optional(), // ISO string; parsed to a Date below
+});
 
 const router: IRouter = Router();
 
@@ -135,7 +141,7 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
   const isStudent = existing.studentId === req.user.id;
   if (!isTutor && !isStudent) { res.status(403).json({ error: "Forbidden" }); return; }
 
-  const parsed = UpdateSessionBody.safeParse(req.body);
+  const parsed = UpdateSessionInput.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
 
   const updates: Record<string, unknown> = {};
