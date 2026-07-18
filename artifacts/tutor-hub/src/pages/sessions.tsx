@@ -67,6 +67,7 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
   const [times, setTimes] = useState<string[]>([""]);
   const [duration, setDuration] = useState("60");
   const [topic, setTopic] = useState("");
+  const [repeatWeeks, setRepeatWeeks] = useState("1");
   const [loading, setLoading] = useState(false);
 
   const addTimeField = () => setTimes(t => [...t, ""]);
@@ -81,11 +82,19 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
       return;
     }
     setLoading(true);
-    const slots = validTimes.map(t => ({
-      startsAt: new Date(`${date}T${t}`).toISOString(),
-      durationMinutes: Number(duration),
-      topic: topic.trim() || undefined,
-    }));
+    const weeks = Number(repeatWeeks) || 1;
+    const slots = validTimes.flatMap(t => {
+      const base = new Date(`${date}T${t}`);
+      return Array.from({ length: weeks }, (_, w) => {
+        const d = new Date(base);
+        d.setDate(d.getDate() + w * 7);
+        return {
+          startsAt: d.toISOString(),
+          durationMinutes: Number(duration),
+          topic: topic.trim() || undefined,
+        };
+      });
+    });
     try {
       const res = await fetch(`${BASE}/api/availability`, {
         method: "POST",
@@ -96,7 +105,7 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
       if (!res.ok) throw new Error();
       toast({ title: `${slots.length} slot${slots.length > 1 ? "s" : ""} added!` });
       setOpen(false);
-      setDate(""); setTimes([""]); setTopic("");
+      setDate(""); setTimes([""]); setTopic(""); setRepeatWeeks("1");
       onAdded();
     } catch {
       toast({ title: "Failed to add slots", variant: "destructive" });
@@ -176,6 +185,22 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
                 className="rounded-xl"
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Repeat weekly</Label>
+            <Select value={repeatWeeks} onValueChange={setRepeatWeeks}>
+              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Just this date</SelectItem>
+                <SelectItem value="2">Weekly · 2 weeks</SelectItem>
+                <SelectItem value="4">Weekly · 4 weeks</SelectItem>
+                <SelectItem value="6">Weekly · 6 weeks</SelectItem>
+                <SelectItem value="8">Weekly · 8 weeks</SelectItem>
+                <SelectItem value="12">Weekly · 12 weeks</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Repeats the same time(s) each week — perfect for a standing weekly session.</p>
           </div>
 
           <Button type="submit" className="w-full rounded-xl" disabled={loading}>
