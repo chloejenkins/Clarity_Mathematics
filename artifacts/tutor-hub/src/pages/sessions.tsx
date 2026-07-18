@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, isToday, isTomorrow, isThisWeek, parseISO } from "date-fns";
@@ -19,6 +20,7 @@ import {
   CalendarCheck,
   Users,
   Loader2,
+  FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/empty-state";
@@ -303,6 +305,65 @@ function RescheduleDialog({ session }: { session: { id: number; scheduledAt: str
   );
 }
 
+function LessonNotes({ session, canEdit }: { session: { id: number; notes: string | null }; canEdit: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [notes, setNotes] = useState(session.notes ?? "");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const save = useMutation({
+    mutationFn: () =>
+      customFetch(`/api/sessions/${session.id}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      toast({ title: "Lesson notes saved" });
+      setEditing(false);
+    },
+    onError: () => toast({ title: "Couldn't save notes", variant: "destructive" }),
+  });
+
+  if (!canEdit && !session.notes) return null;
+
+  return (
+    <div className="mt-2 pt-2 border-t border-border/50">
+      {editing ? (
+        <div className="space-y-2">
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="What we covered, homework set, how it went…"
+            className="rounded-lg text-sm min-h-[70px]"
+          />
+          <div className="flex gap-2">
+            <Button size="sm" className="rounded-lg" disabled={save.isPending} onClick={() => save.mutate()}>
+              {save.isPending ? "Saving…" : "Save notes"}
+            </Button>
+            <Button size="sm" variant="ghost" className="rounded-lg" onClick={() => { setNotes(session.notes ?? ""); setEditing(false); }}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : session.notes ? (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+            <FileText className="h-3 w-3" /> Lesson notes
+          </p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{session.notes}</p>
+          {canEdit && (
+            <button onClick={() => { setNotes(session.notes ?? ""); setEditing(true); }} className="text-xs text-primary font-medium mt-1">
+              Edit
+            </button>
+          )}
+        </div>
+      ) : canEdit ? (
+        <button onClick={() => setEditing(true)} className="text-xs text-primary font-medium flex items-center gap-1">
+          <FileText className="h-3 w-3" /> Add lesson notes
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export default function SchedulePage() {
   const { user } = useAuth();
   const isTutor = user?.role === "tutor";
@@ -511,13 +572,18 @@ export default function SchedulePage() {
                 {pastSessions.slice(0, 6).map(session => {
                   const d = new Date(session.scheduledAt);
                   return (
-                    <Card key={session.id} className="border shadow-sm rounded-2xl opacity-60">
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-sm">{session.studentName} · {format(d, "MMM d, h:mm a")}</p>
-                          <p className="text-xs text-muted-foreground">{session.durationMinutes} min {session.topic ? `· ${session.topic}` : ""}</p>
+                    <Card key={session.id} className="border shadow-sm rounded-2xl">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-sm">{session.studentName} · {format(d, "MMM d, h:mm a")}</p>
+                            <p className="text-xs text-muted-foreground">{session.durationMinutes} min {session.topic ? `· ${session.topic}` : ""}</p>
+                          </div>
+                          <StatusPill status={session.status} />
                         </div>
-                        <StatusPill status={session.status} />
+                        {session.status === "completed" && (
+                          <LessonNotes session={{ id: session.id, notes: session.notes ?? null }} canEdit />
+                        )}
                       </CardContent>
                     </Card>
                   );
@@ -628,13 +694,16 @@ export default function SchedulePage() {
                 {pastSessions.slice(0, 4).map(session => {
                   const d = new Date(session.scheduledAt);
                   return (
-                    <Card key={session.id} className="border shadow-sm rounded-2xl opacity-60">
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-sm">{format(d, "EEE, MMM d")} · {format(d, "h:mm a")}</p>
-                          <p className="text-xs text-muted-foreground">{session.durationMinutes} min {session.topic ? `· ${session.topic}` : ""}</p>
+                    <Card key={session.id} className="border shadow-sm rounded-2xl">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-sm">{format(d, "EEE, MMM d")} · {format(d, "h:mm a")}</p>
+                            <p className="text-xs text-muted-foreground">{session.durationMinutes} min {session.topic ? `· ${session.topic}` : ""}</p>
+                          </div>
+                          <StatusPill status={session.status} />
                         </div>
-                        <StatusPill status={session.status} />
+                        <LessonNotes session={{ id: session.id, notes: session.notes ?? null }} canEdit={false} />
                       </CardContent>
                     </Card>
                   );
