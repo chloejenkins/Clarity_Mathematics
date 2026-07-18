@@ -10,6 +10,8 @@ export interface Assignment {
   id: number;
   assignedTo?: string | null;
   assignedToName?: string | null;
+  submitted?: boolean;
+  reviewed?: boolean;
   title: string;
   description?: string | null;
   dueDate?: Date | null;

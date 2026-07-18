@@ -9,6 +9,7 @@ import {
   ClipboardList,
   ChevronRight,
   Camera,
+  TrendingUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +57,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Schedule", url: "/", icon: CalendarDays },
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
+    { title: "Progress", url: "/progress", icon: TrendingUp },
     { title: "Payments", url: "/payments", icon: CreditCard },
     { title: "Feedback", url: "/parent-feedback", icon: ClipboardList },
   ];
@@ -64,6 +66,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Schedule", url: "/", icon: CalendarDays },
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
+    { title: "Progress", url: "/progress", icon: TrendingUp },
   ];
 
   const navigationItems = isTutor ? tutorNav : isParent ? parentNav : studentNav;

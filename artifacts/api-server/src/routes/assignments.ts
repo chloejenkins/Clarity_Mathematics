@@ -59,12 +59,26 @@ router.get("/assignments", async (req: Request, res: Response) => {
       .orderBy(desc(assignmentsTable.createdAt));
   }
 
-  // Attach the recipient's display name (used for the tutor's "assigned to" label).
+  // Attach the recipient's display name and submission status.
   const users = await db.select().from(usersTable);
   const nameById = new Map(users.map((u) => [u.id, displayName(u)]));
+
+  const ids = assignments.map((a) => a.id);
+  const subs = ids.length
+    ? await db.select().from(submissionsTable).where(inArray(submissionsTable.assignmentId, ids))
+    : [];
+  const statusByAssignment = new Map<number, { submitted: boolean; reviewed: boolean }>();
+  for (const a of assignments) {
+    // A submission counts if it's from the person the assignment is for.
+    const s = subs.find((x) => x.assignmentId === a.id && x.studentId === a.assignedTo);
+    statusByAssignment.set(a.id, { submitted: Boolean(s), reviewed: Boolean(s?.reviewedAt) });
+  }
+
   const hydrated = assignments.map((a) => ({
     ...a,
     assignedToName: a.assignedTo ? nameById.get(a.assignedTo) ?? null : null,
+    submitted: statusByAssignment.get(a.id)?.submitted ?? false,
+    reviewed: statusByAssignment.get(a.id)?.reviewed ?? false,
   }));
 
   res.json(ListAssignmentsResponse.parse(hydrated));

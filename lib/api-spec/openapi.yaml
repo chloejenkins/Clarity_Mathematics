@@ -553,6 +553,10 @@ components:
         assignedToName:
           type: string
           nullable: true
+        submitted:
+          type: boolean
+        reviewed:
+          type: boolean
         title:
           type: string
         description:
