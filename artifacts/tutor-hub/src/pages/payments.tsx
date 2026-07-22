@@ -34,7 +34,8 @@ function escapeHtml(s: string): string {
 function openReceipt(p: Payment) {
   const w = window.open("", "_blank", "width=460,height=680");
   if (!w) return;
-  const date = new Date(p.receivedAt ?? p.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  const paidAt = p.receivedAt ?? p.createdAt;
+  const date = paidAt ? format(new Date(paidAt), "MMMM d, yyyy") : "—";
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Receipt — Clarity Mathematics</title>
     <style>
       body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;padding:40px;max-width:400px;margin:0 auto;}
