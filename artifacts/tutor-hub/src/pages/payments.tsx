@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 // Set this once the tutor's Venmo handle exists → enables the one-tap Venmo button.
-const VENMO_HANDLE = "";
+const VENMO_HANDLE = "Chloe-Jenkins-46";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
