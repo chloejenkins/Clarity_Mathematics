@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { eq, and, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
+import { strictRateLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
 
@@ -116,7 +117,7 @@ const CreateConversationBody = z.object({
 
 // POST /conversations — create a direct (2-person) or group conversation.
 // Direct conversations are deduped: the existing one is returned if present.
-router.post("/conversations", async (req: Request, res: Response) => {
+router.post("/conversations", strictRateLimiter, async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const parsed = CreateConversationBody.safeParse(req.body);
@@ -206,7 +207,7 @@ router.get("/conversations/:id/messages", async (req: Request, res: Response) =>
 const SendBody = z.object({ content: z.string().trim().min(1) });
 
 // POST /conversations/:id/messages
-router.post("/conversations/:id/messages", async (req: Request, res: Response) => {
+router.post("/conversations/:id/messages", strictRateLimiter, async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const convId = Number(req.params.id);
   if (!Number.isInteger(convId)) { res.status(400).json({ error: "Invalid conversation id" }); return; }

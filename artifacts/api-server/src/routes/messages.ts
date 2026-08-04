@@ -5,6 +5,7 @@ import {
   ListMessagesResponse,
   SendMessageBody,
 } from "@workspace/api-zod";
+import { strictRateLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
 
@@ -56,7 +57,7 @@ router.get("/messages", async (req: Request, res: Response) => {
   res.json(ListMessagesResponse.parse(result));
 });
 
-router.post("/messages", async (req: Request, res: Response) => {
+router.post("/messages", strictRateLimiter, async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;

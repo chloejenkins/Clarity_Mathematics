@@ -3,6 +3,7 @@ import { db, usersTable } from "@workspace/db";
 import { parentStudentLinksTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { strictRateLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
 
@@ -101,7 +102,7 @@ router.delete("/parent-links/:id", async (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-router.post("/auth/set-role", async (req: Request, res: Response) => {
+router.post("/auth/set-role", strictRateLimiter, async (req: Request, res: Response) => {
   const { getAuth, clerkClient } = await import("@clerk/express");
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }

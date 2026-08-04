@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { strictRateLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
 
@@ -63,7 +64,7 @@ router.get("/auth/user", async (req: Request, res: Response) => {
 
 // Pull the caller's current Clerk profile (name, username, avatar) into our
 // users row, so profile-picture / name changes propagate to other users.
-router.post("/auth/sync-profile", async (req: Request, res: Response) => {
+router.post("/auth/sync-profile", strictRateLimiter, async (req: Request, res: Response) => {
   const { userId } = getAuth(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
   try {
