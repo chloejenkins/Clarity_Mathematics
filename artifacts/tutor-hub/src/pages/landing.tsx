@@ -239,7 +239,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800">Venmo</p>
-                    <p className="text-xs text-slate-400">Handle coming soon</p>
+                    <p className="text-xs text-slate-400">@Chloe-Jenkins-46</p>
                   </div>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
