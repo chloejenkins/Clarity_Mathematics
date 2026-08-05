@@ -17,6 +17,8 @@ import PaymentsPage from "@/pages/payments";
 import ParentReportsPage from "@/pages/parent-reports";
 import ParentFeedbackViewPage from "@/pages/parent-feedback-view";
 import OnboardingPage from "@/pages/onboarding";
+import PrivacyPage from "@/pages/privacy";
+import TermsPage from "@/pages/terms";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +103,8 @@ function Router() {
       <Route path="/parent-reports"><ProtectedRoute component={ParentReportsPage} /></Route>
       <Route path="/parent-feedback"><ProtectedRoute component={ParentFeedbackViewPage} /></Route>
       <Route path="/onboarding"><OnboardingPage /></Route>
+      <Route path="/privacy"><PrivacyPage /></Route>
+      <Route path="/terms"><TermsPage /></Route>
       <Route component={NotFound} />
     </Switch>
   );

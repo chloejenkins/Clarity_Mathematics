@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
@@ -85,14 +86,15 @@ export default function LandingPage() {
               </div>
 
               <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-[1.1] mb-5">
-                Reach Your{" "}
+                Private one-on-one{" "}
                 <span className="text-blue-900">
-                  Math Goals
+                  math tutoring
                 </span>
               </h1>
 
               <p className="text-lg text-slate-500 leading-relaxed mb-9 max-w-md">
-                Book sessions, message your tutor, and pay directly — all in one private space.
+                Book lessons, message your tutor, share assignments, and track progress — all in one
+                private space built for you and your family.
               </p>
 
               <Button
@@ -286,7 +288,15 @@ export default function LandingPage() {
         <div className="flex items-center gap-2 text-sm text-slate-400">
           Clarity Mathematics
         </div>
-        <p className="text-xs text-slate-400">Private · Secure · Focused</p>
+        <div className="flex items-center gap-4">
+          <Link href="/privacy" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
+            Terms &amp; Conditions
+          </Link>
+          <p className="text-xs text-slate-400">Private · Secure · Focused</p>
+        </div>
       </footer>
     </div>
   );
