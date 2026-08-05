@@ -59,10 +59,11 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Nav */}
       <header className="px-6 md:px-10 py-4 flex items-center justify-between bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200">
-        <div className="flex flex-col leading-none select-none">
-          <span className="font-display text-3xl font-bold tracking-tight text-[#c9a227]">CM</span>
-          <span className="text-[10px] font-semibold tracking-widest uppercase text-slate-400 mt-0.5">Clarity Mathematics</span>
-        </div>
+        <img
+          src="/logo-header.png"
+          alt="Clarity Mathematics"
+          className="h-9 w-auto select-none"
+        />
         <Button
           onClick={login}
           className="bg-blue-900 hover:bg-blue-800 text-white text-sm h-9 px-5 rounded-lg"
