@@ -19,7 +19,7 @@ const features = [
   {
     icon: CalendarDays,
     title: "Smart Scheduling",
-    desc: "Pick from available time slots and book instantly — no back-and-forth needed.",
+    desc: "Pick from available time slots and book instantly. No back-and-forth needed.",
     bg: "bg-blue-50",
     text: "text-blue-700",
   },
@@ -93,7 +93,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-lg text-slate-500 leading-relaxed mb-9 max-w-md">
-                Book lessons, message your tutor, share assignments, and track progress — all in one
+                Book lessons, message your tutor, share assignments, and track progress. All in one
                 private space built for you and your family.
               </p>
 
@@ -161,7 +161,7 @@ export default function LandingPage() {
                 Everything in one place
               </h2>
               <p className="text-slate-500 max-w-lg mx-auto text-base">
-                Designed to keep students accountable and parents informed — without the noise of general-purpose apps.
+                Designed to keep students accountable and parents informed, without the noise of general-purpose apps.
               </p>
             </div>
             <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-5">
@@ -192,7 +192,7 @@ export default function LandingPage() {
                 Book a Session
               </h2>
               <p className="text-slate-500 max-w-md mx-auto">
-                Pick a time that works for you — sessions are confirmed instantly.
+                Pick a time that works for you. Sessions are confirmed instantly.
               </p>
             </div>
 
@@ -272,7 +272,7 @@ export default function LandingPage() {
             <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
               Ready to get started?
             </h2>
-            <p className="text-blue-300 mb-8 max-w-sm mx-auto">Sign in with your account — it takes under a minute.</p>
+            <p className="text-blue-300 mb-8 max-w-sm mx-auto">Sign in with your account. It takes under a minute.</p>
             <Button
               onClick={login}
               size="lg"
