@@ -4,6 +4,7 @@ import { parentStudentLinksTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { strictRateLimiter } from "../middlewares/rateLimit";
+import { anyAllowedTutorEmail } from "../lib/tutorAllowlist";
 
 const router: IRouter = Router();
 
@@ -113,16 +114,17 @@ router.post("/auth/set-role", strictRateLimiter, async (req: Request, res: Respo
     return;
   }
 
-  // Tutors must have a @claritymathematics.com email
+  // The tutor role is restricted to an explicit allowlist of email addresses
+  // (TUTOR_EMAILS). This prevents any signed-up student/parent from promoting
+  // themselves to tutor.
   if (role === "tutor") {
-    const { clerkClient: cc } = await import("@clerk/express");
-    const clerkUser = await cc.users.getUser(userId);
-    const hasValidEmail = clerkUser.emailAddresses.some(e =>
-      e.emailAddress.toLowerCase().endsWith("@claritymathematics.com")
+    const clerkUserForCheck = await clerkClient.users.getUser(userId);
+    const allowed = anyAllowedTutorEmail(
+      clerkUserForCheck.emailAddresses.map((e) => e.emailAddress),
     );
-    if (!hasValidEmail) {
+    if (!allowed) {
       res.status(403).json({
-        error: "Tutor accounts require a @claritymathematics.com email address.",
+        error: "This email address is not authorized to create a tutor account.",
         code: "INVALID_TUTOR_EMAIL",
       });
       return;

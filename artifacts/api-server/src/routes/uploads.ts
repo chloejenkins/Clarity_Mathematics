@@ -152,10 +152,11 @@ router.get("/uploads/:id/download", requireAuth, async (req: Request, res: Respo
   const [att] = await db.select().from(attachmentsTable).where(eq(attachmentsTable.id, id)).limit(1);
   if (!att) { res.status(404).json({ error: "Not found" }); return; }
 
+  // Only the uploader or the tutor the file is routed to may access it —
+  // NOT any tutor (that would expose every family's files across tutors).
   const canAccess =
     att.uploadedBy === req.user.id ||
-    att.tutorId === req.user.id ||
-    req.user.role === "tutor";
+    att.tutorId === req.user.id;
   if (!canAccess) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const filePath = path.join(UPLOADS_DIR, att.storageKey);
@@ -176,7 +177,7 @@ router.delete("/uploads/:id", requireAuth, async (req: Request, res: Response) =
 
   const [att] = await db.select().from(attachmentsTable).where(eq(attachmentsTable.id, id)).limit(1);
   if (!att) { res.status(404).json({ error: "Not found" }); return; }
-  if (att.uploadedBy !== req.user.id && req.user.role !== "tutor") {
+  if (att.uploadedBy !== req.user.id && att.tutorId !== req.user.id) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
