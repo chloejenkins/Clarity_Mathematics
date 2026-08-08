@@ -244,7 +244,7 @@ router.post("/submissions/:id/review", async (req: Request, res: Response) => {
   const [sub] = await db.select().from(submissionsTable).where(eq(submissionsTable.id, id)).limit(1);
   if (!sub) { res.status(404).json({ error: "Submission not found" }); return; }
   const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, sub.assignmentId)).limit(1);
-  if (assignment?.tutorId && assignment.tutorId !== req.user.id) {
+  if (!assignment || assignment.tutorId !== req.user.id) {
     res.status(403).json({ error: "You can only review your own assignments" });
     return;
   }

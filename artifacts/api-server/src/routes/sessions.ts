@@ -137,7 +137,7 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tutoringSessionsTable).where(eq(tutoringSessionsTable.id, id));
   if (!existing) { res.status(404).json({ error: "Session not found" }); return; }
 
-  const isTutor = req.user.role === "tutor" && (!existing.tutorId || existing.tutorId === req.user.id);
+  const isTutor = req.user.role === "tutor" && existing.tutorId === req.user.id;
   const isStudent = existing.studentId === req.user.id;
   if (!isTutor && !isStudent) { res.status(403).json({ error: "Forbidden" }); return; }
 
@@ -176,7 +176,7 @@ router.delete("/sessions/:id", async (req: Request, res: Response) => {
   const [existing] = await db.select().from(tutoringSessionsTable).where(eq(tutoringSessionsTable.id, id));
   if (!existing) { res.status(404).json({ error: "Session not found" }); return; }
 
-  const isTutor = req.user.role === "tutor" && (!existing.tutorId || existing.tutorId === req.user.id);
+  const isTutor = req.user.role === "tutor" && existing.tutorId === req.user.id;
   const isStudent = existing.studentId === req.user.id;
   if (!isTutor && !isStudent) { res.status(403).json({ error: "Forbidden" }); return; }
 

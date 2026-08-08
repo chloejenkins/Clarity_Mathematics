@@ -14,6 +14,14 @@ const app: Express = express();
 // IP (not the proxy), which the rate limiter keys on.
 app.set("trust proxy", 1);
 
+// Allowed browser origins. Configure via CORS_ORIGINS (comma-separated);
+// defaults to the local dev frontend. Non-browser requests (no Origin header,
+// e.g. health checks / server-to-server) are always allowed.
+const allowedOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(
   pinoHttp({
     logger,
@@ -33,7 +41,17 @@ app.use(
     },
   }),
 );
-app.use(cors({ credentials: true, origin: true }));
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, cb) => {
+      // Allow requests with no Origin (curl, health checks, same-origin) and
+      // any origin on the allowlist; otherwise omit CORS headers so the
+      // browser blocks the cross-origin response.
+      cb(null, !origin || allowedOrigins.includes(origin));
+    },
+  }),
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
