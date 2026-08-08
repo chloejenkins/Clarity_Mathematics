@@ -67,48 +67,49 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 210 20% 98%;
-  --foreground: 215 28% 17%;
+  /* Warm editorial palette: ivory paper, navy ink, gold accent */
+  --background: 40 43% 94%;
+  --foreground: 221 39% 18%;
 
-  --border: 214 24% 90%;
-  --input: 214 24% 90%;
-  --ring: 224 71% 40%;
+  --border: 38 24% 85%;
+  --input: 38 24% 85%;
+  --ring: 46 60% 45%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 215 28% 17%;
-  --card-border: 214 24% 90%;
+  --card: 42 44% 97%;
+  --card-foreground: 221 39% 18%;
+  --card-border: 38 24% 88%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 215 28% 17%;
-  --popover-border: 214 24% 90%;
+  --popover: 42 44% 98%;
+  --popover-foreground: 221 39% 18%;
+  --popover-border: 38 24% 88%;
 
-  /* Primary: Deep Navy (brand) */
-  --primary: 224 64% 33%;
-  --primary-foreground: 0 0% 100%;
+  /* Primary: Navy ink (matches the landing button) */
+  --primary: 221 39% 20%;
+  --primary-foreground: 42 44% 97%;
 
-  /* Secondary: Soft slate-blue */
-  --secondary: 218 40% 94%;
-  --secondary-foreground: 215 28% 30%;
+  /* Secondary: warm paper tint */
+  --secondary: 40 30% 90%;
+  --secondary-foreground: 221 30% 26%;
 
   /* Muted */
-  --muted: 214 30% 95%;
-  --muted-foreground: 215 16% 50%;
+  --muted: 40 28% 91%;
+  --muted-foreground: 35 12% 44%;
 
-  /* Accent: subtle navy tint (hover/highlight surfaces) */
-  --accent: 216 45% 91%;
-  --accent-foreground: 224 55% 25%;
+  /* Accent: warm hover/highlight surfaces */
+  --accent: 42 42% 88%;
+  --accent-foreground: 221 39% 22%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
+  --destructive: 0 68% 46%;
+  --destructive-foreground: 42 44% 97%;
 
-  --sidebar: 223 47% 13%;
-  --sidebar-foreground: 213 30% 90%;
-  --sidebar-border: 222 38% 20%;
-  --sidebar-primary: 46 68% 47%;
-  --sidebar-primary-foreground: 224 60% 15%;
-  --sidebar-accent: 222 38% 20%;
-  --sidebar-accent-foreground: 213 30% 92%;
-  --sidebar-ring: 46 68% 50%;
+  --sidebar: 221 40% 15%;
+  --sidebar-foreground: 40 25% 88%;
+  --sidebar-border: 221 28% 23%;
+  --sidebar-primary: 46 68% 50%;
+  --sidebar-primary-foreground: 221 45% 14%;
+  --sidebar-accent: 221 28% 22%;
+  --sidebar-accent-foreground: 40 25% 90%;
+  --sidebar-ring: 46 68% 52%;
 
   --radius: 0.625rem;
 
@@ -128,44 +129,44 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 215 28% 10%;
-  --foreground: 210 20% 95%;
+  --background: 221 32% 9%;
+  --foreground: 40 24% 92%;
 
-  --border: 217 28% 18%;
-  --input: 217 28% 18%;
-  --ring: 224 70% 60%;
+  --border: 221 24% 18%;
+  --input: 221 24% 18%;
+  --ring: 46 64% 52%;
 
-  --card: 215 28% 13%;
-  --card-foreground: 210 20% 95%;
-  --card-border: 217 28% 20%;
+  --card: 221 30% 12%;
+  --card-foreground: 40 24% 92%;
+  --card-border: 221 24% 20%;
 
-  --popover: 215 28% 13%;
-  --popover-foreground: 210 20% 95%;
-  --popover-border: 217 28% 20%;
+  --popover: 221 30% 12%;
+  --popover-foreground: 40 24% 92%;
+  --popover-border: 221 24% 20%;
 
-  --primary: 216 72% 60%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 46 66% 52%;
+  --primary-foreground: 221 45% 12%;
 
-  --secondary: 217 28% 20%;
-  --secondary-foreground: 210 20% 85%;
+  --secondary: 221 24% 20%;
+  --secondary-foreground: 40 20% 85%;
 
-  --muted: 217 28% 18%;
-  --muted-foreground: 215 20% 60%;
+  --muted: 221 24% 17%;
+  --muted-foreground: 40 12% 62%;
 
-  --accent: 217 30% 24%;
-  --accent-foreground: 213 30% 92%;
+  --accent: 221 26% 22%;
+  --accent-foreground: 40 24% 90%;
 
-  --destructive: 0 62.8% 50%;
-  --destructive-foreground: 0 0% 100%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 40 24% 95%;
 
-  --sidebar: 223 45% 8%;
-  --sidebar-foreground: 213 30% 90%;
-  --sidebar-border: 222 35% 15%;
-  --sidebar-primary: 46 74% 52%;
-  --sidebar-primary-foreground: 224 60% 12%;
-  --sidebar-accent: 222 32% 16%;
-  --sidebar-accent-foreground: 213 30% 90%;
-  --sidebar-ring: 46 74% 55%;
+  --sidebar: 221 38% 7%;
+  --sidebar-foreground: 40 22% 88%;
+  --sidebar-border: 221 26% 14%;
+  --sidebar-primary: 46 74% 54%;
+  --sidebar-primary-foreground: 221 50% 10%;
+  --sidebar-accent: 221 24% 15%;
+  --sidebar-accent-foreground: 40 22% 90%;
+  --sidebar-ring: 46 74% 56%;
 }
 
 @layer base {
@@ -180,6 +181,12 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);
     @apply tracking-tight font-semibold;
+  }
+
+  /* Editorial: page & section titles use the display serif */
+  h1, h2 {
+    font-family: var(--font-display);
+    @apply font-semibold;
   }
 }
 
