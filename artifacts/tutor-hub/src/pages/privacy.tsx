@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <Link href="/" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to home
           </Link>
-          <span className="font-display text-xl font-bold text-[#c9a227] select-none">CM</span>
+          <img src="/logo-header.png" alt="Clarity Mathematics" className="h-7 w-auto select-none" />
         </div>
       </header>
 

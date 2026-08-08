@@ -106,15 +106,18 @@ export default function LandingPage() {
                 className="rounded-2xl p-8 md:p-9"
                 style={{ backgroundColor: INK, boxShadow: `0 30px 60px -25px ${INK}66` }}
               >
-                <div className="flex items-baseline justify-between">
-                  <span className="font-display text-4xl font-semibold" style={{ color: GOLD }}>
-                    CM
-                  </span>
+                <div className="flex items-center justify-between">
+                  <img
+                    src="/logo-header.png"
+                    alt="Clarity Mathematics"
+                    className="h-7 w-auto"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                  />
                   <span
                     className="text-[10px] uppercase"
                     style={{ color: "#ffffff66", letterSpacing: "0.18em" }}
                   >
-                    Est. Portal
+                    Portal
                   </span>
                 </div>
 

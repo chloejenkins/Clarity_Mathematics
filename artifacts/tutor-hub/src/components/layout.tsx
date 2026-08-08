@@ -91,7 +91,12 @@ export function AppLayout({ children }: LayoutProps) {
           <SidebarContent>
             {/* Logo */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-sidebar-border">
-              <span className="font-display text-2xl font-bold tracking-tight text-[#c9a227] select-none">CM</span>
+              <img
+                src="/logo-header.png"
+                alt="Clarity Mathematics"
+                className="h-7 w-auto select-none"
+                style={{ filter: "brightness(0) invert(1)" }}
+              />
               <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider shrink-0">
                 {isTutor ? "Tutor" : isParent ? "Parent" : "Student"}
               </p>
@@ -171,8 +176,7 @@ export function AppLayout({ children }: LayoutProps) {
           <header className="h-14 flex items-center gap-3 px-4 bg-background border-b border-border sticky top-0 z-10 shrink-0">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors" />
             <nav className="flex items-center gap-2 min-w-0 text-sm" aria-label="Breadcrumb">
-              <span className="font-display font-bold text-[#c9a227] shrink-0">CM</span>
-              <span className="hidden sm:inline text-muted-foreground shrink-0">Clarity Mathematics</span>
+              <img src="/logo-header.png" alt="Clarity Mathematics" className="h-6 w-auto shrink-0" />
               {currentPage && (
                 <>
                   <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
