@@ -1,302 +1,286 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
-import {
-  ArrowRight,
-  MessageSquare,
-  CalendarDays,
-  ShieldCheck,
-  CheckCircle,
-  Sparkles,
-  CreditCard,
-  Gift,
-  Clock,
-  RefreshCcw,
-} from "lucide-react";
 import { motion } from "framer-motion";
 
-const features = [
-  {
-    icon: CalendarDays,
-    title: "Smart Scheduling",
-    desc: "Pick from available time slots and book instantly. No back-and-forth needed.",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-  },
-  {
-    icon: MessageSquare,
-    title: "Private Messaging",
-    desc: "A secure, direct chat between student and tutor. No third-party apps needed.",
-    bg: "bg-slate-100",
-    text: "text-slate-700",
-  },
-  {
-    icon: CreditCard,
-    title: "Direct Payments",
-    desc: "Pay simply via Venmo or Zelle. No third-party billing platforms or hidden fees.",
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Safe & Private",
-    desc: "Only enrolled students and the tutor have access. Fully private and logged.",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-  },
-];
+const INK = "#1b2740"; // deep navy ink
+const GOLD = "#b8901f"; // brand gold, slightly deepened for text contrast
+const CREAM = "#f7f3ea"; // warm paper
 
-const trustPoints = [
-  "No social features or public profiles",
-  "Parent-approved student access only",
-  "All sessions tracked and recorded",
+const steps = [
+  {
+    n: "01",
+    title: "Choose a time",
+    body: "Pick a slot from the live calendar. Confirmation is instant, and your first lesson is free, with no card and no commitment.",
+  },
+  {
+    n: "02",
+    title: "Meet, one to one",
+    body: "Every lesson is private and undivided. Share the work you're stuck on, and message between sessions whenever a question comes up.",
+  },
+  {
+    n: "03",
+    title: "See it add up",
+    body: "Lesson notes, assignments, and progress live in one place, so a parent can always see exactly where things stand.",
+  },
 ];
 
 export default function LandingPage() {
   const { login } = useAuth();
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: CREAM, color: INK }}>
       {/* Nav */}
-      <header className="px-6 md:px-10 py-4 flex items-center justify-between bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200">
-        <img
-          src="/logo-header.png"
-          alt="Clarity Mathematics"
-          className="h-9 w-auto select-none"
-        />
-        <Button
+      <header
+        className="px-6 md:px-12 py-5 flex items-center justify-between"
+        style={{ borderBottom: `1px solid ${INK}14` }}
+      >
+        <img src="/logo-header.png" alt="Clarity Mathematics" className="h-9 w-auto select-none" />
+        <button
           onClick={login}
-          className="bg-blue-900 hover:bg-blue-800 text-white text-sm h-9 px-5 rounded-lg"
+          className="text-sm font-medium tracking-wide hover:opacity-60 transition-opacity"
+          style={{ color: INK }}
         >
-          Sign In
-        </Button>
+          Sign in
+        </button>
       </header>
+
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden" style={{ background: "radial-gradient(ellipse at center, #ffffff 0%, #ffffff 85%, #f5f8ff 100%)" }}>
-
-          <div className="relative max-w-6xl mx-auto px-6 md:px-10 py-16 md:py-24 grid md:grid-cols-2 gap-14 items-center">
+        <section className="max-w-6xl mx-auto px-6 md:px-12 pt-16 md:pt-24 pb-20 md:pb-28">
+          <div className="grid md:grid-cols-12 gap-x-12 gap-y-16 items-center">
             <motion.div
-              initial={{ opacity: 0, y: 28 }}
+              className="md:col-span-7"
+              initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.65, ease: "easeOut" }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 mb-7">
-                <Sparkles className="h-3.5 w-3.5" />
+              <p
+                className="text-[11px] font-semibold uppercase mb-6"
+                style={{ color: GOLD, letterSpacing: "0.22em" }}
+              >
                 Private Mathematics Tutoring
-              </div>
-
-              <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-[1.1] mb-5">
-                Private one-on-one{" "}
-                <span className="text-blue-900">
-                  math tutoring
-                </span>
-              </h1>
-
-              <p className="text-lg text-slate-500 leading-relaxed mb-9 max-w-md">
-                Book lessons, message your tutor, share assignments, and track progress. All in one
-                private space built for you and your family.
               </p>
 
-              <Button
-                onClick={login}
-                size="lg"
-                className="bg-blue-900 hover:bg-blue-800 text-white h-13 px-8 text-base font-semibold rounded-xl shadow-lg shadow-blue-900/20 hover:-translate-y-0.5 transition-all duration-200"
+              <h1
+                className="font-display font-semibold leading-[1.04] tracking-[-0.01em] text-[2.6rem] sm:text-6xl md:text-[4.1rem]"
+                style={{ color: INK }}
               >
-                Access the Portal <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+                Math, made
+                <br />
+                <span style={{ fontStyle: "italic", color: GOLD }}>clear.</span>
+              </h1>
 
-              <ul className="mt-9 space-y-3">
-                {trustPoints.map((point) => (
-                  <li key={point} className="flex items-center gap-2.5 text-sm text-slate-500">
-                    <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
-                    {point}
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-7 text-lg leading-relaxed max-w-md" style={{ color: `${INK}b3` }}>
+                A private one-to-one tutoring practice. Book lessons, work through what's hard, and
+                watch steady progress take shape, in one calm space made for you and your family.
+              </p>
+
+              <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
+                <Button
+                  onClick={login}
+                  className="h-12 px-7 text-[15px] font-semibold rounded-full text-white hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: INK }}
+                >
+                  Enter the portal
+                </Button>
+                <span className="text-sm" style={{ color: `${INK}99` }}>
+                  Your first lesson is free.
+                </span>
+              </div>
+
+              <p className="mt-12 text-sm flex items-center gap-2.5" style={{ color: `${INK}80` }}>
+                <span className="inline-block w-8 h-px" style={{ backgroundColor: `${INK}40` }} />
+                Taught personally by Chloe Jenkins
+              </p>
             </motion.div>
 
-            {/* Portal card */}
+            {/* Portal calling-card */}
             <motion.div
-              initial={{ opacity: 0, y: 36 }}
+              className="md:col-span-5"
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.18 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
             >
-              <div className="bg-blue-900 rounded-3xl p-8 text-white shadow-2xl shadow-blue-900/30 flex flex-col gap-7">
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col leading-none select-none">
-                    <span className="font-display text-4xl font-bold tracking-tight text-[#c9a227]">CM</span>
-                    <span className="text-[9px] font-semibold tracking-widest uppercase text-blue-300 mt-1">Clarity Mathematics</span>
-                  </div>
-                  <p className="text-blue-300 text-xs">Student &amp; Parent Portal</p>
+              <div
+                className="rounded-2xl p-8 md:p-9"
+                style={{ backgroundColor: INK, boxShadow: `0 30px 60px -25px ${INK}66` }}
+              >
+                <div className="flex items-baseline justify-between">
+                  <span className="font-display text-4xl font-semibold" style={{ color: GOLD }}>
+                    CM
+                  </span>
+                  <span
+                    className="text-[10px] uppercase"
+                    style={{ color: "#ffffff66", letterSpacing: "0.18em" }}
+                  >
+                    Est. Portal
+                  </span>
                 </div>
 
-                <div className="space-y-3">
-                  {[
-                    { icon: CalendarDays, text: "View &amp; book upcoming sessions" },
-                    { icon: MessageSquare, text: "Message your tutor directly" },
-                  ].map(({ icon: Icon, text }, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
-                      <Icon className="h-4 w-4 text-amber-400 shrink-0" />
-                      <span className="text-sm text-blue-100" dangerouslySetInnerHTML={{ __html: text }} />
-                    </div>
-                  ))}
+                <div className="mt-8 space-y-5">
+                  <p className="text-white/90 text-[15px] leading-relaxed">
+                    The student &amp; parent portal: your schedule, lessons, and messages, all in
+                    one place.
+                  </p>
+                  <div className="h-px w-full" style={{ backgroundColor: "#ffffff1f" }} />
+                  <ul className="space-y-3 text-sm" style={{ color: "#ffffffcc" }}>
+                    {["Book and manage lessons", "Message your tutor directly", "Follow progress and notes"].map(
+                      (t) => (
+                        <li key={t} className="flex items-center gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
+                          {t}
+                        </li>
+                      ),
+                    )}
+                  </ul>
                 </div>
 
                 <Button
                   onClick={login}
-                  className="w-full bg-[#c9a227] text-blue-900 hover:bg-amber-300 font-bold rounded-xl h-11 text-sm shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                  className="mt-8 w-full h-11 rounded-full text-[15px] font-semibold hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: GOLD, color: INK }}
                 >
-                  Sign in to your portal <ArrowRight className="ml-2 h-4 w-4" />
+                  Sign in
                 </Button>
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Feature section */}
-        <section className="py-20 bg-slate-50 border-t border-slate-200">
-          <div className="max-w-6xl mx-auto px-6 md:px-10">
-            <div className="text-center mb-14">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3">
-                Everything in one place
-              </h2>
-              <p className="text-slate-500 max-w-lg mx-auto text-base">
-                Designed to keep students accountable and parents informed, without the noise of general-purpose apps.
-              </p>
-            </div>
-            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-5">
-              {features.map((f, i) => (
-                <motion.div
-                  key={i}
-                  className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08 * i, duration: 0.5 }}
-                >
-                  <div className={`w-11 h-11 rounded-xl ${f.bg} flex items-center justify-center mb-4`}>
-                    <f.icon className={`h-5 w-5 ${f.text}`} />
-                  </div>
-                  <h3 className="font-bold text-slate-800 mb-2">{f.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
-                </motion.div>
+        {/* How it works: editorial, numbered */}
+        <section style={{ borderTop: `1px solid ${INK}14` }}>
+          <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24">
+            <h2
+              className="font-display text-2xl md:text-3xl font-semibold mb-14 max-w-md leading-snug"
+              style={{ color: INK }}
+            >
+              A calm, unhurried way to get better at math.
+            </h2>
+            <div className="grid md:grid-cols-3 gap-x-12 gap-y-12">
+              {steps.map((s) => (
+                <div key={s.n}>
+                  <p className="font-display text-3xl font-semibold mb-4" style={{ color: GOLD }}>
+                    {s.n}
+                  </p>
+                  <h3 className="text-lg font-semibold mb-2.5" style={{ color: INK }}>
+                    {s.title}
+                  </h3>
+                  <p className="text-[15px] leading-relaxed" style={{ color: `${INK}a6` }}>
+                    {s.body}
+                  </p>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Booking + Payment section */}
-        <section className="py-20 bg-white border-t border-slate-200">
-          <div className="max-w-4xl mx-auto px-6 md:px-10">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3">
-                Book a Session
-              </h2>
-              <p className="text-slate-500 max-w-md mx-auto">
-                Pick a time that works for you. Sessions are confirmed instantly.
+        {/* Pricing & payment */}
+        <section style={{ borderTop: `1px solid ${INK}14` }}>
+          <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 grid md:grid-cols-2 gap-x-16 gap-y-12">
+            <div>
+              <p
+                className="text-[11px] font-semibold uppercase mb-6"
+                style={{ color: GOLD, letterSpacing: "0.2em" }}
+              >
+                Simple, fair pricing
               </p>
+              <dl className="space-y-6">
+                {[
+                  ["First lesson", "Free. A chance to see if we're a good fit."],
+                  ["Cancel 24h ahead", "Full refund, no questions asked."],
+                  ["Cancel within 24h", "Half the lesson is refunded."],
+                ].map(([term, desc]) => (
+                  <div key={term} className="flex gap-5">
+                    <dt className="w-36 shrink-0 font-semibold text-[15px]" style={{ color: INK }}>
+                      {term}
+                    </dt>
+                    <dd className="text-[15px] leading-relaxed" style={{ color: `${INK}a6` }}>
+                      {desc}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
 
-            {/* Policy + Payment row */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-10">
-              {/* Policy */}
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Pricing &amp; Policy</p>
-              <div className="grid sm:grid-cols-3 gap-3 mb-6">
-                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
-                  <div className="bg-emerald-100 p-1.5 rounded-lg shrink-0 mt-0.5">
-                    <Gift className="h-3.5 w-3.5 text-emerald-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800 leading-snug">First session free</p>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">No payment needed to get started.</p>
-                  </div>
-                </div>
-                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
-                  <div className="bg-amber-100 p-1.5 rounded-lg shrink-0 mt-0.5">
-                    <Clock className="h-3.5 w-3.5 text-amber-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800 leading-snug">50% refund</p>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">If cancelled within 24 hours of session.</p>
-                  </div>
-                </div>
-                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
-                  <div className="bg-blue-100 p-1.5 rounded-lg shrink-0 mt-0.5">
-                    <RefreshCcw className="h-3.5 w-3.5 text-blue-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800 leading-snug">100% refund</p>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">If cancelled more than 24 hours in advance.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment methods */}
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Payment Methods</p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-[#008CFF]/10 flex items-center justify-center shrink-0">
+            <div>
+              <p
+                className="text-[11px] font-semibold uppercase mb-6"
+                style={{ color: GOLD, letterSpacing: "0.2em" }}
+              >
+                Paying is easy
+              </p>
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <span
+                    className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: "#008CFF14" }}
+                  >
                     <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#008CFF]" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M19.014 2.002c.394 1.18.569 2.398.569 3.95C19.583 11.2 14.72 18.3 10.8 22H3.985L1 3.23l6.02-.567 1.567 12.634c1.46-2.48 3.26-6.386 3.26-9.048 0-1.458-.25-2.449-.622-3.277l7.79-.97z"/>
+                      <path d="M19.014 2.002c.394 1.18.569 2.398.569 3.95C19.583 11.2 14.72 18.3 10.8 22H3.985L1 3.23l6.02-.567 1.567 12.634c1.46-2.48 3.26-6.386 3.26-9.048 0-1.458-.25-2.449-.622-3.277l7.79-.97z" />
                     </svg>
-                  </div>
+                  </span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Venmo</p>
-                    <p className="text-xs text-slate-400">@Chloe-Jenkins-46</p>
+                    <p className="font-semibold text-[15px]" style={{ color: INK }}>Venmo</p>
+                    <p className="text-sm" style={{ color: `${INK}99` }}>@Chloe-Jenkins-46</p>
                   </div>
                 </div>
-                <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-[#6D1ED4]/10 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-4">
+                  <span
+                    className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: "#6D1ED414" }}
+                  >
                     <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#6D1ED4]" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.25 16.5H9.362l5.513-8.25H8.75v-1.5h8.138L11.375 15H17.25v1.5z"/>
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.25 16.5H9.362l5.513-8.25H8.75v-1.5h8.138L11.375 15H17.25v1.5z" />
                     </svg>
-                  </div>
+                  </span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Zelle</p>
-                    <p className="text-xs text-slate-400">chloejenkins@claritymathematics.com</p>
-                    <p className="text-xs text-slate-400">(862) 357-1374</p>
+                    <p className="font-semibold text-[15px]" style={{ color: INK }}>Zelle</p>
+                    <p className="text-sm" style={{ color: `${INK}99` }}>chloejenkins@claritymathematics.com</p>
+                    <p className="text-sm" style={{ color: `${INK}99` }}>(862) 357-1374</p>
                   </div>
                 </div>
               </div>
             </div>
-
           </div>
         </section>
 
-        {/* CTA strip */}
-        <section className="bg-blue-900 py-16 px-6 md:px-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
-              Ready to get started?
+        {/* Closing */}
+        <section style={{ backgroundColor: INK }}>
+          <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 text-center">
+            <h2 className="font-display text-3xl md:text-4xl font-semibold text-white leading-tight">
+              Let's make math make sense.
             </h2>
-            <p className="text-blue-300 mb-8 max-w-sm mx-auto">Sign in with your account. It takes under a minute.</p>
+            <p className="mt-4 text-white/60 max-w-sm mx-auto">
+              The first lesson is on me. Sign in whenever you're ready.
+            </p>
             <Button
               onClick={login}
-              size="lg"
-              className="bg-amber-400 text-blue-900 hover:bg-amber-300 font-bold px-10 h-13 rounded-xl shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+              className="mt-9 h-12 px-8 rounded-full text-[15px] font-semibold hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: GOLD, color: INK }}
             >
-              Access the Portal <ArrowRight className="ml-2 h-5 w-5" />
+              Enter the portal
             </Button>
-          </motion.div>
+          </div>
         </section>
       </main>
+
       {/* Footer */}
-      <footer className="border-t border-slate-200 py-5 px-6 md:px-10 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-slate-400">
+      <footer
+        className="px-6 md:px-12 py-6 flex flex-col sm:flex-row items-center justify-between gap-3"
+        style={{ borderTop: `1px solid ${INK}14` }}
+      >
+        <p className="text-sm" style={{ color: `${INK}80` }}>
           Clarity Mathematics
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/privacy" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
-            Privacy Policy
+        </p>
+        <div className="flex items-center gap-5 text-xs" style={{ color: `${INK}80` }}>
+          <Link href="/privacy" className="hover:opacity-60 transition-opacity">
+            Privacy
           </Link>
-          <Link href="/terms" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">
-            Terms &amp; Conditions
+          <Link href="/terms" className="hover:opacity-60 transition-opacity">
+            Terms
           </Link>
-          <p className="text-xs text-slate-400">Private · Secure · Focused</p>
+          <span>Private · one to one</span>
         </div>
       </footer>
     </div>
