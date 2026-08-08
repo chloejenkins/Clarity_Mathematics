@@ -59,16 +59,16 @@ export default function LandingPage() {
                 className="text-[11px] font-semibold uppercase mb-6"
                 style={{ color: GOLD, letterSpacing: "0.22em" }}
               >
-                Private Mathematics Tutoring
+                For students and parents
               </p>
 
               <h1
-                className="font-display font-semibold leading-[1.04] tracking-[-0.01em] text-[2.6rem] sm:text-6xl md:text-[4.1rem]"
+                className="font-display font-semibold leading-[1.05] tracking-[-0.01em] text-[2.5rem] sm:text-5xl md:text-[3.7rem]"
                 style={{ color: INK }}
               >
-                Math, made
+                Private one-on-one
                 <br />
-                <span style={{ fontStyle: "italic", color: GOLD }}>clear.</span>
+                math tutoring.
               </h1>
 
               <p className="mt-7 text-lg leading-relaxed max-w-md" style={{ color: `${INK}b3` }}>
