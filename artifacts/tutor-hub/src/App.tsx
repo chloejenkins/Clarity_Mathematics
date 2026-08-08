@@ -48,7 +48,7 @@ function ProfileSync() {
   useEffect(() => {
     if (!isSignedIn) return;
     customFetch("/api/auth/sync-profile", { method: "POST" }).catch(() => {
-      /* not fatal — will retry on next profile change */
+      /* not fatal, will retry on next profile change */
     });
   }, [isSignedIn, imageUrl, firstName, lastName, username]);
 

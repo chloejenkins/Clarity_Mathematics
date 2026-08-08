@@ -84,7 +84,7 @@ export default function ProgressPage() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">To do</h2>
         {todo.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-5 text-sm text-muted-foreground flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-emerald-600" /> All caught up — nothing outstanding.
+            <CheckCircle className="h-4 w-4 text-emerald-600" /> All caught up, nothing outstanding.
           </div>
         ) : (
           <div className="space-y-2">
@@ -115,7 +115,7 @@ export default function ProgressPage() {
       <section className="space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Recent lesson notes</h2>
         {recentNotes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No lesson notes yet — they'll appear after completed sessions.</p>
+          <p className="text-sm text-muted-foreground">No lesson notes yet, they'll appear after completed sessions.</p>
         ) : (
           <div className="space-y-2">
             {recentNotes.map((s) => (

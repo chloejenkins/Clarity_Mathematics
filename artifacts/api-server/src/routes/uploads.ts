@@ -95,7 +95,7 @@ async function hydrate(rows: (typeof attachmentsTable.$inferSelect)[]) {
   }));
 }
 
-// POST /uploads — multipart: file (required), assignmentId? (attach to assignment), note?
+// POST /uploads, multipart: file (required), assignmentId? (attach to assignment), note?
 router.post("/uploads", requireAuth, uploadSingle, async (req: Request, res: Response) => {
   if (!req.file) {
     res.status(400).json({ error: "No valid file. Allowed: PDF, images, Office docs, text, zip." });
@@ -124,7 +124,7 @@ router.post("/uploads", requireAuth, uploadSingle, async (req: Request, res: Res
   res.status(201).json(hydrated);
 });
 
-// GET /uploads?assignmentId= — files the current user can see.
+// GET /uploads?assignmentId=, files the current user can see.
 router.get("/uploads", requireAuth, async (req: Request, res: Response) => {
   const assignmentId = req.query.assignmentId ? Number(req.query.assignmentId) : undefined;
   const conds = [];
@@ -144,7 +144,7 @@ router.get("/uploads", requireAuth, async (req: Request, res: Response) => {
   res.json(await hydrate(rows));
 });
 
-// GET /uploads/:id/download — stream the file (auth-checked).
+// GET /uploads/:id/download, stream the file (auth-checked).
 router.get("/uploads/:id/download", requireAuth, async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -152,7 +152,7 @@ router.get("/uploads/:id/download", requireAuth, async (req: Request, res: Respo
   const [att] = await db.select().from(attachmentsTable).where(eq(attachmentsTable.id, id)).limit(1);
   if (!att) { res.status(404).json({ error: "Not found" }); return; }
 
-  // Only the uploader or the tutor the file is routed to may access it —
+  // Only the uploader or the tutor the file is routed to may access it -
   // NOT any tutor (that would expose every family's files across tutors).
   const canAccess =
     att.uploadedBy === req.user.id ||
@@ -170,7 +170,7 @@ router.get("/uploads/:id/download", requireAuth, async (req: Request, res: Respo
   fs.createReadStream(filePath).pipe(res);
 });
 
-// DELETE /uploads/:id — uploader or a tutor may remove.
+// DELETE /uploads/:id, uploader or a tutor may remove.
 router.delete("/uploads/:id", requireAuth, async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) { res.status(400).json({ error: "Invalid id" }); return; }

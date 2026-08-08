@@ -32,7 +32,7 @@ async function linkedStudentIds(parentId: string): Promise<string[]> {
 
 /**
  * Ensure a payment row exists for each past, non-cancelled session in the set.
- * Idempotent — only creates charges that don't exist yet. The student's earliest
+ * Idempotent, only creates charges that don't exist yet. The student's earliest
  * session is free (matches the "first session free" policy).
  */
 async function ensurePayments(sessions: SessionRow[]) {
@@ -78,7 +78,7 @@ async function ensurePayments(sessions: SessionRow[]) {
       studentId: s.studentId,
       sessionId: s.id,
       amount,
-      description: isFirst ? "First session — free" : (s.topic || "Tutoring session"),
+      description: isFirst ? "First session, free" : (s.topic || "Tutoring session"),
       status: amount === 0 ? "received" : "due",
       receivedAt: amount === 0 ? new Date() : null,
     };
@@ -110,7 +110,7 @@ async function hydrate(rows: PaymentRow[]) {
   }));
 }
 
-// GET /payments — reconciles then returns the caller's charges.
+// GET /payments, reconciles then returns the caller's charges.
 router.get("/payments", requireAuth, async (req: Request, res: Response) => {
   if (req.user.role === "tutor") {
     const sessions = await db.select().from(tutoringSessionsTable);
@@ -122,7 +122,7 @@ router.get("/payments", requireAuth, async (req: Request, res: Response) => {
       .orderBy(desc(paymentsTable.createdAt));
     res.json(await hydrate(rows));
   } else if (req.user.role === "parent") {
-    // Parents see (and can pay) their linked children's charges — plus their
+    // Parents see (and can pay) their linked children's charges, plus their
     // own, for a parent acting as the family account for a young child.
     const ids = Array.from(new Set([req.user.id, ...(await linkedStudentIds(req.user.id))]));
     const sessions = await db

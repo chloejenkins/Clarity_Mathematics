@@ -62,13 +62,13 @@ export function PaymentBanner() {
     const parts: string[] = [];
     if (awaiting.length) parts.push(`${awaiting.length} to confirm ($${awaiting.reduce((s, p) => s + p.amount, 0)})`);
     if (refunds.length) parts.push(`${refunds.length} refund${refunds.length > 1 ? "s" : ""} to send ($${refunds.reduce((s, p) => s + p.refundDue, 0)})`);
-    return <Banner tone="amber" text={`Payments need attention — ${parts.join(" · ")}`} />;
+    return <Banner tone="amber" text={`Payments need attention, ${parts.join(" · ")}`} />;
   }
 
   const due = data.filter((p) => p.status === "due");
   if (due.length > 0) {
     const total = due.reduce((s, p) => s + p.amount, 0);
-    return <Banner tone="primary" text={`You have ${due.length} unpaid session${due.length > 1 ? "s" : ""} — $${total} due`} />;
+    return <Banner tone="primary" text={`You have ${due.length} unpaid session${due.length > 1 ? "s" : ""}, $${total} due`} />;
   }
 
   const owedRefunds = data.filter((p) => p.status === "refund_due");

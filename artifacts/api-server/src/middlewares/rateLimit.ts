@@ -22,6 +22,6 @@ export const strictRateLimiter = rateLimit({
   limit: 30, // 30 writes per user per minute
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "You're doing that too fast — please slow down." },
+  message: { error: "You're doing that too fast, please slow down." },
   keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip ?? ""),
 });

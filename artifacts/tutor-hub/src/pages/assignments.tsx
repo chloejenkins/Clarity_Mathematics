@@ -205,7 +205,7 @@ function SubmissionReviewRow({ sub, assignmentId }: { sub: TutorSubmission; assi
       {sub.content ? (
         <p className="text-sm text-foreground whitespace-pre-wrap">{sub.content}</p>
       ) : (
-        <p className="text-xs text-muted-foreground italic">No note — see attached files.</p>
+        <p className="text-xs text-muted-foreground italic">No note, see attached files.</p>
       )}
       <Textarea
         value={comment}

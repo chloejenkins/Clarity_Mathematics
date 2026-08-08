@@ -200,7 +200,7 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
                 <SelectItem value="12">Weekly · 12 weeks</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">Repeats the same time(s) each week — perfect for a standing weekly session.</p>
+            <p className="text-xs text-muted-foreground">Repeats the same time(s) each week, perfect for a standing weekly session.</p>
           </div>
 
           <Button type="submit" className="w-full rounded-xl" disabled={loading}>
@@ -435,12 +435,12 @@ export default function SchedulePage() {
           const { policy, feeOwed, refundOwed } = cancellation;
           let desc =
             policy === "tutor_cancel"
-              ? "Full refund — the student owes nothing."
+              ? "Full refund, the student owes nothing."
               : policy === "full_refund"
-                ? "Cancelled more than 24h ahead — no charge."
+                ? "Cancelled more than 24h ahead, no charge."
                 : feeOwed
-                  ? `Within 24h — a 50% fee ($${feeOwed}) applies.`
-                  : "Within 24h — 50% fee applies.";
+                  ? `Within 24h, a 50% fee ($${feeOwed}) applies.`
+                  : "Within 24h, 50% fee applies.";
           if (refundOwed) desc += ` Refund $${refundOwed} to the student.`;
           toast({ title: "Session cancelled", description: desc });
         } else {
@@ -469,7 +469,7 @@ export default function SchedulePage() {
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             {isTutor
-              ? "Post your available times — students book directly, no back and forth."
+              ? "Post your available times, students book directly, no back and forth."
               : "Pick from available times below. Bookings are instantly confirmed."}
           </p>
         </div>
@@ -629,7 +629,7 @@ export default function SchedulePage() {
               <div className="text-center py-16 border-2 border-dashed rounded-2xl text-muted-foreground">
                 <CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-20" />
                 <p className="font-medium">No times available right now.</p>
-                <p className="text-sm mt-1">Check back soon — your tutor will add new slots.</p>
+                <p className="text-sm mt-1">Check back soon, your tutor will add new slots.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

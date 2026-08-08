@@ -74,7 +74,7 @@ export function FileUploadButton({
         title: "Upload failed",
         description: msg.toLowerCase().includes("too large")
           ? "File too large (max 15 MB)."
-          : "Allowed: PDF, images, Office docs, text, zip — under 15 MB.",
+          : "Allowed: PDF, images, Office docs, text, zip, under 15 MB.",
         variant: "destructive",
       });
     } finally {

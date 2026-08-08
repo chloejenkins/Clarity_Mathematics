@@ -12,7 +12,7 @@ const CreateSlotBody = z.object({
   topic: z.string().optional(),
 });
 
-// GET /api/availability — list slots
+// GET /api/availability, list slots
 // Tutors see their own; students/parents see ALL tutors' unbooked slots with tutor info
 router.get("/availability", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
@@ -63,7 +63,7 @@ router.get("/availability", async (req: Request, res: Response) => {
   res.json(enriched);
 });
 
-// POST /api/availability — tutor creates slots
+// POST /api/availability, tutor creates slots
 router.post("/availability", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (req.user.role !== "tutor") { res.status(403).json({ error: "Only tutors can create slots" }); return; }
@@ -86,7 +86,7 @@ router.post("/availability", async (req: Request, res: Response) => {
   res.status(201).json(inserted);
 });
 
-// DELETE /api/availability/:id — tutor removes an unbooked slot
+// DELETE /api/availability/:id, tutor removes an unbooked slot
 router.delete("/availability/:id", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (req.user.role !== "tutor") { res.status(403).json({ error: "Only tutors can delete slots" }); return; }
@@ -101,7 +101,7 @@ router.delete("/availability/:id", async (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-// POST /api/availability/:id/book — student or parent books a slot
+// POST /api/availability/:id/book, student or parent books a slot
 router.post("/availability/:id/book", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (req.user.role !== "student" && req.user.role !== "parent") {

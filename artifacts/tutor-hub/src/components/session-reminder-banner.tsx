@@ -56,7 +56,7 @@ export function SessionReminderBanner() {
   let text: string;
   if (urgent) {
     const label = minsUntil <= 1 ? "now" : `in ${minsUntil} min`;
-    text = `${whose}session ${label} — ${next.topic || "Tutoring"} at ${time}`;
+    text = `${whose}session ${label}, ${next.topic || "Tutoring"} at ${time}`;
   } else {
     const rel = isTomorrow(date) ? "tomorrow" : isToday(date) ? "today" : format(date, "EEE");
     text = `Reminder: ${whose}session ${rel} at ${time}${next.topic ? ` (${next.topic})` : ""}`;

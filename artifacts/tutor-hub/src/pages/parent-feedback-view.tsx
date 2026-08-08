@@ -151,7 +151,7 @@ function LinkedStudentFeedback({
 
       {!link.linked ? (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-200">
-          This is a name only — it isn't connected to a real account yet, so no feedback, schedule, or
+          This is a name only, it isn't connected to a real account yet, so no feedback, schedule, or
           payments will show. Unlink it and re-add your child by their email.
         </div>
       ) : isLoading ? (

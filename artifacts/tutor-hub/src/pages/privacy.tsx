@@ -51,24 +51,24 @@ export default function PrivacyPage() {
             <p>We collect the following, most of which you provide directly:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong className="text-slate-700">Account information</strong> — your name, email
+                <strong className="text-slate-700">Account information</strong>: your name, email
                 address, username, and (if you add one) a profile photo. Sign-in and account security
                 are handled by our authentication provider, Clerk.
               </li>
               <li>
-                <strong className="text-slate-700">Role and relationships</strong> — whether you are a
+                <strong className="text-slate-700">Role and relationships</strong>: whether you are a
                 tutor, student, or parent, and any parent–student links you create.
               </li>
               <li>
-                <strong className="text-slate-700">Tutoring activity</strong> — sessions you book or
+                <strong className="text-slate-700">Tutoring activity</strong>: sessions you book or
                 schedule, availability, lesson notes, assignments, and work you submit.
               </li>
               <li>
-                <strong className="text-slate-700">Messages</strong> — the content of direct and group
+                <strong className="text-slate-700">Messages</strong>: the content of direct and group
                 conversations you send through the platform.
               </li>
               <li>
-                <strong className="text-slate-700">Payment records</strong> — the amount, date, and
+                <strong className="text-slate-700">Payment records</strong>: the amount, date, and
                 status of payments for sessions. Payments themselves are made outside the platform
                 through Venmo or Zelle, so we do not collect or store card numbers or bank details.
               </li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
           <Section title="3. How we use your information">
             <p>We use the information above to:</p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>provide and operate the tutoring service — scheduling, messaging, assignments, and progress;</li>
+              <li>provide and operate the tutoring service, scheduling, messaging, assignments, and progress;</li>
               <li>let parents view their linked child's sessions, assignments, and progress;</li>
               <li>keep a record of payments due and received;</li>
               <li>send reminders and important account or session notifications;</li>
@@ -101,17 +101,17 @@ export default function PrivacyPage() {
             <p>We share information only in these limited ways:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong className="text-slate-700">Within your tutoring relationship</strong> — a
+                <strong className="text-slate-700">Within your tutoring relationship</strong>: a
                 tutor and their student (and a linked parent) can see the sessions, assignments,
                 messages, and notes relevant to that relationship.
               </li>
               <li>
-                <strong className="text-slate-700">Service providers</strong> — we use trusted
+                <strong className="text-slate-700">Service providers</strong>: we use trusted
                 providers to run the platform, such as Clerk for authentication and our hosting
                 provider for storing data. They may process information only on our behalf.
               </li>
               <li>
-                <strong className="text-slate-700">Legal reasons</strong> — if required by law or to
+                <strong className="text-slate-700">Legal reasons</strong>: if required by law or to
                 protect the safety and rights of our users.
               </li>
             </ul>

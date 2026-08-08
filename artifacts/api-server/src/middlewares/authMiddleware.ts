@@ -54,7 +54,7 @@ export async function authMiddleware(
       };
     }
   } catch {
-    // user not in db yet — will be created on /api/auth/user call
+    // user not in db yet, will be created on /api/auth/user call
   }
 
   next();

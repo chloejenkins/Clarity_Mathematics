@@ -35,8 +35,8 @@ function openReceipt(p: Payment) {
   const w = window.open("", "_blank", "width=460,height=680");
   if (!w) return;
   const paidAt = p.receivedAt ?? p.createdAt;
-  const date = paidAt ? format(new Date(paidAt), "MMMM d, yyyy") : "—";
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Receipt — Clarity Mathematics</title>
+  const date = paidAt ? format(new Date(paidAt), "MMMM d, yyyy") : "-";
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Receipt, Clarity Mathematics</title>
     <style>
       body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;padding:40px;max-width:400px;margin:0 auto;}
       h1{font-family:Georgia,'Times New Roman',serif;color:#c9a227;font-size:30px;margin:0;letter-spacing:-1px;}
@@ -56,7 +56,7 @@ function openReceipt(p: Payment) {
     <div class="row"><span class="label">Date paid</span><span>${date}</span></div>
     <div class="total"><span>Total</span><span>$${p.amount}.00</span></div>
     <span class="paid">PAID</span>
-    <div class="foot">Thank you — Clarity Mathematics</div>
+    <div class="foot">Thank you, Clarity Mathematics</div>
     </body></html>`);
   w.document.close();
   w.focus();

@@ -5,7 +5,7 @@
 //   TUTOR_EMAILS="chloejenkins@claritymathematics.com,ms.bennett@example.com"
 //
 // Fails closed: if TUTOR_EMAILS is unset/empty, no new account can claim the
-// tutor role via onboarding. (Existing tutor rows keep their role — the
+// tutor role via onboarding. (Existing tutor rows keep their role, the
 // allowlist only gates *assigning* the role, not revoking it.)
 const allowedTutorEmails = new Set(
   (process.env.TUTOR_EMAILS ?? "")

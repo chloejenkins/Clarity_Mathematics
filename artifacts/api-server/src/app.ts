@@ -10,7 +10,7 @@ import { apiRateLimiter } from "./middlewares/rateLimit";
 
 const app: Express = express();
 
-// Behind Replit's proxy — trust exactly one hop so req.ip is the real client
+// Behind Replit's proxy, trust exactly one hop so req.ip is the real client
 // IP (not the proxy), which the rate limiter keys on.
 app.set("trust proxy", 1);
 

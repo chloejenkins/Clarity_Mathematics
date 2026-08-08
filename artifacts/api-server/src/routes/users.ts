@@ -6,7 +6,7 @@ import { ListUsersResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-// GET /users — only the people the caller is actually related to (their tutor,
+// GET /users, only the people the caller is actually related to (their tutor,
 // their students, and linked parents/children). NOT the entire user base.
 router.get("/users", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {

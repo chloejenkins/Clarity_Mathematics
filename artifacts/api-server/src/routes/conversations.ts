@@ -103,7 +103,7 @@ async function isParticipant(convId: number, userId: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-// GET /conversations — every conversation the current user is part of.
+// GET /conversations, every conversation the current user is part of.
 router.get("/conversations", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const ids = await conversationIdsFor(req.user.id);
@@ -115,7 +115,7 @@ const CreateConversationBody = z.object({
   title: z.string().trim().optional(),
 });
 
-// POST /conversations — create a direct (2-person) or group conversation.
+// POST /conversations, create a direct (2-person) or group conversation.
 // Direct conversations are deduped: the existing one is returned if present.
 router.post("/conversations", strictRateLimiter, async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }

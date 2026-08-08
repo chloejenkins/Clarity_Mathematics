@@ -113,7 +113,7 @@ export default function ParentReportsPage() {
           <ClipboardList className="h-6 w-6 text-primary" /> Parent Reports
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Private notes for parents only — students cannot see this page.
+          Private notes for parents only, students cannot see this page.
         </p>
       </div>
 
@@ -184,7 +184,7 @@ export default function ParentReportsPage() {
                   <div className="space-y-2">
                     <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Report</label>
                     <Textarea
-                      placeholder="Write your feedback for the parent here. This is private — only you can see it."
+                      placeholder="Write your feedback for the parent here. This is private, only you can see it."
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       className="rounded-xl min-h-[200px] resize-none"

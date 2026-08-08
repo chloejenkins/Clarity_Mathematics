@@ -167,7 +167,7 @@ export default function ChatPage() {
       </div>
 
       <div className="flex gap-4 flex-1 min-h-0">
-        {/* Conversation list — full-width on mobile, hidden once a chat is open */}
+        {/* Conversation list, full-width on mobile, hidden once a chat is open */}
         <Card className={cn(
           "w-full md:w-72 flex-shrink-0 border-none shadow-md rounded-2xl flex-col overflow-hidden",
           activeConv ? "hidden md:flex" : "flex",
@@ -232,7 +232,7 @@ export default function ChatPage() {
           </div>
         </Card>
 
-        {/* Chat area — hidden on mobile until a conversation is opened */}
+        {/* Chat area, hidden on mobile until a conversation is opened */}
         <Card className={cn(
           "flex-1 border-none shadow-md rounded-2xl flex-col overflow-hidden min-h-0",
           activeConv ? "flex" : "hidden md:flex",

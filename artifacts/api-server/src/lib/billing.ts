@@ -71,7 +71,7 @@ export async function applyCancellation(
         refundDue: refundOwed,
         amount: fee,
         description:
-          policy === "half_fee" ? "Late cancellation (50% fee)" : "Cancelled — refund due",
+          policy === "half_fee" ? "Late cancellation (50% fee)" : "Cancelled, refund due",
       })
       .where(eq(paymentsTable.id, existing.id));
   } else if (existing) {
