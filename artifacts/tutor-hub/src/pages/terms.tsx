@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 const LAST_UPDATED = "July 23, 2026";
 const CONTACT_EMAIL = "chloejenkins@claritymathematics.com";
@@ -21,7 +22,7 @@ export default function TermsPage() {
           <Link href="/" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to home
           </Link>
-          <img src="/logo-header.png" alt="Clarity Mathematics" className="h-7 w-auto select-none" />
+          <Logo style={{ color: "#1b2740", fontSize: "1.05rem" }} />
         </div>
       </header>
 

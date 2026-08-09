@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserRound, Users, GraduationCap, ArrowRight, CheckCircle, ChevronLeft } from "lucide-react";
 import { customFetch } from "@workspace/api-client-react";
+import { Logo } from "@/components/logo";
 
 type Step = "role" | "profile-parent" | "profile-student";
 
@@ -97,9 +98,8 @@ export default function OnboardingPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex flex-col leading-none select-none items-center mb-4">
-            <span className="font-display text-4xl font-bold tracking-tight text-[#c9a227]">CM</span>
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-slate-400 mt-1">Clarity Mathematics</span>
+          <div className="flex justify-center mb-4">
+            <Logo style={{ color: "#1b2740", fontSize: "1.3rem" }} />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900">Welcome</h1>
           <p className="text-slate-500 mt-1 text-sm">Let's get your account set up</p>

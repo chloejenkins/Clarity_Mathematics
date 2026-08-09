@@ -29,6 +29,7 @@ import { useClerk } from "@clerk/clerk-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/logo";
 import { PaymentBanner } from "@/components/payment-banner";
 import { SessionReminderBanner } from "@/components/session-reminder-banner";
 
@@ -91,12 +92,7 @@ export function AppLayout({ children }: LayoutProps) {
           <SidebarContent>
             {/* Logo */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-sidebar-border">
-              <img
-                src="/logo-header.png"
-                alt="Clarity Mathematics"
-                className="h-7 w-auto select-none"
-                style={{ filter: "brightness(0) invert(1)" }}
-              />
+              <Logo className="text-sidebar-foreground" style={{ fontSize: "1rem" }} />
               <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider shrink-0">
                 {isTutor ? "Tutor" : isParent ? "Parent" : "Student"}
               </p>
@@ -176,7 +172,7 @@ export function AppLayout({ children }: LayoutProps) {
           <header className="h-14 flex items-center gap-3 px-4 bg-background border-b border-border sticky top-0 z-10 shrink-0">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors" />
             <nav className="flex items-center gap-2 min-w-0 text-sm" aria-label="Breadcrumb">
-              <img src="/logo-header.png" alt="Clarity Mathematics" className="h-6 w-auto shrink-0" />
+              <Logo showWordmark={false} className="text-foreground shrink-0" style={{ fontSize: "0.7rem" }} />
               {currentPage && (
                 <>
                   <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />

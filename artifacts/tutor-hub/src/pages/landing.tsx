@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import { motion } from "framer-motion";
+import { Logo } from "@/components/logo";
 
 const INK = "#1b2740"; // deep navy ink
 const GOLD = "#b8901f"; // brand gold, slightly deepened for text contrast
@@ -35,7 +36,7 @@ export default function LandingPage() {
         className="px-6 md:px-12 py-5 flex items-center justify-between"
         style={{ borderBottom: `1px solid ${INK}14` }}
       >
-        <img src="/logo-header.png" alt="Clarity Mathematics" className="h-9 w-auto select-none" />
+        <Logo style={{ color: INK, fontSize: "1.35rem" }} />
         <button
           onClick={login}
           className="text-sm font-medium tracking-wide hover:opacity-60 transition-opacity"
@@ -107,12 +108,7 @@ export default function LandingPage() {
                 style={{ backgroundColor: INK, boxShadow: `0 30px 60px -25px ${INK}66` }}
               >
                 <div className="flex items-center justify-between">
-                  <img
-                    src="/logo-header.png"
-                    alt="Clarity Mathematics"
-                    className="h-7 w-auto"
-                    style={{ filter: "brightness(0) invert(1)" }}
-                  />
+                  <Logo style={{ color: "#ffffff", fontSize: "1.05rem" }} />
                   <span
                     className="text-[10px] uppercase"
                     style={{ color: "#ffffff66", letterSpacing: "0.18em" }}
