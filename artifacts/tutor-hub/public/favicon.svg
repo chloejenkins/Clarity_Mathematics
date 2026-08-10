@@ -1,8 +1,8 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="180" height="180" rx="40" fill="#1b2740"/>
-  <g font-family="Georgia, 'Times New Roman', serif" font-weight="600" font-size="84" fill="#f4efe4">
-    <text x="76" y="120" text-anchor="end">C</text>
-    <text x="90" y="120" text-anchor="start">M</text>
+  <g font-family="Georgia, 'Times New Roman', serif" font-weight="600" font-size="82" fill="#f4efe4">
+    <text x="71" y="119" text-anchor="end">C</text>
+    <text x="84" y="119" text-anchor="start">M</text>
   </g>
-  <rect x="81.4" y="56" width="3" height="64" rx="1.5" fill="#f4efe4" opacity="0.4"/>
+  <rect x="76.6" y="57" width="2.8" height="62" rx="1.4" fill="#f4efe4" opacity="0.4"/>
 </svg>
