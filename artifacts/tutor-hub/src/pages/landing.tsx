@@ -12,17 +12,17 @@ const steps = [
   {
     n: "01",
     title: "Choose a time",
-    body: "Pick a slot from the live calendar. Confirmation is instant, and your first lesson is free, with no card and no commitment.",
+    body: "Pick an open slot from the calendar. Booking is instant, and the first lesson is free.",
   },
   {
     n: "02",
-    title: "Meet, one to one",
-    body: "Every lesson is private and undivided. Share the work you're stuck on, and message between sessions whenever a question comes up.",
+    title: "Meet one-on-one",
+    body: "Private lessons, with messaging between sessions for quick questions.",
   },
   {
     n: "03",
-    title: "See it add up",
-    body: "Lesson notes, assignments, and progress live in one place, so a parent can always see exactly where things stand.",
+    title: "Track progress",
+    body: "Lesson notes, assignments, and progress in one place, so parents always know where things stand.",
   },
 ];
 
@@ -72,9 +72,8 @@ export default function LandingPage() {
                 math tutoring.
               </h1>
 
-              <p className="mt-7 text-lg leading-relaxed max-w-md" style={{ color: `${INK}b3` }}>
-                A private one-to-one tutoring practice. Book lessons, work through what's hard, and
-                watch steady progress take shape, in one calm space made for you and your family.
+              <p className="mt-6 text-lg leading-relaxed max-w-md" style={{ color: `${INK}b3` }}>
+                Book lessons, message your tutor, and track progress, all in one private place.
               </p>
 
               <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
@@ -113,12 +112,7 @@ export default function LandingPage() {
                   </span>
                 </div>
 
-                <div className="mt-8 space-y-5">
-                  <p className="text-white/90 text-[15px] leading-relaxed">
-                    The student &amp; parent portal: your schedule, lessons, and messages, all in
-                    one place.
-                  </p>
-                  <div className="h-px w-full" style={{ backgroundColor: "#ffffff1f" }} />
+                <div className="mt-8">
                   <ul className="space-y-3 text-sm" style={{ color: "#ffffffcc" }}>
                     {["Book and manage lessons", "Message your tutor directly", "Follow progress and notes"].map(
                       (t) => (
@@ -147,10 +141,10 @@ export default function LandingPage() {
         <section style={{ borderTop: `1px solid ${INK}14` }}>
           <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24">
             <h2
-              className="font-display text-2xl md:text-3xl font-semibold mb-14 max-w-md leading-snug"
+              className="font-display text-2xl md:text-3xl font-semibold mb-14"
               style={{ color: INK }}
             >
-              A calm, unhurried way to get better at math.
+              How it works
             </h2>
             <div className="grid md:grid-cols-3 gap-x-12 gap-y-12">
               {steps.map((s) => (
@@ -182,9 +176,9 @@ export default function LandingPage() {
               </p>
               <dl className="space-y-6">
                 {[
-                  ["First lesson", "Free. A chance to see if we're a good fit."],
-                  ["Cancel 24h ahead", "Full refund, no questions asked."],
-                  ["Cancel within 24h", "Half the lesson is refunded."],
+                  ["First lesson", "Free, no commitment."],
+                  ["Cancel 24h ahead", "Full refund."],
+                  ["Cancel within 24h", "50% refund."],
                 ].map(([term, desc]) => (
                   <div key={term} className="flex gap-5">
                     <dt className="w-36 shrink-0 font-semibold text-[15px]" style={{ color: INK }}>
@@ -240,24 +234,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Closing */}
-        <section style={{ backgroundColor: INK }}>
-          <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 text-center">
-            <h2 className="font-display text-3xl md:text-4xl font-semibold text-white leading-tight">
-              Let's make math make sense.
-            </h2>
-            <p className="mt-4 text-white/60 max-w-sm mx-auto">
-              The first lesson is on me. Sign in whenever you're ready.
-            </p>
-            <Button
-              onClick={login}
-              className="mt-9 h-12 px-8 rounded-full text-[15px] font-semibold hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: GOLD, color: INK }}
-            >
-              Enter the portal
-            </Button>
-          </div>
-        </section>
       </main>
 
       {/* Footer */}
