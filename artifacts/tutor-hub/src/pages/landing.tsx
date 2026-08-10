@@ -90,10 +90,6 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <p className="mt-12 text-sm flex items-center gap-2.5" style={{ color: `${INK}80` }}>
-                <span className="inline-block w-8 h-px" style={{ backgroundColor: `${INK}40` }} />
-                Taught personally by Chloe Jenkins
-              </p>
             </motion.div>
 
             {/* Portal calling-card */}
