@@ -22,7 +22,7 @@ const steps = [
   {
     n: "03",
     title: "Track progress",
-    body: "Lesson notes, assignments, and progress in one place, so parents always know where things stand.",
+    body: "Lesson notes, assignments, and progress in one place.",
   },
 ];
 
