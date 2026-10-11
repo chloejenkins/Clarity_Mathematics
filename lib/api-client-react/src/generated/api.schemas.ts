@@ -33,21 +33,6 @@ export interface GetCurrentAuthUserResponse {
   user?: User;
 }
 
-export interface ExchangeMobileAuthorizationCodeBody {
-  code: string;
-  state: string;
-  codeVerifier: string;
-  nonce: string;
-}
-
-export interface ExchangeMobileAuthorizationCodeResponse {
-  token: string;
-}
-
-export interface MobileLogoutResponse {
-  success: boolean;
-}
-
 export interface SuccessResponse {
   success: boolean;
 }
@@ -81,6 +66,31 @@ export interface CreateSessionBody {
   notes?: string;
 }
 
+export type SessionCancellationPolicy =
+  (typeof SessionCancellationPolicy)[keyof typeof SessionCancellationPolicy];
+
+export const SessionCancellationPolicy = {
+  full_refund: "full_refund",
+  half_fee: "half_fee",
+  tutor_cancel: "tutor_cancel",
+} as const;
+
+/**
+ * How the refund policy was applied when a session was cancelled
+ */
+export interface SessionCancellation {
+  policy: SessionCancellationPolicy;
+  /** Cancellation fee the student still owes, in whole dollars */
+  feeOwed: number;
+  /** Amount the tutor should refund, in whole dollars */
+  refundOwed: number;
+}
+
+export type UpdatedTutoringSession = TutoringSession & {
+  /** Only present the first time a session is cancelled */
+  cancellation?: SessionCancellation;
+};
+
 export type UpdateSessionBodyStatus =
   (typeof UpdateSessionBodyStatus)[keyof typeof UpdateSessionBodyStatus];
 
@@ -102,6 +112,7 @@ export interface Message {
   senderId: string;
   senderName?: string | null;
   senderImageUrl?: string | null;
+  conversationId?: number | null;
   recipientId?: string | null;
   content: string;
   createdAt: string;
@@ -156,10 +167,276 @@ export interface CreateVideoBody {
   subject?: string;
 }
 
+export type AuthUserRole = (typeof AuthUserRole)[keyof typeof AuthUserRole];
+
+export const AuthUserRole = {
+  tutor: "tutor",
+  student: "student",
+  parent: "parent",
+  pending: "pending",
+} as const;
+
+/**
+ * The signed-in user as attached to each request by the auth middleware
+ */
+export interface AuthUser {
+  id: string;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
+  role: AuthUserRole;
+  tutorId?: string | null;
+}
+
+export interface SyncProfileResponse {
+  success: boolean;
+  profileImageUrl?: string | null;
+}
+
+export type SetRoleBodyRole =
+  (typeof SetRoleBodyRole)[keyof typeof SetRoleBodyRole];
+
+export const SetRoleBodyRole = {
+  tutor: "tutor",
+  student: "student",
+  parent: "parent",
+} as const;
+
+export interface SetRoleBody {
+  role: SetRoleBodyRole;
+  tutorId?: string;
+}
+
+export type SetRoleResponseRole =
+  (typeof SetRoleResponseRole)[keyof typeof SetRoleResponseRole];
+
+export const SetRoleResponseRole = {
+  tutor: "tutor",
+  student: "student",
+  parent: "parent",
+} as const;
+
+export interface SetRoleResponse {
+  success: boolean;
+  role: SetRoleResponseRole;
+  tutorId: string | null;
+}
+
+export interface TutorSummary {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+  profileImageUrl?: string | null;
+}
+
+export interface Submission {
+  id: number;
+  assignmentId: number;
+  studentId: string;
+  content: string;
+  tutorComment?: string | null;
+  reviewedAt?: string | null;
+  submittedAt: string;
+  updatedAt?: string;
+}
+
+export type AssignmentSubmission = Submission & {
+  studentName: string;
+};
+
+export interface SubmitAssignmentBody {
+  content?: string;
+}
+
+export interface ReviewSubmissionBody {
+  comment?: string;
+}
+
+export interface ConversationParticipant {
+  id: string;
+  name: string;
+  role?: string | null;
+  imageUrl?: string | null;
+}
+
+export type ConversationType =
+  (typeof ConversationType)[keyof typeof ConversationType];
+
+export const ConversationType = {
+  direct: "direct",
+  group: "group",
+} as const;
+
+export interface Conversation {
+  id: number;
+  type: ConversationType;
+  title?: string | null;
+  participants: ConversationParticipant[];
+  lastMessage?: string | null;
+  lastMessageAt: string;
+}
+
+export interface CreateConversationBody {
+  /** @minItems 1 */
+  participantIds: string[];
+  title?: string;
+}
+
+export interface SendConversationMessageBody {
+  content: string;
+}
+
+export interface Attachment {
+  id: number;
+  assignmentId?: number | null;
+  uploadedBy: string;
+  uploaderName: string;
+  uploaderRole?: string | null;
+  filename: string;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  note?: string | null;
+  createdAt: string;
+  downloadUrl: string;
+}
+
+export interface CreateUploadBody {
+  file: Blob;
+  assignmentId?: number;
+  note?: string;
+}
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
+
+export const PaymentStatus = {
+  due: "due",
+  sent: "sent",
+  received: "received",
+  void: "void",
+  refund_due: "refund_due",
+  refunded: "refunded",
+} as const;
+
+export interface Payment {
+  id: number;
+  /** Whole dollars */
+  amount: number;
+  description?: string | null;
+  status: PaymentStatus;
+  refundDue: number;
+  studentId: string;
+  studentName: string;
+  tutorName: string;
+  sessionDate?: string | null;
+  createdAt: string;
+  sentAt?: string | null;
+  receivedAt?: string | null;
+}
+
+export interface PaymentRecord {
+  id: number;
+  tutorId: string;
+  studentId: string;
+  sessionId?: number | null;
+  amount: number;
+  description?: string | null;
+  status: PaymentStatus;
+  refundDue: number;
+  createdAt: string;
+  sentAt?: string | null;
+  receivedAt?: string | null;
+}
+
+export interface PaymentSettings {
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  hourlyRate: number;
+}
+
+export type AvailabilitySlotIsBooked =
+  (typeof AvailabilitySlotIsBooked)[keyof typeof AvailabilitySlotIsBooked];
+
+export const AvailabilitySlotIsBooked = {
+  true: "true",
+  false: "false",
+} as const;
+
+export interface AvailabilitySlot {
+  id: number;
+  tutorId?: string | null;
+  startsAt: string;
+  durationMinutes: number;
+  topic?: string | null;
+  isBooked: AvailabilitySlotIsBooked;
+  bookedByStudentId?: string | null;
+  sessionId?: number | null;
+  createdAt: string;
+  /** Only present for students and parents */
+  tutorName?: string;
+  /** Only present for students and parents */
+  tutorProfileImageUrl?: string | null;
+}
+
+export interface CreateAvailabilitySlotBody {
+  startsAt: string;
+  /**
+   * @minimum 15
+   * @maximum 240
+   */
+  durationMinutes?: number;
+  topic?: string;
+}
+
+export interface BookAvailabilitySlotBody {
+  topic?: string;
+}
+
+export interface BookAvailabilitySlotResponse {
+  session: TutoringSession;
+  slotId: number;
+}
+
+export interface ParentFeedback {
+  id: number;
+  tutorId?: string | null;
+  studentId: string;
+  content: string;
+  period?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertParentFeedbackBody {
+  /** @minLength 1 */
+  content: string;
+  period?: string;
+}
+
+export interface ParentStudentLink {
+  id: number;
+  studentId?: string | null;
+  studentName?: string | null;
+  studentEmail?: string | null;
+  /** False for a name-only placeholder with no real account behind it */
+  linked: boolean;
+}
+
+export interface CreateParentLinkBody {
+  studentEmail: string;
+}
+
 export type ListSessionsParams = {
   studentId?: string;
 };
 
 export type ListMessagesParams = {
   withUserId?: string;
+};
+
+export type ListUploadsParams = {
+  assignmentId?: number;
 };

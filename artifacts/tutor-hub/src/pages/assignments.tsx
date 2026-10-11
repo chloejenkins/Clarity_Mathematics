@@ -1,7 +1,20 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListAssignments, useCreateAssignment, useDeleteAssignment, useListUsers, customFetch } from "@workspace/api-client-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useListAssignments,
+  useCreateAssignment,
+  useDeleteAssignment,
+  useListUsers,
+  useGetMySubmission,
+  useSubmitAssignment,
+  useListAssignmentSubmissions,
+  useReviewSubmission,
+  getListAssignmentsQueryKey,
+  getGetMySubmissionQueryKey,
+  getListAssignmentSubmissionsQueryKey,
+  type AssignmentSubmission,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -31,39 +44,22 @@ const submitSchema = z.object({
   content: z.string().optional(),
 });
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
 
-  const { data: existing } = useQuery({
-    queryKey: [`/api/assignments/${assignmentId}/my-submission`],
-    queryFn: async () => {
-      const res = await fetch(`${BASE}/api/assignments/${assignmentId}/my-submission`, { credentials: "include" });
-      if (!res.ok) return null;
-      return res.json() as Promise<{ id: number; content: string; submittedAt: string; tutorComment: string | null; reviewedAt: string | null } | null>;
-    },
-  });
+  const { data: existing } = useGetMySubmission(assignmentId);
 
-  const submitMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const res = await fetch(`${BASE}/api/assignments/${assignmentId}/submit`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-      });
-      if (!res.ok) throw new Error("Submission failed");
-      return res.json();
+  const submitMutation = useSubmitAssignment({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetMySubmissionQueryKey(assignmentId) });
+        toast({ title: existing ? "Submission updated!" : "Work submitted!" });
+        setExpanded(false);
+      },
+      onError: () => toast({ title: "Failed to submit", variant: "destructive" }),
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/assignments/${assignmentId}/my-submission`] });
-      toast({ title: existing ? "Submission updated!" : "Work submitted!" });
-      setExpanded(false);
-    },
-    onError: () => toast({ title: "Failed to submit", variant: "destructive" }),
   });
 
   const form = useForm<z.infer<typeof submitSchema>>({
@@ -72,7 +68,7 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
     values: { content: existing?.content ?? "" },
   });
 
-  const onSubmit = (vals: z.infer<typeof submitSchema>) => submitMutation.mutate(vals.content ?? "");
+  const onSubmit = (vals: z.infer<typeof submitSchema>) => submitMutation.mutate({ id: assignmentId, data: { content: vals.content ?? "" } });
 
   return (
     <div className="mt-4 border-t pt-4">
@@ -149,21 +145,9 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
   );
 }
 
-interface TutorSubmission {
-  id: number;
-  studentId: string;
-  studentName: string;
-  content: string;
-  tutorComment: string | null;
-  reviewedAt: string | null;
-  submittedAt: string;
-}
 
-function TutorSubmissionReview({ assignmentId }: { assignmentId: number }) {
-  const { data: submissions = [] } = useQuery({
-    queryKey: [`/api/assignments/${assignmentId}/submissions`],
-    queryFn: () => customFetch<TutorSubmission[]>(`/api/assignments/${assignmentId}/submissions`),
-  });
+function AssignmentSubmissionReview({ assignmentId }: { assignmentId: number }) {
+  const { data: submissions = [] } = useListAssignmentSubmissions(assignmentId);
 
   return (
     <div className="mt-4 border-t pt-3 space-y-3">
@@ -178,17 +162,17 @@ function TutorSubmissionReview({ assignmentId }: { assignmentId: number }) {
   );
 }
 
-function SubmissionReviewRow({ sub, assignmentId }: { sub: TutorSubmission; assignmentId: number }) {
+function SubmissionReviewRow({ sub, assignmentId }: { sub: AssignmentSubmission; assignmentId: number }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState(sub.tutorComment ?? "");
 
-  const review = useMutation({
-    mutationFn: () =>
-      customFetch(`/api/submissions/${sub.id}/review`, { method: "POST", body: JSON.stringify({ comment }) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/assignments/${assignmentId}/submissions`] });
-      toast({ title: "Review saved" });
+  const review = useReviewSubmission({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListAssignmentSubmissionsQueryKey(assignmentId) });
+        toast({ title: "Review saved" });
+      },
     },
   });
 
@@ -213,7 +197,7 @@ function SubmissionReviewRow({ sub, assignmentId }: { sub: TutorSubmission; assi
         placeholder="Leave feedback for the student…"
         className="rounded-xl min-h-[70px] text-sm bg-background"
       />
-      <Button size="sm" className="rounded-lg" disabled={review.isPending} onClick={() => review.mutate()}>
+      <Button size="sm" className="rounded-lg" disabled={review.isPending} onClick={() => review.mutate({ id: sub.id, data: { comment } })}>
         {review.isPending ? "Saving…" : sub.reviewedAt ? "Update feedback" : "Save & mark reviewed"}
       </Button>
     </div>
@@ -244,7 +228,7 @@ export default function AssignmentsPage() {
   const onSubmit = (values: z.infer<typeof createSchema>) => {
     createMutation.mutate({ data: values }, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+        queryClient.invalidateQueries({ queryKey: getListAssignmentsQueryKey() });
         setIsOpen(false);
         form.reset();
         toast({ title: "Assignment posted!" });
@@ -256,7 +240,7 @@ export default function AssignmentsPage() {
     if (!confirm("Delete this assignment?")) return;
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+        queryClient.invalidateQueries({ queryKey: getListAssignmentsQueryKey() });
         toast({ title: "Assignment deleted" });
       },
     });
@@ -445,7 +429,7 @@ export default function AssignmentsPage() {
                 )}
 
                 {/* Tutor: the student's submission (text + files) and review */}
-                {isTutor && <TutorSubmissionReview assignmentId={assignment.id} />}
+                {isTutor && <AssignmentSubmissionReview assignmentId={assignment.id} />}
 
                 {/* Student submission panel */}
                 {!isTutor && (

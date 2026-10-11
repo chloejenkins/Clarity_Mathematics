@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ExchangeMobileAuthorizationCodeResponse {
-  token: string;
+export interface ConversationParticipant {
+  id: string;
+  name: string;
+  role?: string | null;
+  imageUrl?: string | null;
 }

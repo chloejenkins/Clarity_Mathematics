@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ExchangeMobileAuthorizationCodeBody {
-  code: string;
-  state: string;
-  codeVerifier: string;
-  nonce: string;
+export interface SyncProfileResponse {
+  success: boolean;
+  profileImageUrl?: string | null;
 }

@@ -11,6 +11,7 @@ export interface Message {
   senderId: string;
   senderName?: string | null;
   senderImageUrl?: string | null;
+  conversationId?: number | null;
   recipientId?: string | null;
   content: string;
   createdAt: Date;

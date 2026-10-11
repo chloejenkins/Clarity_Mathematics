@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface MobileLogoutResponse {
-  success: boolean;
+export interface SendConversationMessageBody {
+  content: string;
 }

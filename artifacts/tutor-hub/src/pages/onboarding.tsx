@@ -3,7 +3,7 @@ import { useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserRound, Users, GraduationCap, ArrowRight, CheckCircle, ChevronLeft } from "lucide-react";
-import { customFetch } from "@workspace/api-client-react";
+import { setRole as postSetRole, createParentLink } from "@workspace/api-client-react";
 import { Logo } from "@/components/logo";
 
 type Step = "role" | "profile-parent" | "profile-student";
@@ -18,10 +18,7 @@ export default function OnboardingPage() {
   const displayName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") || clerkUser?.username || "there";
 
   async function setRole(role: "parent" | "student" | "tutor") {
-    await customFetch("/api/auth/set-role", {
-      method: "POST",
-      body: JSON.stringify({ role }),
-    });
+    await postSetRole({ role });
   }
 
   async function handleRoleSelect(role: "parent" | "student" | "tutor") {
@@ -69,10 +66,7 @@ export default function OnboardingPage() {
     setError(null);
     try {
       if (!skip && studentEmail.trim()) {
-        await customFetch("/api/parent-links", {
-          method: "POST",
-          body: JSON.stringify({ studentEmail: studentEmail.trim() }),
-        });
+        await createParentLink({ studentEmail: studentEmail.trim() });
       }
       await clerkUser?.reload();
       window.location.href = "/";

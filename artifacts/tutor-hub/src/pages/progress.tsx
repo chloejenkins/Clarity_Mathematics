@@ -1,19 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { customFetch, useListAssignments } from "@workspace/api-client-react";
+import { useListAssignments, useListSessions } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, CalendarCheck, BookOpen, CheckCircle, FileText, Clock, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import type { LucideIcon } from "lucide-react";
-
-interface SessionLite {
-  id: number;
-  scheduledAt: string;
-  status: string;
-  topic: string | null;
-  notes: string | null;
-  durationMinutes: number;
-}
 
 function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string | number }) {
   return (
@@ -34,10 +24,7 @@ export default function ProgressPage() {
   const isParent = user?.role === "parent";
 
   const { data: assignments = [] } = useListAssignments();
-  const { data: sessions = [] } = useQuery({
-    queryKey: ["/api/sessions"],
-    queryFn: () => customFetch<SessionLite[]>("/api/sessions"),
-  });
+  const { data: sessions = [] } = useListSessions();
 
   const now = Date.now();
   const completedSessions = sessions.filter((s) => s.status === "completed");

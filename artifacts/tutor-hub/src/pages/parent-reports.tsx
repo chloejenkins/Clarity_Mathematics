@@ -1,7 +1,14 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
-import { customFetch } from "@workspace/api-client-react";
+import {
+  useListUsers,
+  useListStudentParentFeedback,
+  useUpsertParentFeedback,
+  useDeleteParentFeedback,
+  getListStudentParentFeedbackQueryKey,
+  type User as StudentUser,
+} from "@workspace/api-client-react";
 import { ClipboardList, Save, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,24 +17,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-interface StudentUser {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  username: string | null;
-  email: string | null;
-}
-
-interface FeedbackRecord {
-  id: number;
-  studentId: string;
-  content: string;
-  period: string | null;
-  updatedAt: string;
-}
-
 function displayName(u: StudentUser) {
-  return [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email || "Unknown";
+  return [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown";
 }
 
 export default function ParentReportsPage() {
@@ -46,46 +37,38 @@ export default function ParentReportsPage() {
     );
   }
 
-  const { data: allUsers } = useQuery<StudentUser[]>({
-    queryKey: ["/api/users"],
-    queryFn: () => customFetch("/api/users"),
-  });
+  const { data: allUsers } = useListUsers();
 
   const students = (allUsers ?? []).filter((u) => u.id !== user.id);
 
-  const { data: feedback, isLoading: feedbackLoading } = useQuery<FeedbackRecord | null>({
-    queryKey: ["/api/parent-feedback", selectedStudentId],
-    queryFn: async () => {
-      if (!selectedStudentId) return null;
-      const rows = await customFetch<FeedbackRecord[]>(`/api/parent-feedback/${selectedStudentId}`);
-      return rows[0] ?? null;
+  const { data: feedback, isLoading: feedbackLoading } = useListStudentParentFeedback(selectedStudentId ?? "", {
+    query: {
+      queryKey: getListStudentParentFeedbackQueryKey(selectedStudentId ?? ""),
+      enabled: !!selectedStudentId,
+      select: (rows) => rows[0] ?? null,
     },
-    enabled: !!selectedStudentId,
   });
 
-  const saveMutation = useMutation({
-    mutationFn: () =>
-      customFetch(`/api/parent-feedback/${selectedStudentId}`, {
-        method: "PUT",
-        body: JSON.stringify({ content: draft, period: period || undefined }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/parent-feedback", selectedStudentId] });
-      toast({ title: "Report saved" });
+  const saveMutation = useUpsertParentFeedback({
+    mutation: {
+      onSuccess: (_row, { studentId }) => {
+        queryClient.invalidateQueries({ queryKey: getListStudentParentFeedbackQueryKey(studentId) });
+        toast({ title: "Report saved" });
+      },
+      onError: () => toast({ title: "Failed to save", variant: "destructive" }),
     },
-    onError: () => toast({ title: "Failed to save", variant: "destructive" }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: () =>
-      customFetch(`/api/parent-feedback/${selectedStudentId}`, { method: "DELETE" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/parent-feedback", selectedStudentId] });
-      setDraft("");
-      setPeriod("");
-      toast({ title: "Report cleared" });
+  const deleteMutation = useDeleteParentFeedback({
+    mutation: {
+      onSuccess: (_res, { studentId }) => {
+        queryClient.invalidateQueries({ queryKey: getListStudentParentFeedbackQueryKey(studentId) });
+        setDraft("");
+        setPeriod("");
+        toast({ title: "Report cleared" });
+      },
+      onError: () => toast({ title: "Failed to clear", variant: "destructive" }),
     },
-    onError: () => toast({ title: "Failed to clear", variant: "destructive" }),
   });
 
   function handleSelectStudent(id: string) {
@@ -193,7 +176,13 @@ export default function ParentReportsPage() {
 
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => saveMutation.mutate()}
+                      onClick={() =>
+                        selectedStudentId &&
+                        saveMutation.mutate({
+                          studentId: selectedStudentId,
+                          data: { content: draft, period: period || undefined },
+                        })
+                      }
                       disabled={!draft.trim() || saveMutation.isPending}
                       className="flex-1 rounded-xl"
                     >
@@ -203,7 +192,7 @@ export default function ParentReportsPage() {
                     {feedback && (
                       <Button
                         variant="outline"
-                        onClick={() => deleteMutation.mutate()}
+                        onClick={() => selectedStudentId && deleteMutation.mutate({ studentId: selectedStudentId })}
                         disabled={deleteMutation.isPending}
                         className="rounded-xl text-destructive hover:text-destructive"
                       >
