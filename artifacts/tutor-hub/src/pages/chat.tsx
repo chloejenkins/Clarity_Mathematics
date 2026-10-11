@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListUsers, customFetch } from "@workspace/api-client-react";
+import { useListUsers, customFetch, type User } from "@workspace/api-client-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -379,7 +379,7 @@ function NewConversationDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  users: NonNullable<ReturnType<typeof useListUsers>["data"]>;
+  users: User[];
   onCreated: (conv: Conversation) => void;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());

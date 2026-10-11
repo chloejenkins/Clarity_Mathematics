@@ -2,7 +2,7 @@ import { clerkMiddleware, getAuth } from "@clerk/express";
 import { type Request, type Response, type NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import type { AuthUser } from "@workspace/api-zod";
+import type { User as AuthUser } from "@workspace/api-zod";
 
 declare global {
   namespace Express {

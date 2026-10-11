@@ -11,7 +11,6 @@ export interface AuthUser {
   tutorId?: string | null;
 }
 
-export type { AuthUser as AuthUser };
 
 interface AuthState {
   user: AuthUser | null;
