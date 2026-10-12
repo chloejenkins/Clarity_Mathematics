@@ -109,6 +109,10 @@ export const parentStudentLinksTable = pgTable("parent_student_links", {
   parentId: varchar("parent_id").notNull(),
   studentId: varchar("student_id"),
   studentName: varchar("student_name"),
+  // "pending" until the student or their tutor approves the request; only
+  // "approved" links grant a parent access to the child's data. The column
+  // default keeps links that existed before approvals were introduced working.
+  status: varchar("status").notNull().default("approved"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

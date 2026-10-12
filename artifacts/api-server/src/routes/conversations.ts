@@ -9,6 +9,7 @@ import {
 import { eq, and, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
 import { strictRateLimiter } from "../middlewares/rateLimit";
+import { canContactAll } from "../lib/contacts";
 
 const router: IRouter = Router();
 
@@ -125,6 +126,13 @@ router.post("/conversations", strictRateLimiter, async (req: Request, res: Respo
 
   const me = req.user.id;
   const ids = Array.from(new Set([me, ...parsed.data.participantIds]));
+
+  // Only people you're connected to (your tutor, students, linked parents/children).
+  const others = ids.filter((id) => id !== me);
+  if (others.length === 0 || !(await canContactAll(req.user, others))) {
+    res.status(403).json({ error: "You can only message people you're connected to" });
+    return;
+  }
 
   // Validate every participant exists.
   const existingUsers = await db

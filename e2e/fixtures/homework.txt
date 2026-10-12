@@ -1,0 +1,3 @@
+Name: Sam Student
+1) x = 4
+2) x = -3

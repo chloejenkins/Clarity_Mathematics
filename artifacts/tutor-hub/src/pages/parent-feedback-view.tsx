@@ -143,7 +143,12 @@ function LinkedStudentFeedback({
         </Button>
       </div>
 
-      {!link.linked ? (
+      {link.status === "pending" ? (
+        <div className="bg-primary/5 border border-primary/25 rounded-2xl p-4 text-sm text-foreground">
+          Waiting for approval. Your child or their tutor needs to approve this link before you can see
+          their feedback, schedule, and payments.
+        </div>
+      ) : !link.linked ? (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-200">
           This is a name only, it isn't connected to a real account yet, so no feedback, schedule, or
           payments will show. Unlink it and re-add your child by their email.
@@ -194,7 +199,7 @@ export function LinkChildDialog({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListParentLinksQueryKey() });
-        toast({ title: "Child linked" });
+        toast({ title: "Request sent", description: "Your child or their tutor will need to approve it." });
         setEmail("");
         onOpenChange(false);
       },
@@ -211,7 +216,7 @@ export function LinkChildDialog({
           <DialogTitle>Link your child</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground -mt-1">
-          Enter the email your child used to sign up. You'll then see their feedback, schedule, and payments.
+          Enter the email your child used to sign up. Once your child or their tutor approves, you'll see their feedback, schedule, and payments.
         </p>
         <Input
           type="email"

@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ApproveParentLinkResponse,
   Assignment,
   AssignmentSubmission,
   Attachment,
@@ -38,6 +39,7 @@ import type {
   ListUploadsParams,
   Message,
   ParentFeedback,
+  ParentLinkRequest,
   ParentStudentLink,
   Payment,
   PaymentRecord,
@@ -4014,7 +4016,7 @@ export function useListParentLinks<
 }
 
 /**
- * @summary Link a student account by email (parent only)
+ * @summary Request a link to a student account by email (parent only; starts pending)
  */
 export const getCreateParentLinkUrl = () => {
   return `/api/parent-links`;
@@ -4077,7 +4079,7 @@ export type CreateParentLinkMutationBody = BodyType<CreateParentLinkBody>;
 export type CreateParentLinkMutationError = ErrorType<unknown>;
 
 /**
- * @summary Link a student account by email (parent only)
+ * @summary Request a link to a student account by email (parent only; starts pending)
  */
 export const useCreateParentLink = <
   TError = ErrorType<unknown>,
@@ -4181,4 +4183,248 @@ export const useDeleteParentLink = <
   TContext
 > => {
   return useMutation(getDeleteParentLinkMutationOptions(options));
+};
+
+/**
+ * @summary List pending link requests the caller can approve (the student, or their tutor)
+ */
+export const getListParentLinkRequestsUrl = () => {
+  return `/api/parent-links/requests`;
+};
+
+export const listParentLinkRequests = async (
+  options?: RequestInit,
+): Promise<ParentLinkRequest[]> => {
+  return customFetch<ParentLinkRequest[]>(getListParentLinkRequestsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListParentLinkRequestsQueryKey = () => {
+  return [`/api/parent-links/requests`] as const;
+};
+
+export const getListParentLinkRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listParentLinkRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listParentLinkRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListParentLinkRequestsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listParentLinkRequests>>
+  > = ({ signal }) => listParentLinkRequests({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listParentLinkRequests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListParentLinkRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listParentLinkRequests>>
+>;
+export type ListParentLinkRequestsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List pending link requests the caller can approve (the student, or their tutor)
+ */
+
+export function useListParentLinkRequests<
+  TData = Awaited<ReturnType<typeof listParentLinkRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listParentLinkRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListParentLinkRequestsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve a parent's link request (the student, or their tutor)
+ */
+export const getApproveParentLinkUrl = (id: number) => {
+  return `/api/parent-links/${id}/approve`;
+};
+
+export const approveParentLink = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ApproveParentLinkResponse> => {
+  return customFetch<ApproveParentLinkResponse>(getApproveParentLinkUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getApproveParentLinkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveParentLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveParentLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["approveParentLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveParentLink>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return approveParentLink(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveParentLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveParentLink>>
+>;
+
+export type ApproveParentLinkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Approve a parent's link request (the student, or their tutor)
+ */
+export const useApproveParentLink = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveParentLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveParentLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getApproveParentLinkMutationOptions(options));
+};
+
+/**
+ * @summary Decline a link request, or revoke an approved link (the student, or their tutor)
+ */
+export const getDeclineParentLinkUrl = (id: number) => {
+  return `/api/parent-links/${id}/decline`;
+};
+
+export const declineParentLink = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeclineParentLinkUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getDeclineParentLinkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof declineParentLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof declineParentLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["declineParentLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof declineParentLink>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return declineParentLink(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeclineParentLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof declineParentLink>>
+>;
+
+export type DeclineParentLinkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Decline a link request, or revoke an approved link (the student, or their tutor)
+ */
+export const useDeclineParentLink = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof declineParentLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof declineParentLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeclineParentLinkMutationOptions(options));
 };

@@ -50,7 +50,10 @@ router.get("/parent-feedback/:studentId", async (req: Request, res: Response) =>
     const links = await db
       .select()
       .from(parentStudentLinksTable)
-      .where(eq(parentStudentLinksTable.parentId, req.user.id));
+      .where(and(
+        eq(parentStudentLinksTable.parentId, req.user.id),
+        eq(parentStudentLinksTable.status, "approved"),
+      ));
     // Allow a parent to read feedback for a linked child, or for themselves
     // (a parent acting as the family account for a young child).
     const linked =

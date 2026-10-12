@@ -920,7 +920,7 @@ paths:
     post:
       operationId: createParentLink
       tags: [parentLinks]
-      summary: Link a student account by email (parent only)
+      summary: Request a link to a student account by email (parent only; starts pending)
       requestBody:
         required: true
         content:
@@ -955,6 +955,59 @@ paths:
       responses:
         "200":
           description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /parent-links/requests:
+    get:
+      operationId: listParentLinkRequests
+      tags: [parentLinks]
+      summary: List pending link requests the caller can approve (the student, or their tutor)
+      responses:
+        "200":
+          description: Pending requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParentLinkRequest"
+
+  /parent-links/{id}/approve:
+    post:
+      operationId: approveParentLink
+      tags: [parentLinks]
+      summary: Approve a parent's link request (the student, or their tutor)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApproveParentLinkResponse"
+
+  /parent-links/{id}/decline:
+    post:
+      operationId: declineParentLink
+      tags: [parentLinks]
+      summary: Decline a link request, or revoke an approved link (the student, or their tutor)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Declined
           content:
             application/json:
               schema:
@@ -1248,34 +1301,6 @@ components:
       required:
         - title
         - url
-
-    AuthUser:
-      type: object
-      description: The signed-in user as attached to each request by the auth middleware
-      properties:
-        id:
-          type: string
-        username:
-          type: string
-          nullable: true
-        firstName:
-          type: string
-          nullable: true
-        lastName:
-          type: string
-          nullable: true
-        profileImageUrl:
-          type: string
-          nullable: true
-        role:
-          type: string
-          enum: [tutor, student, parent, pending]
-        tutorId:
-          type: string
-          nullable: true
-      required:
-        - id
-        - role
 
     SyncProfileResponse:
       type: object
@@ -1735,10 +1760,56 @@ components:
           nullable: true
         linked:
           type: boolean
-          description: False for a name-only placeholder with no real account behind it
+          description: True only for an approved link to a real student account
+        status:
+          $ref: "#/components/schemas/ParentLinkStatus"
       required:
         - id
         - linked
+        - status
+
+    ParentLinkStatus:
+      type: string
+      enum: [pending, approved]
+      description: Links start pending until the student or their tutor approves them
+
+    ParentLinkRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        parentId:
+          type: string
+        parentName:
+          type: string
+        parentEmail:
+          type: string
+          nullable: true
+        studentId:
+          type: string
+          nullable: true
+        studentName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - parentId
+        - parentName
+        - createdAt
+
+    ApproveParentLinkResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: "#/components/schemas/ParentLinkStatus"
+      required:
+        - id
+        - status
 
     CreateParentLinkBody:
       type: object

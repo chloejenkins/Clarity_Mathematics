@@ -167,28 +167,6 @@ export interface CreateVideoBody {
   subject?: string;
 }
 
-export type AuthUserRole = (typeof AuthUserRole)[keyof typeof AuthUserRole];
-
-export const AuthUserRole = {
-  tutor: "tutor",
-  student: "student",
-  parent: "parent",
-  pending: "pending",
-} as const;
-
-/**
- * The signed-in user as attached to each request by the auth middleware
- */
-export interface AuthUser {
-  id: string;
-  username?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  profileImageUrl?: string | null;
-  role: AuthUserRole;
-  tutorId?: string | null;
-}
-
 export interface SyncProfileResponse {
   success: boolean;
   profileImageUrl?: string | null;
@@ -416,13 +394,40 @@ export interface UpsertParentFeedbackBody {
   period?: string;
 }
 
+/**
+ * Links start pending until the student or their tutor approves them
+ */
+export type ParentLinkStatus =
+  (typeof ParentLinkStatus)[keyof typeof ParentLinkStatus];
+
+export const ParentLinkStatus = {
+  pending: "pending",
+  approved: "approved",
+} as const;
+
 export interface ParentStudentLink {
   id: number;
   studentId?: string | null;
   studentName?: string | null;
   studentEmail?: string | null;
-  /** False for a name-only placeholder with no real account behind it */
+  /** True only for an approved link to a real student account */
   linked: boolean;
+  status: ParentLinkStatus;
+}
+
+export interface ParentLinkRequest {
+  id: number;
+  parentId: string;
+  parentName: string;
+  parentEmail?: string | null;
+  studentId?: string | null;
+  studentName?: string | null;
+  createdAt: string;
+}
+
+export interface ApproveParentLinkResponse {
+  id: number;
+  status: ParentLinkStatus;
 }
 
 export interface CreateParentLinkBody {

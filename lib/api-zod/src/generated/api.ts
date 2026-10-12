@@ -823,14 +823,17 @@ export const ListParentLinksResponseItem = zod.object({
   studentEmail: zod.string().nullish(),
   linked: zod
     .boolean()
+    .describe("True only for an approved link to a real student account"),
+  status: zod
+    .enum(["pending", "approved"])
     .describe(
-      "False for a name-only placeholder with no real account behind it",
+      "Links start pending until the student or their tutor approves them",
     ),
 });
 export const ListParentLinksResponse = zod.array(ListParentLinksResponseItem);
 
 /**
- * @summary Link a student account by email (parent only)
+ * @summary Request a link to a student account by email (parent only; starts pending)
  */
 export const CreateParentLinkBody = zod.object({
   studentEmail: zod.string().email(),
@@ -843,8 +846,11 @@ export const CreateParentLinkResponse = zod.object({
   studentEmail: zod.string().nullish(),
   linked: zod
     .boolean()
+    .describe("True only for an approved link to a real student account"),
+  status: zod
+    .enum(["pending", "approved"])
     .describe(
-      "False for a name-only placeholder with no real account behind it",
+      "Links start pending until the student or their tutor approves them",
     ),
 });
 
@@ -856,5 +862,48 @@ export const DeleteParentLinkParams = zod.object({
 });
 
 export const DeleteParentLinkResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List pending link requests the caller can approve (the student, or their tutor)
+ */
+export const ListParentLinkRequestsResponseItem = zod.object({
+  id: zod.number(),
+  parentId: zod.string(),
+  parentName: zod.string(),
+  parentEmail: zod.string().nullish(),
+  studentId: zod.string().nullish(),
+  studentName: zod.string().nullish(),
+  createdAt: zod.date(),
+});
+export const ListParentLinkRequestsResponse = zod.array(
+  ListParentLinkRequestsResponseItem,
+);
+
+/**
+ * @summary Approve a parent's link request (the student, or their tutor)
+ */
+export const ApproveParentLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ApproveParentLinkResponse = zod.object({
+  id: zod.number(),
+  status: zod
+    .enum(["pending", "approved"])
+    .describe(
+      "Links start pending until the student or their tutor approves them",
+    ),
+});
+
+/**
+ * @summary Decline a link request, or revoke an approved link (the student, or their tutor)
+ */
+export const DeclineParentLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeclineParentLinkResponse = zod.object({
   success: zod.boolean(),
 });

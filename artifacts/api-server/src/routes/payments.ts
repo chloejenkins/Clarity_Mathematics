@@ -16,6 +16,7 @@ function displayName(u: UserRow | undefined): string {
   return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || u.email || "User";
 }
 
+// Guarantees req.user for the handlers below (hence the `req.user!`s).
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   next();
@@ -26,7 +27,11 @@ async function linkedStudentIds(parentId: string): Promise<string[]> {
   const links = await db
     .select({ studentId: parentStudentLinksTable.studentId })
     .from(parentStudentLinksTable)
-    .where(and(eq(parentStudentLinksTable.parentId, parentId), isNotNull(parentStudentLinksTable.studentId)));
+    .where(and(
+      eq(parentStudentLinksTable.parentId, parentId),
+      eq(parentStudentLinksTable.status, "approved"),
+      isNotNull(parentStudentLinksTable.studentId),
+    ));
   return links.map((l) => l.studentId).filter((v): v is string => Boolean(v));
 }
 

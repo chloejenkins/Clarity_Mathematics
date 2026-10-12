@@ -5,12 +5,14 @@
  * Math Tutor Hub API
  * OpenAPI spec version: 0.1.0
  */
+import type { ParentLinkStatus } from "./parentLinkStatus";
 
 export interface ParentStudentLink {
   id: number;
   studentId?: string | null;
   studentName?: string | null;
   studentEmail?: string | null;
-  /** False for a name-only placeholder with no real account behind it */
+  /** True only for an approved link to a real student account */
   linked: boolean;
+  status: ParentLinkStatus;
 }

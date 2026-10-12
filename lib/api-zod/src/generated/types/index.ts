@@ -6,11 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./approveParentLinkResponse";
 export * from "./assignment";
 export * from "./assignmentSubmission";
 export * from "./attachment";
-export * from "./authUser";
-export * from "./authUserRole";
 export * from "./availabilitySlot";
 export * from "./availabilitySlotIsBooked";
 export * from "./bookAvailabilitySlotBody";
@@ -32,6 +31,8 @@ export * from "./listSessionsParams";
 export * from "./listUploadsParams";
 export * from "./message";
 export * from "./parentFeedback";
+export * from "./parentLinkRequest";
+export * from "./parentLinkStatus";
 export * from "./parentStudentLink";
 export * from "./payment";
 export * from "./paymentRecord";

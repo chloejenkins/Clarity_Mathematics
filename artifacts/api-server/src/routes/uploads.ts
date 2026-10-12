@@ -49,6 +49,7 @@ function displayName(u: UserRow | undefined): string {
   return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || u.email || "User";
 }
 
+// Guarantees req.user for the handlers below (hence the `req.user!`s).
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   next();

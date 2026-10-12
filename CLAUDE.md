@@ -25,7 +25,11 @@ shared code lives under `lib/*`.
   refuses due to data loss warnings)
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate `api-client-react` and `api-zod` from
   `lib/api-spec/openapi.yaml`
-- There is no test suite/runner configured in this repo yet.
+- `pnpm run test` — run every package's `test` script (currently Vitest in `artifacts/api-server`,
+  tests under `src/__tests__/`). Route tests swap the Drizzle `db` for the queue-based fake in
+  `src/__tests__/helpers/fakeDb.ts`, so no database is needed
+- CI (`.github/workflows/ci.yml`) runs `pnpm run typecheck` and `pnpm run test` on every PR and on
+  pushes to `main`
 - Only `pnpm` is allowed — the root `preinstall` script hard-fails on npm/yarn.
 
 ## Architecture
@@ -63,9 +67,7 @@ then update the route handler and any frontend callers — don't hand-edit files
   `publicMetadata` so the frontend can read it off the Clerk user object without an extra API call
 - `src/routes/index.ts` mounts one router per resource (`sessions`, `messages`, `assignments`,
   `videos`, `users`, `availability`, `parentFeedback`, `parentLinks`, `health`)
-- `src/lib/auth.ts` contains Replit-OIDC session helpers (`createSession`/`getSession` against
-  `sessionsTable`) that predate the Clerk migration and are not wired into `app.ts` — auth is
-  Clerk-only in the current pipeline
+- Auth is Clerk-only; the old Replit-OIDC session helpers (`src/lib/auth.ts`) have been removed
 - Auth model: Clerk is the identity provider; `role` (`tutor` | `student` | `parent` | `pending`) and
   `tutorId` are app-level state stored in Postgres and synced into Clerk `publicMetadata`
 - Build: `build.mjs` bundles the server with esbuild into a single `dist/index.mjs` (ESM), with a
@@ -76,8 +78,8 @@ then update the route handler and any frontend callers — don't hand-edit files
 ### `lib/db` (Drizzle ORM + PostgreSQL)
 
 - `src/schema/auth.ts` — `sessionsTable` and `usersTable`. Both are marked "mandatory for Replit
-  Auth, don't drop" even though live auth now goes through Clerk; `sessionsTable` is still used by
-  the legacy `lib/auth.ts` helpers above
+  Auth, don't drop" even though live auth now goes through Clerk; `sessionsTable` is no longer read
+  or written by any code but is kept so `drizzle-kit push` doesn't drop the table
 - `src/schema/tutoring.ts` — domain tables: `tutoringSessionsTable`, `messagesTable`,
   `assignmentsTable`, `videosTable`, `availabilitySlotsTable`, `submissionsTable`,
   `parentStudentLinksTable`, `parentFeedbackTable`. Each has a matching `drizzle-zod` insert schema

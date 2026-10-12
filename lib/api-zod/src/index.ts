@@ -1,6 +1,27 @@
 export * from "./generated/api";
-// The generated TypeScript interfaces share names with the Zod schemas above
-// (e.g. `CreateSessionBody`), so a second `export *` would be ambiguous. Expose
-// them under a `types` namespace, plus the ones the server imports by name.
-export type * as types from "./generated/types";
-export type { AuthUser } from "./generated/types";
+export * from "./generated/types";
+
+// Orval emits a Zod schema (generated/api) and a TypeScript interface
+// (generated/types) under the same name for some request/response bodies.
+// Prefer the Zod schemas, which is what the api-server imports.
+export {
+  ApproveParentLinkResponse,
+  BookAvailabilitySlotBody,
+  CreateAssignmentBody,
+  CreateConversationBody,
+  CreateParentLinkBody,
+  CreateSessionBody,
+  CreateUploadBody,
+  CreateVideoBody,
+  GetCurrentAuthUserResponse,
+  ReviewSubmissionBody,
+  SendConversationMessageBody,
+  SendMessageBody,
+  SetRoleBody,
+  SetRoleResponse,
+  SubmitAssignmentBody,
+  SyncProfileResponse,
+  UpdateAssignmentBody,
+  UpdateSessionBody,
+  UpsertParentFeedbackBody,
+} from "./generated/api";
