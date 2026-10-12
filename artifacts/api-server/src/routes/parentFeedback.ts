@@ -11,7 +11,7 @@ const UpsertBody = z.object({
   period: z.string().optional(),
 });
 
-function tutorOnly(req: Request, res: Response): boolean {
+function tutorOnly(req: Request, res: Response): req is Request & Express.AuthedRequest {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return false;
@@ -40,7 +40,7 @@ router.get("/parent-feedback/:studentId", async (req: Request, res: Response) =>
     const rows = await db
       .select()
       .from(parentFeedbackTable)
-      .where(eq(parentFeedbackTable.studentId, req.params.studentId))
+      .where(eq(parentFeedbackTable.studentId, String(req.params.studentId)))
       .orderBy(desc(parentFeedbackTable.updatedAt));
     res.json(rows);
     return;
@@ -54,14 +54,14 @@ router.get("/parent-feedback/:studentId", async (req: Request, res: Response) =>
     // Allow a parent to read feedback for a linked child, or for themselves
     // (a parent acting as the family account for a young child).
     const linked =
-      req.params.studentId === req.user.id ||
-      links.some((l) => l.studentId === req.params.studentId);
+      String(req.params.studentId) === req.user.id ||
+      links.some((l) => l.studentId === String(req.params.studentId));
     if (!linked) { res.status(403).json({ error: "Not linked to this student" }); return; }
 
     const rows = await db
       .select()
       .from(parentFeedbackTable)
-      .where(eq(parentFeedbackTable.studentId, req.params.studentId))
+      .where(eq(parentFeedbackTable.studentId, String(req.params.studentId)))
       .orderBy(desc(parentFeedbackTable.updatedAt));
     res.json(rows);
     return;
@@ -82,7 +82,7 @@ router.put("/parent-feedback/:studentId", async (req: Request, res: Response) =>
     .select()
     .from(parentFeedbackTable)
     .where(and(
-      eq(parentFeedbackTable.studentId, req.params.studentId),
+      eq(parentFeedbackTable.studentId, String(req.params.studentId)),
       eq(parentFeedbackTable.tutorId, req.user.id),
     ))
     .limit(1);
@@ -92,7 +92,7 @@ router.put("/parent-feedback/:studentId", async (req: Request, res: Response) =>
       .update(parentFeedbackTable)
       .set({ content: parsed.data.content, period: parsed.data.period ?? null })
       .where(and(
-        eq(parentFeedbackTable.studentId, req.params.studentId),
+        eq(parentFeedbackTable.studentId, String(req.params.studentId)),
         eq(parentFeedbackTable.tutorId, req.user.id),
       ))
       .returning();
@@ -102,7 +102,7 @@ router.put("/parent-feedback/:studentId", async (req: Request, res: Response) =>
       .insert(parentFeedbackTable)
       .values({
         tutorId: req.user.id,
-        studentId: req.params.studentId,
+        studentId: String(req.params.studentId),
         content: parsed.data.content,
         period: parsed.data.period ?? null,
       })
@@ -114,7 +114,7 @@ router.put("/parent-feedback/:studentId", async (req: Request, res: Response) =>
 router.delete("/parent-feedback/:studentId", async (req: Request, res: Response) => {
   if (!tutorOnly(req, res)) return;
   await db.delete(parentFeedbackTable).where(and(
-    eq(parentFeedbackTable.studentId, req.params.studentId),
+    eq(parentFeedbackTable.studentId, String(req.params.studentId)),
     eq(parentFeedbackTable.tutorId, req.user.id),
   ));
   res.json({ success: true });
