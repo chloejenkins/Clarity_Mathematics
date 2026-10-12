@@ -102,6 +102,11 @@ async function buildAll() {
       "electron",
     ],
     sourcemap: "linked",
+    // E2E harness only: swap Clerk for a header/cookie-driven fake so the
+    // browser tests can sign in as any persona. Never set this in production.
+    ...(process.env.E2E_AUTH_BYPASS === "1"
+      ? { alias: { "@clerk/express": path.resolve(artifactDir, "src/testing/fake-clerk.ts") } }
+      : {}),
     plugins: [
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })

@@ -50,6 +50,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      // E2E harness only: swap Clerk for a localStorage-driven fake persona.
+      ...(process.env.VITE_E2E_AUTH === "1"
+        ? { "@clerk/clerk-react": path.resolve(import.meta.dirname, "src/testing/fake-clerk.tsx") }
+        : {}),
     },
     dedupe: ["react", "react-dom"],
   },
