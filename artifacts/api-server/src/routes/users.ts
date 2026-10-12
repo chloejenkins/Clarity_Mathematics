@@ -29,7 +29,7 @@ router.get("/users", async (req: Request, res: Response) => {
     );
   for (const l of myLinks) {
     ids.add(l.parentId);
-    ids.add(l.studentId);
+    if (l.studentId) ids.add(l.studentId);
   }
 
   if (me.role === "tutor") {
@@ -50,7 +50,9 @@ router.get("/users", async (req: Request, res: Response) => {
   } else {
     // Student/parent: include my tutor, and the tutor of any linked child.
     if (me.tutorId) ids.add(me.tutorId);
-    const linkedStudentIds = myLinks.map((l) => l.studentId);
+    const linkedStudentIds = myLinks
+      .map((l) => l.studentId)
+      .filter((v): v is string => Boolean(v));
     if (linkedStudentIds.length > 0) {
       const linkedStudents = await db
         .select({ tutorId: usersTable.tutorId })

@@ -25,7 +25,11 @@ shared code lives under `lib/*`.
   refuses due to data loss warnings)
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate `api-client-react` and `api-zod` from
   `lib/api-spec/openapi.yaml`
-- There is no test suite/runner configured in this repo yet.
+- `pnpm run test` — run every package's `test` script (currently Vitest in `artifacts/api-server`,
+  tests under `src/__tests__/`). Route tests swap the Drizzle `db` for the queue-based fake in
+  `src/__tests__/helpers/fakeDb.ts`, so no database is needed
+- CI (`.github/workflows/ci.yml`) runs `pnpm run typecheck` and `pnpm run test` on every PR and on
+  pushes to `main`
 - Only `pnpm` is allowed — the root `preinstall` script hard-fails on npm/yarn.
 
 ## Architecture

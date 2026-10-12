@@ -16,6 +16,7 @@ function displayName(u: UserRow | undefined): string {
   return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || u.email || "User";
 }
 
+// Guarantees req.user for the handlers below (hence the `req.user!`s).
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   next();
@@ -112,19 +113,19 @@ async function hydrate(rows: PaymentRow[]) {
 
 // GET /payments, reconciles then returns the caller's charges.
 router.get("/payments", requireAuth, async (req: Request, res: Response) => {
-  if (req.user.role === "tutor") {
+  if (req.user!.role === "tutor") {
     const sessions = await db.select().from(tutoringSessionsTable);
     await ensurePayments(sessions);
     const rows = await db
       .select()
       .from(paymentsTable)
-      .where(eq(paymentsTable.tutorId, req.user.id))
+      .where(eq(paymentsTable.tutorId, req.user!.id))
       .orderBy(desc(paymentsTable.createdAt));
     res.json(await hydrate(rows));
-  } else if (req.user.role === "parent") {
+  } else if (req.user!.role === "parent") {
     // Parents see (and can pay) their linked children's charges, plus their
     // own, for a parent acting as the family account for a young child.
-    const ids = Array.from(new Set([req.user.id, ...(await linkedStudentIds(req.user.id))]));
+    const ids = Array.from(new Set([req.user!.id, ...(await linkedStudentIds(req.user!.id))]));
     const sessions = await db
       .select()
       .from(tutoringSessionsTable)
@@ -140,12 +141,12 @@ router.get("/payments", requireAuth, async (req: Request, res: Response) => {
     const sessions = await db
       .select()
       .from(tutoringSessionsTable)
-      .where(eq(tutoringSessionsTable.studentId, req.user.id));
+      .where(eq(tutoringSessionsTable.studentId, req.user!.id));
     await ensurePayments(sessions);
     const rows = await db
       .select()
       .from(paymentsTable)
-      .where(eq(paymentsTable.studentId, req.user.id))
+      .where(eq(paymentsTable.studentId, req.user!.id))
       .orderBy(desc(paymentsTable.createdAt));
     res.json(await hydrate(rows));
   }
@@ -157,8 +158,8 @@ router.post("/payments/:id/mark-sent", requireAuth, async (req: Request, res: Re
   const [p] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, id)).limit(1);
   if (!p) { res.status(404).json({ error: "Not found" }); return; }
   const allowed =
-    p.studentId === req.user.id ||
-    (req.user.role === "parent" && (await linkedStudentIds(req.user.id)).includes(p.studentId));
+    p.studentId === req.user!.id ||
+    (req.user!.role === "parent" && (await linkedStudentIds(req.user!.id)).includes(p.studentId));
   if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
   const [updated] = await db
     .update(paymentsTable)
@@ -170,11 +171,11 @@ router.post("/payments/:id/mark-sent", requireAuth, async (req: Request, res: Re
 
 // Tutor confirms a payment was received.
 router.post("/payments/:id/mark-received", requireAuth, async (req: Request, res: Response) => {
-  if (req.user.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
+  if (req.user!.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
   const id = Number(req.params.id);
   const [p] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, id)).limit(1);
   if (!p) { res.status(404).json({ error: "Not found" }); return; }
-  if (p.tutorId !== req.user.id) { res.status(403).json({ error: "Forbidden" }); return; }
+  if (p.tutorId !== req.user!.id) { res.status(403).json({ error: "Forbidden" }); return; }
   const [updated] = await db
     .update(paymentsTable)
     .set({ status: "received", receivedAt: new Date() })
@@ -185,11 +186,11 @@ router.post("/payments/:id/mark-received", requireAuth, async (req: Request, res
 
 // Tutor confirms they've sent a refund back to the student.
 router.post("/payments/:id/mark-refunded", requireAuth, async (req: Request, res: Response) => {
-  if (req.user.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
+  if (req.user!.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
   const id = Number(req.params.id);
   const [p] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, id)).limit(1);
   if (!p) { res.status(404).json({ error: "Not found" }); return; }
-  if (p.tutorId !== req.user.id) { res.status(403).json({ error: "Forbidden" }); return; }
+  if (p.tutorId !== req.user!.id) { res.status(403).json({ error: "Forbidden" }); return; }
   const [updated] = await db
     .update(paymentsTable)
     .set({ status: "refunded", refundDue: 0 })
@@ -200,19 +201,19 @@ router.post("/payments/:id/mark-refunded", requireAuth, async (req: Request, res
 
 // Tutor rate settings.
 router.get("/payments/settings", requireAuth, async (req: Request, res: Response) => {
-  const [me] = await db.select().from(usersTable).where(eq(usersTable.id, req.user.id)).limit(1);
+  const [me] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id)).limit(1);
   res.json({ hourlyRate: me?.hourlyRate ?? DEFAULT_RATE });
 });
 
 const RateBody = z.object({ hourlyRate: z.number().int().min(0).max(100000) });
 router.put("/payments/settings", requireAuth, async (req: Request, res: Response) => {
-  if (req.user.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
+  if (req.user!.role !== "tutor") { res.status(403).json({ error: "Tutors only" }); return; }
   const parsed = RateBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "hourlyRate must be a whole number" }); return; }
   await db
     .update(usersTable)
     .set({ hourlyRate: parsed.data.hourlyRate })
-    .where(eq(usersTable.id, req.user.id));
+    .where(eq(usersTable.id, req.user!.id));
   res.json({ hourlyRate: parsed.data.hourlyRate });
 });
 

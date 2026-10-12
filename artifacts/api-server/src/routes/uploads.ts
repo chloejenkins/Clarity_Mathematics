@@ -49,6 +49,7 @@ function displayName(u: UserRow | undefined): string {
   return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || u.email || "User";
 }
 
+// Guarantees req.user for the handlers below (hence the `req.user!`s).
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   next();
@@ -104,13 +105,13 @@ router.post("/uploads", requireAuth, uploadSingle, async (req: Request, res: Res
   const rawId = req.body?.assignmentId;
   const assignmentId = rawId != null && rawId !== "" ? Number(rawId) : null;
   const note = typeof req.body?.note === "string" ? req.body.note.slice(0, 1000) : null;
-  const tutorId = await resolveTutorId(req.user);
+  const tutorId = await resolveTutorId(req.user!);
 
   const [row] = await db
     .insert(attachmentsTable)
     .values({
       assignmentId: assignmentId != null && Number.isInteger(assignmentId) ? assignmentId : null,
-      uploadedBy: req.user.id,
+      uploadedBy: req.user!.id,
       tutorId,
       filename: req.file.originalname,
       storageKey: req.file.filename,
@@ -128,10 +129,10 @@ router.post("/uploads", requireAuth, uploadSingle, async (req: Request, res: Res
 router.get("/uploads", requireAuth, async (req: Request, res: Response) => {
   const assignmentId = req.query.assignmentId ? Number(req.query.assignmentId) : undefined;
   const conds = [];
-  if (req.user.role === "tutor") {
-    conds.push(eq(attachmentsTable.tutorId, req.user.id));
+  if (req.user!.role === "tutor") {
+    conds.push(eq(attachmentsTable.tutorId, req.user!.id));
   } else {
-    conds.push(eq(attachmentsTable.uploadedBy, req.user.id));
+    conds.push(eq(attachmentsTable.uploadedBy, req.user!.id));
   }
   if (assignmentId != null && Number.isInteger(assignmentId)) {
     conds.push(eq(attachmentsTable.assignmentId, assignmentId));
@@ -155,8 +156,8 @@ router.get("/uploads/:id/download", requireAuth, async (req: Request, res: Respo
   // Only the uploader or the tutor the file is routed to may access it -
   // NOT any tutor (that would expose every family's files across tutors).
   const canAccess =
-    att.uploadedBy === req.user.id ||
-    att.tutorId === req.user.id;
+    att.uploadedBy === req.user!.id ||
+    att.tutorId === req.user!.id;
   if (!canAccess) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const filePath = path.join(UPLOADS_DIR, att.storageKey);
@@ -177,7 +178,7 @@ router.delete("/uploads/:id", requireAuth, async (req: Request, res: Response) =
 
   const [att] = await db.select().from(attachmentsTable).where(eq(attachmentsTable.id, id)).limit(1);
   if (!att) { res.status(404).json({ error: "Not found" }); return; }
-  if (att.uploadedBy !== req.user.id && att.tutorId !== req.user.id) {
+  if (att.uploadedBy !== req.user!.id && att.tutorId !== req.user!.id) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
