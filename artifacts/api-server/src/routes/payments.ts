@@ -27,7 +27,11 @@ async function linkedStudentIds(parentId: string): Promise<string[]> {
   const links = await db
     .select({ studentId: parentStudentLinksTable.studentId })
     .from(parentStudentLinksTable)
-    .where(and(eq(parentStudentLinksTable.parentId, parentId), isNotNull(parentStudentLinksTable.studentId)));
+    .where(and(
+      eq(parentStudentLinksTable.parentId, parentId),
+      eq(parentStudentLinksTable.status, "approved"),
+      isNotNull(parentStudentLinksTable.studentId),
+    ));
   return links.map((l) => l.studentId).filter((v): v is string => Boolean(v));
 }
 

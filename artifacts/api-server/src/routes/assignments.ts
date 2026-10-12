@@ -41,7 +41,11 @@ router.get("/assignments", async (req: Request, res: Response) => {
     const links = await db
       .select({ studentId: parentStudentLinksTable.studentId })
       .from(parentStudentLinksTable)
-      .where(and(eq(parentStudentLinksTable.parentId, req.user.id), isNotNull(parentStudentLinksTable.studentId)));
+      .where(and(
+        eq(parentStudentLinksTable.parentId, req.user.id),
+        eq(parentStudentLinksTable.status, "approved"),
+        isNotNull(parentStudentLinksTable.studentId),
+      ));
     const ids = Array.from(
       new Set([req.user.id, ...links.map((l) => l.studentId).filter((v): v is string => Boolean(v))]),
     );
@@ -173,6 +177,14 @@ router.post("/assignments/:id/submit", async (req: Request, res: Response) => {
   const parsed = SubmitBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
   const content = parsed.data.content ?? "";
+
+  // Only the person the assignment was given to can submit work for it.
+  const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, assignmentId)).limit(1);
+  if (!assignment) { res.status(404).json({ error: "Assignment not found" }); return; }
+  if (assignment.assignedTo !== req.user.id) {
+    res.status(403).json({ error: "This assignment isn't assigned to you" });
+    return;
+  }
 
   const existing = await db
     .select()

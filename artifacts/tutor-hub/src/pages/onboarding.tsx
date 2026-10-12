@@ -145,8 +145,8 @@ export default function OnboardingPage() {
             <div>
               <h2 className="font-bold text-slate-900 text-lg">Hi, {displayName}!</h2>
               <p className="text-sm text-slate-500 mt-1">
-                Enter your child's email (the one they signed up with) to link your account and see their
-                feedback, schedule, and payments. You can also do this later.
+                Enter your child's email (the one they signed up with) to send a link request. Once your child
+                or their tutor approves it, you'll see their feedback, schedule, and payments. You can also do this later.
               </p>
             </div>
 

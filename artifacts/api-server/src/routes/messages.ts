@@ -6,6 +6,7 @@ import {
   SendMessageBody,
 } from "@workspace/api-zod";
 import { strictRateLimiter } from "../middlewares/rateLimit";
+import { canContactAll } from "../lib/contacts";
 
 const router: IRouter = Router();
 
@@ -70,6 +71,12 @@ router.post("/messages", strictRateLimiter, async (req: Request, res: Response) 
   }
 
   const { recipientId, content } = parsed.data;
+
+  // Only people you're connected to (your tutor, students, linked parents/children).
+  if (!(await canContactAll(req.user, [recipientId]))) {
+    res.status(403).json({ error: "You can only message people you're connected to" });
+    return;
+  }
 
   const [message] = await db
     .insert(messagesTable)
