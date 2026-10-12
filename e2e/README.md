@@ -39,7 +39,7 @@ pnpm install
 export DATABASE_URL=postgres://postgres@localhost:5432/clarity_e2e
 
 e2e/scripts/start-stack.sh                    # pushes the schema, starts API :3001 and web :5173
-pnpm --filter @workspace/e2e test             # scripted journeys
+pnpm --filter @workspace/e2e run test:e2e     # scripted journeys
 pnpm --filter @workspace/e2e run explore -- all   # AI explorer (needs ANTHROPIC_API_KEY); or one mission name
 e2e/scripts/stop-stack.sh
 ```
