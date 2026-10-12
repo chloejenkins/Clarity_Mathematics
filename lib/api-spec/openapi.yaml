@@ -21,6 +21,18 @@ tags:
     description: Math tutorial videos
   - name: users
     description: User management
+  - name: conversations
+    description: Direct and group conversations
+  - name: uploads
+    description: File uploads
+  - name: payments
+    description: Session charges and payment tracking
+  - name: availability
+    description: Tutor availability slots and booking
+  - name: parentFeedback
+    description: Tutor reports for parents
+  - name: parentLinks
+    description: Parent-to-student account links
 paths:
   /healthz:
     get:
@@ -48,6 +60,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetCurrentAuthUserResponse"
 
+  /auth/sync-profile:
+    post:
+      operationId: syncProfile
+      tags: [auth]
+      summary: Copy the caller's Clerk profile into their user row
+      responses:
+        "200":
+          description: Profile synced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncProfileResponse"
+
+  /auth/set-role:
+    post:
+      operationId: setRole
+      tags: [auth]
+      summary: Choose a role during onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetRoleBody"
+      responses:
+        "200":
+          description: Role set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetRoleResponse"
+
   /users:
     get:
       operationId: listUsers
@@ -62,6 +106,21 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+
+  /users/tutors:
+    get:
+      operationId: listTutors
+      tags: [users]
+      summary: List tutors (for onboarding)
+      responses:
+        "200":
+          description: Tutors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TutorSummary"
 
   /sessions:
     get:
@@ -141,7 +200,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TutoringSession"
+                $ref: "#/components/schemas/UpdatedTutoringSession"
     delete:
       operationId: deleteSession
       tags: [sessions]
@@ -272,6 +331,104 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /assignments/{id}/submit:
+    post:
+      operationId: submitAssignment
+      tags: [assignments]
+      summary: Submit (or resubmit) work for an assignment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAssignmentBody"
+      responses:
+        "200":
+          description: Submission updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "201":
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
+  /assignments/{id}/my-submission:
+    get:
+      operationId: getMySubmission
+      tags: [assignments]
+      summary: Get the caller's submission for an assignment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The submission, or null if none
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Submission"
+                  - type: "null"
+
+  /assignments/{id}/submissions:
+    get:
+      operationId: listAssignmentSubmissions
+      tags: [assignments]
+      summary: List submissions for an assignment (tutor only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AssignmentSubmission"
+
+  /submissions/{id}/review:
+    post:
+      operationId: reviewSubmission
+      tags: [assignments]
+      summary: Review a submission (tutor only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewSubmissionBody"
+      responses:
+        "200":
+          description: Reviewed submission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
   /videos:
     get:
       operationId: listVideos
@@ -318,6 +475,539 @@ paths:
       responses:
         "200":
           description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List the caller's conversations
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Start a direct or group conversation (direct ones are deduped)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationBody"
+      responses:
+        "200":
+          description: Existing direct conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}/messages:
+    get:
+      operationId: listConversationMessages
+      tags: [conversations]
+      summary: List messages in a conversation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendConversationMessage
+      tags: [conversations]
+      summary: Send a message to a conversation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendConversationMessageBody"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /uploads:
+    get:
+      operationId: listUploads
+      tags: [uploads]
+      summary: List files the caller can see
+      parameters:
+        - in: query
+          name: assignmentId
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attachment"
+    post:
+      operationId: createUpload
+      tags: [uploads]
+      summary: Upload a file (max 15 MB)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateUploadBody"
+      responses:
+        "201":
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attachment"
+
+  /uploads/{id}:
+    delete:
+      operationId: deleteUpload
+      tags: [uploads]
+      summary: Delete a file
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /uploads/{id}/download:
+    get:
+      operationId: downloadUpload
+      tags: [uploads]
+      summary: Download a file
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: File contents
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /payments:
+    get:
+      operationId: listPayments
+      tags: [payments]
+      summary: List the caller's charges (creates any that are owed)
+      responses:
+        "200":
+          description: Payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+
+  /payments/{id}/mark-sent:
+    post:
+      operationId: markPaymentSent
+      tags: [payments]
+      summary: Mark a charge as paid (student or parent)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentRecord"
+
+  /payments/{id}/mark-received:
+    post:
+      operationId: markPaymentReceived
+      tags: [payments]
+      summary: Confirm a payment was received (tutor only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentRecord"
+
+  /payments/{id}/mark-refunded:
+    post:
+      operationId: markPaymentRefunded
+      tags: [payments]
+      summary: Confirm a refund was sent (tutor only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentRecord"
+
+  /payments/settings:
+    get:
+      operationId: getPaymentSettings
+      tags: [payments]
+      summary: Get the tutor's hourly rate
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSettings"
+    put:
+      operationId: updatePaymentSettings
+      tags: [payments]
+      summary: Set the tutor's hourly rate (tutor only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentSettings"
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSettings"
+
+  /availability:
+    get:
+      operationId: listAvailability
+      tags: [availability]
+      summary: List open slots (tutors see their own)
+      responses:
+        "200":
+          description: Slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailabilitySlot"
+    post:
+      operationId: createAvailabilitySlots
+      tags: [availability]
+      summary: Add open slots (tutor only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/CreateAvailabilitySlotBody"
+      responses:
+        "201":
+          description: Slots created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailabilitySlot"
+
+  /availability/{id}:
+    delete:
+      operationId: deleteAvailabilitySlot
+      tags: [availability]
+      summary: Remove an unbooked slot (tutor only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /availability/{id}/book:
+    post:
+      operationId: bookAvailabilitySlot
+      tags: [availability]
+      summary: Book a slot (student or parent)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookAvailabilitySlotBody"
+      responses:
+        "201":
+          description: Booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookAvailabilitySlotResponse"
+
+  /parent-feedback:
+    get:
+      operationId: listParentFeedback
+      tags: [parentFeedback]
+      summary: List the tutor's parent reports (tutor only)
+      responses:
+        "200":
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParentFeedback"
+
+  /parent-feedback/{studentId}:
+    get:
+      operationId: listStudentParentFeedback
+      tags: [parentFeedback]
+      summary: List parent reports for one student
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParentFeedback"
+    put:
+      operationId: upsertParentFeedback
+      tags: [parentFeedback]
+      summary: Create or replace the tutor's report for a student (tutor only)
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertParentFeedbackBody"
+      responses:
+        "200":
+          description: Report updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentFeedback"
+        "201":
+          description: Report created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentFeedback"
+    delete:
+      operationId: deleteParentFeedback
+      tags: [parentFeedback]
+      summary: Delete the tutor's report for a student (tutor only)
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /parent-links:
+    get:
+      operationId: listParentLinks
+      tags: [parentLinks]
+      summary: List the parent's linked students (parent only)
+      responses:
+        "200":
+          description: Links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParentStudentLink"
+    post:
+      operationId: createParentLink
+      tags: [parentLinks]
+      summary: Request a link to a student account by email (parent only; starts pending)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateParentLinkBody"
+      responses:
+        "200":
+          description: Already linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentStudentLink"
+        "201":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentStudentLink"
+
+  /parent-links/{id}:
+    delete:
+      operationId: deleteParentLink
+      tags: [parentLinks]
+      summary: Unlink a student (parent only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /parent-links/requests:
+    get:
+      operationId: listParentLinkRequests
+      tags: [parentLinks]
+      summary: List pending link requests the caller can approve (the student, or their tutor)
+      responses:
+        "200":
+          description: Pending requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParentLinkRequest"
+
+  /parent-links/{id}/approve:
+    post:
+      operationId: approveParentLink
+      tags: [parentLinks]
+      summary: Approve a parent's link request (the student, or their tutor)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApproveParentLinkResponse"
+
+  /parent-links/{id}/decline:
+    post:
+      operationId: declineParentLink
+      tags: [parentLinks]
+      summary: Decline a link request, or revoke an approved link (the student, or their tutor)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Declined
           content:
             application/json:
               schema:
@@ -427,6 +1117,33 @@ components:
         - scheduledAt
         - durationMinutes
 
+    SessionCancellation:
+      type: object
+      description: How the refund policy was applied when a session was cancelled
+      properties:
+        policy:
+          type: string
+          enum: [full_refund, half_fee, tutor_cancel]
+        feeOwed:
+          type: integer
+          description: Cancellation fee the student still owes, in whole dollars
+        refundOwed:
+          type: integer
+          description: Amount the tutor should refund, in whole dollars
+      required:
+        - policy
+        - feeOwed
+        - refundOwed
+
+    UpdatedTutoringSession:
+      allOf:
+        - $ref: "#/components/schemas/TutoringSession"
+        - type: object
+          properties:
+            cancellation:
+              $ref: "#/components/schemas/SessionCancellation"
+              description: Only present the first time a session is cancelled
+
     UpdateSessionBody:
       type: object
       properties:
@@ -451,6 +1168,9 @@ components:
           nullable: true
         senderImageUrl:
           type: string
+          nullable: true
+        conversationId:
+          type: integer
           nullable: true
         recipientId:
           type: string
@@ -581,3 +1301,521 @@ components:
       required:
         - title
         - url
+
+    SyncProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        profileImageUrl:
+          type: string
+          nullable: true
+      required:
+        - success
+
+    SetRoleBody:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [tutor, student, parent]
+        tutorId:
+          type: string
+      required:
+        - role
+
+    SetRoleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        role:
+          type: string
+          enum: [tutor, student, parent]
+        tutorId:
+          type: string
+          nullable: true
+      required:
+        - success
+        - role
+        - tutorId
+
+    TutorSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        username:
+          type: string
+          nullable: true
+        profileImageUrl:
+          type: string
+          nullable: true
+      required:
+        - id
+
+    Submission:
+      type: object
+      properties:
+        id:
+          type: integer
+        assignmentId:
+          type: integer
+        studentId:
+          type: string
+        content:
+          type: string
+        tutorComment:
+          type: string
+          nullable: true
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - assignmentId
+        - studentId
+        - content
+        - submittedAt
+
+    AssignmentSubmission:
+      allOf:
+        - $ref: "#/components/schemas/Submission"
+        - type: object
+          properties:
+            studentName:
+              type: string
+          required:
+            - studentName
+
+    SubmitAssignmentBody:
+      type: object
+      properties:
+        content:
+          type: string
+
+    ReviewSubmissionBody:
+      type: object
+      properties:
+        comment:
+          type: string
+
+    ConversationParticipant:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [direct, group]
+        title:
+          type: string
+          nullable: true
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationParticipant"
+        lastMessage:
+          type: string
+          nullable: true
+        lastMessageAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - participants
+        - lastMessageAt
+
+    CreateConversationBody:
+      type: object
+      properties:
+        participantIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        title:
+          type: string
+      required:
+        - participantIds
+
+    SendConversationMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: integer
+        assignmentId:
+          type: integer
+          nullable: true
+        uploadedBy:
+          type: string
+        uploaderName:
+          type: string
+        uploaderRole:
+          type: string
+          nullable: true
+        filename:
+          type: string
+        mimeType:
+          type: string
+          nullable: true
+        sizeBytes:
+          type: integer
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+      required:
+        - id
+        - uploadedBy
+        - uploaderName
+        - filename
+        - createdAt
+        - downloadUrl
+
+    CreateUploadBody:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        assignmentId:
+          type: integer
+        note:
+          type: string
+      required:
+        - file
+
+    PaymentStatus:
+      type: string
+      enum: [due, sent, received, void, refund_due, refunded]
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: integer
+          description: Whole dollars
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        refundDue:
+          type: integer
+        studentId:
+          type: string
+        studentName:
+          type: string
+        tutorName:
+          type: string
+        sessionDate:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - amount
+        - status
+        - refundDue
+        - studentId
+        - studentName
+        - tutorName
+        - createdAt
+
+    PaymentRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        tutorId:
+          type: string
+        studentId:
+          type: string
+        sessionId:
+          type: integer
+          nullable: true
+        amount:
+          type: integer
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        refundDue:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - tutorId
+        - studentId
+        - amount
+        - status
+        - refundDue
+        - createdAt
+
+    PaymentSettings:
+      type: object
+      properties:
+        hourlyRate:
+          type: integer
+          minimum: 0
+          maximum: 100000
+      required:
+        - hourlyRate
+
+    AvailabilitySlot:
+      type: object
+      properties:
+        id:
+          type: integer
+        tutorId:
+          type: string
+          nullable: true
+        startsAt:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+        topic:
+          type: string
+          nullable: true
+        isBooked:
+          type: string
+          enum: ["true", "false"]
+        bookedByStudentId:
+          type: string
+          nullable: true
+        sessionId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        tutorName:
+          type: string
+          description: Only present for students and parents
+        tutorProfileImageUrl:
+          type: string
+          nullable: true
+          description: Only present for students and parents
+      required:
+        - id
+        - startsAt
+        - durationMinutes
+        - isBooked
+        - createdAt
+
+    CreateAvailabilitySlotBody:
+      type: object
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+          minimum: 15
+          maximum: 240
+        topic:
+          type: string
+      required:
+        - startsAt
+
+    BookAvailabilitySlotBody:
+      type: object
+      properties:
+        topic:
+          type: string
+
+    BookAvailabilitySlotResponse:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/TutoringSession"
+        slotId:
+          type: integer
+      required:
+        - session
+        - slotId
+
+    ParentFeedback:
+      type: object
+      properties:
+        id:
+          type: integer
+        tutorId:
+          type: string
+          nullable: true
+        studentId:
+          type: string
+        content:
+          type: string
+        period:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - studentId
+        - content
+        - createdAt
+        - updatedAt
+
+    UpsertParentFeedbackBody:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+        period:
+          type: string
+      required:
+        - content
+
+    ParentStudentLink:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: string
+          nullable: true
+        studentName:
+          type: string
+          nullable: true
+        studentEmail:
+          type: string
+          nullable: true
+        linked:
+          type: boolean
+          description: True only for an approved link to a real student account
+        status:
+          $ref: "#/components/schemas/ParentLinkStatus"
+      required:
+        - id
+        - linked
+        - status
+
+    ParentLinkStatus:
+      type: string
+      enum: [pending, approved]
+      description: Links start pending until the student or their tutor approves them
+
+    ParentLinkRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        parentId:
+          type: string
+        parentName:
+          type: string
+        parentEmail:
+          type: string
+          nullable: true
+        studentId:
+          type: string
+          nullable: true
+        studentName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - parentId
+        - parentName
+        - createdAt
+
+    ApproveParentLinkResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: "#/components/schemas/ParentLinkStatus"
+      required:
+        - id
+        - status
+
+    CreateParentLinkBody:
+      type: object
+      properties:
+        studentEmail:
+          type: string
+          format: email
+      required:
+        - studentEmail

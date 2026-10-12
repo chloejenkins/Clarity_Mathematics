@@ -1,8 +1,16 @@
 import { CreditCard, Gift, Clock, RefreshCcw, Copy, CheckCircle, Wallet, Check, Loader2, Pencil, Receipt } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { customFetch } from "@workspace/api-client-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMarkPaymentSent,
+  useMarkPaymentReceived,
+  useMarkPaymentRefunded,
+  useGetPaymentSettings,
+  useUpdatePaymentSettings,
+  getListPaymentsQueryKey,
+  getGetPaymentSettingsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePayments, type Payment } from "@/components/payment-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,25 +95,28 @@ function ChargeRow({ p, isTutor }: { p: Payment; isTutor: boolean }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const markSent = useMutation({
-    mutationFn: () => customFetch(`/api/payments/${p.id}/mark-sent`, { method: "POST" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
-      toast({ title: "Marked as paid", description: "Your tutor will confirm receipt." });
+  const markSent = useMarkPaymentSent({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+        toast({ title: "Marked as paid", description: "Your tutor will confirm receipt." });
+      },
     },
   });
-  const markReceived = useMutation({
-    mutationFn: () => customFetch(`/api/payments/${p.id}/mark-received`, { method: "POST" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
-      toast({ title: "Payment confirmed" });
+  const markReceived = useMarkPaymentReceived({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+        toast({ title: "Payment confirmed" });
+      },
     },
   });
-  const markRefunded = useMutation({
-    mutationFn: () => customFetch(`/api/payments/${p.id}/mark-refunded`, { method: "POST" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
-      toast({ title: "Refund marked as sent" });
+  const markRefunded = useMarkPaymentRefunded({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+        toast({ title: "Refund marked as sent" });
+      },
     },
   });
 
@@ -129,17 +140,17 @@ function ChargeRow({ p, isTutor }: { p: Payment; isTutor: boolean }) {
         <StatusBadge status={p.status} />
       </div>
       {!isTutor && p.status === "due" && (
-        <Button size="sm" className="rounded-lg shrink-0" disabled={markSent.isPending} onClick={() => markSent.mutate()}>
+        <Button size="sm" className="rounded-lg shrink-0" disabled={markSent.isPending} onClick={() => markSent.mutate({ id: p.id })}>
           {markSent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark as paid"}
         </Button>
       )}
       {isTutor && p.status === "sent" && (
-        <Button size="sm" className="rounded-lg shrink-0 gap-1" disabled={markReceived.isPending} onClick={() => markReceived.mutate()}>
+        <Button size="sm" className="rounded-lg shrink-0 gap-1" disabled={markReceived.isPending} onClick={() => markReceived.mutate({ id: p.id })}>
           {markReceived.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4" /> Confirm</>}
         </Button>
       )}
       {isTutor && p.status === "refund_due" && (
-        <Button size="sm" variant="outline" className="rounded-lg shrink-0" disabled={markRefunded.isPending} onClick={() => markRefunded.mutate()}>
+        <Button size="sm" variant="outline" className="rounded-lg shrink-0" disabled={markRefunded.isPending} onClick={() => markRefunded.mutate({ id: p.id })}>
           {markRefunded.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark refunded"}
         </Button>
       )}
@@ -158,19 +169,16 @@ function RateEditor() {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
 
-  const { data } = useQuery({
-    queryKey: ["/api/payments/settings"],
-    queryFn: () => customFetch<{ hourlyRate: number }>("/api/payments/settings"),
-  });
+  const { data } = useGetPaymentSettings();
 
-  const save = useMutation({
-    mutationFn: (rate: number) =>
-      customFetch("/api/payments/settings", { method: "PUT", body: JSON.stringify({ hourlyRate: rate }) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payments/settings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
-      setEditing(false);
-      toast({ title: "Hourly rate updated" });
+  const save = useUpdatePaymentSettings({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetPaymentSettingsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+        setEditing(false);
+        toast({ title: "Hourly rate updated" });
+      },
     },
   });
 
@@ -192,7 +200,7 @@ function RateEditor() {
             />
             <span className="text-muted-foreground ml-1">/hr</span>
           </div>
-          <Button size="sm" className="h-8 rounded-lg" disabled={save.isPending} onClick={() => save.mutate(Math.max(0, Math.round(Number(value) || rate)))}>
+          <Button size="sm" className="h-8 rounded-lg" disabled={save.isPending} onClick={() => save.mutate({ data: { hourlyRate: Math.max(0, Math.round(Number(value) || rate)) } })}>
             Save
           </Button>
           <Button size="sm" variant="ghost" className="h-8 rounded-lg" onClick={() => setEditing(false)}>Cancel</Button>

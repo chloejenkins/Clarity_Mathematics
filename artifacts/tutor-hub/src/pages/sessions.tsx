@@ -1,7 +1,19 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListSessions, useUpdateSession, useDeleteSession, customFetch } from "@workspace/api-client-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useListSessions,
+  useUpdateSession,
+  useDeleteSession,
+  useListAvailability,
+  createAvailabilitySlots,
+  bookAvailabilitySlot,
+  deleteAvailabilitySlot,
+  getListAvailabilityQueryKey,
+  getListSessionsQueryKey,
+  getListPaymentsQueryKey,
+  type AvailabilitySlot as Slot,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -25,18 +37,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-type Slot = {
-  id: number;
-  startsAt: string;
-  durationMinutes: number;
-  topic: string | null;
-  isBooked: string;
-  bookedByStudentId: string | null;
-  sessionId: number | null;
-};
 
 function formatDay(date: Date) {
   if (isToday(date)) return "Today";
@@ -96,13 +96,7 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
       });
     });
     try {
-      const res = await fetch(`${BASE}/api/availability`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(slots),
-      });
-      if (!res.ok) throw new Error();
+      await createAvailabilitySlots(slots);
       toast({ title: `${slots.length} slot${slots.length > 1 ? "s" : ""} added!` });
       setOpen(false);
       setDate(""); setTimes([""]); setTopic(""); setRepeatWeeks("1");
@@ -223,18 +217,15 @@ function BookSlotDialog({ slot, onBooked }: { slot: Slot; onBooked: () => void }
   const handleBook = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/availability/${slot.id}/book`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: topic.trim() || undefined }),
-      });
-      if (res.status === 409) { toast({ title: "This slot was just booked by someone else", variant: "destructive" }); return; }
-      if (!res.ok) throw new Error();
+      await bookAvailabilitySlot(slot.id, { topic: topic.trim() || undefined });
       toast({ title: "Session booked! It's confirmed." });
       setOpen(false);
       onBooked();
-    } catch {
+    } catch (e) {
+      if ((e as { status?: number }).status === 409) {
+        toast({ title: "This slot was just booked by someone else", variant: "destructive" });
+        return;
+      }
       toast({ title: "Failed to book session", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -294,18 +285,15 @@ function RescheduleDialog({ session }: { session: { id: number; scheduledAt: str
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   };
 
-  const reschedule = useMutation({
-    mutationFn: () =>
-      customFetch(`/api/sessions/${session.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ scheduledAt: new Date(dt).toISOString() }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      toast({ title: "Session rescheduled" });
-      setOpen(false);
+  const reschedule = useUpdateSession({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
+        toast({ title: "Session rescheduled" });
+        setOpen(false);
+      },
+      onError: () => toast({ title: "Couldn't reschedule", variant: "destructive" }),
     },
-    onError: () => toast({ title: "Couldn't reschedule", variant: "destructive" }),
   });
 
   return (
@@ -321,7 +309,7 @@ function RescheduleDialog({ session }: { session: { id: number; scheduledAt: str
         <div className="space-y-3">
           <Label>New date &amp; time</Label>
           <Input type="datetime-local" value={dt} onChange={(e) => setDt(e.target.value)} className="rounded-xl" />
-          <Button className="w-full rounded-xl" disabled={!dt || reschedule.isPending} onClick={() => reschedule.mutate()}>
+          <Button className="w-full rounded-xl" disabled={!dt || reschedule.isPending} onClick={() => reschedule.mutate({ id: session.id, data: { scheduledAt: new Date(dt).toISOString() } })}>
             {reschedule.isPending ? "Saving…" : "Confirm new time"}
           </Button>
         </div>
@@ -336,15 +324,15 @@ function LessonNotes({ session, canEdit }: { session: { id: number; notes: strin
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const save = useMutation({
-    mutationFn: () =>
-      customFetch(`/api/sessions/${session.id}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      toast({ title: "Lesson notes saved" });
-      setEditing(false);
+  const save = useUpdateSession({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
+        toast({ title: "Lesson notes saved" });
+        setEditing(false);
+      },
+      onError: () => toast({ title: "Couldn't save notes", variant: "destructive" }),
     },
-    onError: () => toast({ title: "Couldn't save notes", variant: "destructive" }),
   });
 
   if (!canEdit && !session.notes) return null;
@@ -360,7 +348,7 @@ function LessonNotes({ session, canEdit }: { session: { id: number; notes: strin
             className="rounded-lg text-sm min-h-[70px]"
           />
           <div className="flex gap-2">
-            <Button size="sm" className="rounded-lg" disabled={save.isPending} onClick={() => save.mutate()}>
+            <Button size="sm" className="rounded-lg" disabled={save.isPending} onClick={() => save.mutate({ id: session.id, data: { notes } })}>
               {save.isPending ? "Saving…" : "Save notes"}
             </Button>
             <Button size="sm" variant="ghost" className="rounded-lg" onClick={() => { setNotes(session.notes ?? ""); setEditing(false); }}>
@@ -399,14 +387,8 @@ export default function SchedulePage() {
   const deleteMutation = useDeleteSession();
 
   // Availability slots
-  const { data: slots = [], refetch: refetchSlots } = useQuery<Slot[]>({
-    queryKey: ["/api/availability"],
-    queryFn: async () => {
-      const res = await fetch(`${BASE}/api/availability`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch availability");
-      return res.json();
-    },
-    refetchInterval: 10000,
+  const { data: slots = [], refetch: refetchSlots } = useListAvailability({
+    query: { queryKey: getListAvailabilityQueryKey(), refetchInterval: 10000 },
   });
 
   // Confirmed sessions (from bookings)
@@ -417,7 +399,7 @@ export default function SchedulePage() {
   const deleteSlot = async (id: number) => {
     if (!confirm("Remove this time slot?")) return;
     try {
-      await fetch(`${BASE}/api/availability/${id}`, { method: "DELETE", credentials: "include" });
+      await deleteAvailabilitySlot(id);
       refetchSlots();
       toast({ title: "Slot removed" });
     } catch {
@@ -428,9 +410,9 @@ export default function SchedulePage() {
   const handleSessionStatus = (id: number, status: "completed" | "cancelled") => {
     updateMutation.mutate({ id, data: { status } }, {
       onSuccess: (res) => {
-        queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
-        const cancellation = (res as { cancellation?: { policy: string; feeOwed: number; refundOwed: number } })?.cancellation;
+        queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+        const cancellation = res.cancellation;
         if (status === "cancelled" && cancellation) {
           const { policy, feeOwed, refundOwed } = cancellation;
           let desc =
@@ -548,7 +530,7 @@ export default function SchedulePage() {
                             onClick={() => {
                               if (confirm("Delete this session?")) {
                                 deleteMutation.mutate({ id: session.id }, {
-                                  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/sessions"] })
+                                  onSuccess: () => queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() })
                                 });
                               }
                             }}
@@ -654,7 +636,7 @@ export default function SchedulePage() {
                         )}
                         <BookSlotDialog slot={slot} onBooked={() => {
                           refetchSlots();
-                          queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+                          queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
                         }} />
                       </CardContent>
                     </Card>

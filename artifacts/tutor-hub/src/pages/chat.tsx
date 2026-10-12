@@ -1,7 +1,17 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListUsers, customFetch, type User } from "@workspace/api-client-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useListUsers,
+  useListConversations,
+  useListConversationMessages,
+  useSendConversationMessage,
+  useCreateConversation,
+  getListConversationsQueryKey,
+  getListConversationMessagesQueryKey,
+  type Conversation,
+  type User,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,30 +27,6 @@ import {
 import { Send, MessageSquare, Plus, Users, Check, ChevronLeft } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { cn } from "@/lib/utils";
-
-interface Participant {
-  id: string;
-  name: string;
-  role: string | null;
-  imageUrl: string | null;
-}
-interface Conversation {
-  id: number;
-  type: string;
-  title: string | null;
-  participants: Participant[];
-  lastMessage: string | null;
-  lastMessageAt: string;
-}
-interface ChatMessage {
-  id: number;
-  conversationId: number | null;
-  senderId: string;
-  content: string;
-  createdAt: string;
-  senderName: string;
-  senderImageUrl: string | null;
-}
 
 function formatMsgTime(dateStr: string | Date) {
   const date = new Date(dateStr);
@@ -71,10 +57,8 @@ export default function ChatPage() {
 
   const { data: users } = useListUsers();
 
-  const { data: conversations } = useQuery({
-    queryKey: ["/api/conversations"],
-    queryFn: () => customFetch<Conversation[]>("/api/conversations"),
-    refetchInterval: 5000,
+  const { data: conversations } = useListConversations({
+    query: { queryKey: getListConversationsQueryKey(), refetchInterval: 5000 },
   });
 
   const [selectedId, setSelectedId] = useState<number | undefined>(undefined);
@@ -87,26 +71,21 @@ export default function ChatPage() {
     }
   }, [conversations, selectedId]);
 
-  const { data: messages, isLoading } = useQuery({
-    queryKey: ["/api/conversations", selectedId, "messages"],
-    queryFn: () =>
-      customFetch<ChatMessage[]>(`/api/conversations/${selectedId}/messages`),
-    enabled: selectedId !== undefined,
-    refetchInterval: 4000,
+  const { data: messages, isLoading } = useListConversationMessages(selectedId ?? 0, {
+    query: {
+      queryKey: getListConversationMessagesQueryKey(selectedId ?? 0),
+      enabled: selectedId !== undefined,
+      refetchInterval: 4000,
+    },
   });
 
-  const sendMutation = useMutation({
-    mutationFn: (content: string) =>
-      customFetch<ChatMessage>(`/api/conversations/${selectedId}/messages`, {
-        method: "POST",
-        body: JSON.stringify({ content }),
-      }),
-    onSuccess: () => {
-      setDraft("");
-      queryClient.invalidateQueries({
-        queryKey: ["/api/conversations", selectedId, "messages"],
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+  const sendMutation = useSendConversationMessage({
+    mutation: {
+      onSuccess: (_message, { id }) => {
+        setDraft("");
+        queryClient.invalidateQueries({ queryKey: getListConversationMessagesQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
+      },
     },
   });
 
@@ -122,7 +101,7 @@ export default function ChatPage() {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.trim() || selectedId === undefined || sendMutation.isPending) return;
-    sendMutation.mutate(draft.trim());
+    sendMutation.mutate({ id: selectedId, data: { content: draft.trim() } });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -362,7 +341,7 @@ export default function ChatPage() {
         onOpenChange={setDialogOpen}
         users={(users ?? []).filter((u) => u.id !== myId)}
         onCreated={(conv) => {
-          queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+          queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
           setSelectedId(conv.id);
           setDialogOpen(false);
         }}
@@ -395,17 +374,7 @@ function NewConversationDialog({
 
   const isGroup = selected.size > 1;
 
-  const createMutation = useMutation({
-    mutationFn: () =>
-      customFetch<Conversation>("/api/conversations", {
-        method: "POST",
-        body: JSON.stringify({
-          participantIds: Array.from(selected),
-          title: isGroup && title.trim() ? title.trim() : undefined,
-        }),
-      }),
-    onSuccess: onCreated,
-  });
+  const createMutation = useCreateConversation({ mutation: { onSuccess: onCreated } });
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -487,7 +456,14 @@ function NewConversationDialog({
 
         <DialogFooter>
           <Button
-            onClick={() => createMutation.mutate()}
+            onClick={() =>
+              createMutation.mutate({
+                data: {
+                  participantIds: Array.from(selected),
+                  title: isGroup && title.trim() ? title.trim() : undefined,
+                },
+              })
+            }
             disabled={selected.size === 0 || createMutation.isPending}
             className="w-full rounded-lg"
           >

@@ -33,6 +33,28 @@ export const GetCurrentAuthUserResponse = zod.object({
 });
 
 /**
+ * @summary Copy the caller's Clerk profile into their user row
+ */
+export const SyncProfileResponse = zod.object({
+  success: zod.boolean(),
+  profileImageUrl: zod.string().nullish(),
+});
+
+/**
+ * @summary Choose a role during onboarding
+ */
+export const SetRoleBody = zod.object({
+  role: zod.enum(["tutor", "student", "parent"]),
+  tutorId: zod.string().optional(),
+});
+
+export const SetRoleResponse = zod.object({
+  success: zod.boolean(),
+  role: zod.enum(["tutor", "student", "parent"]),
+  tutorId: zod.string().nullable(),
+});
+
+/**
  * @summary List all students (tutor only)
  */
 export const ListUsersResponseItem = zod.object({
@@ -45,6 +67,18 @@ export const ListUsersResponseItem = zod.object({
   createdAt: zod.date().optional(),
 });
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
+
+/**
+ * @summary List tutors (for onboarding)
+ */
+export const ListTutorsResponseItem = zod.object({
+  id: zod.string(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  username: zod.string().nullish(),
+  profileImageUrl: zod.string().nullish(),
+});
+export const ListTutorsResponse = zod.array(ListTutorsResponseItem);
 
 /**
  * @summary List tutoring sessions
@@ -110,17 +144,36 @@ export const UpdateSessionBody = zod.object({
   scheduledAt: zod.date().optional(),
 });
 
-export const UpdateSessionResponse = zod.object({
-  id: zod.number(),
-  studentId: zod.string(),
-  studentName: zod.string().optional(),
-  scheduledAt: zod.date(),
-  durationMinutes: zod.number(),
-  topic: zod.string().nullish(),
-  status: zod.enum(["pending", "approved", "cancelled", "completed"]),
-  notes: zod.string().nullish(),
-  createdAt: zod.date().optional(),
-});
+export const UpdateSessionResponse = zod
+  .object({
+    id: zod.number(),
+    studentId: zod.string(),
+    studentName: zod.string().optional(),
+    scheduledAt: zod.date(),
+    durationMinutes: zod.number(),
+    topic: zod.string().nullish(),
+    status: zod.enum(["pending", "approved", "cancelled", "completed"]),
+    notes: zod.string().nullish(),
+    createdAt: zod.date().optional(),
+  })
+  .and(
+    zod.object({
+      cancellation: zod
+        .object({
+          policy: zod.enum(["full_refund", "half_fee", "tutor_cancel"]),
+          feeOwed: zod
+            .number()
+            .describe(
+              "Cancellation fee the student still owes, in whole dollars",
+            ),
+          refundOwed: zod
+            .number()
+            .describe("Amount the tutor should refund, in whole dollars"),
+        })
+        .optional()
+        .describe("Only present the first time a session is cancelled"),
+    }),
+  );
 
 /**
  * @summary Delete a session
@@ -145,6 +198,7 @@ export const ListMessagesResponseItem = zod.object({
   senderId: zod.string(),
   senderName: zod.string().nullish(),
   senderImageUrl: zod.string().nullish(),
+  conversationId: zod.number().nullish(),
   recipientId: zod.string().nullish(),
   content: zod.string(),
   createdAt: zod.date(),
@@ -226,6 +280,98 @@ export const DeleteAssignmentResponse = zod.object({
 });
 
 /**
+ * @summary Submit (or resubmit) work for an assignment
+ */
+export const SubmitAssignmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SubmitAssignmentBody = zod.object({
+  content: zod.string().optional(),
+});
+
+export const SubmitAssignmentResponse = zod.object({
+  id: zod.number(),
+  assignmentId: zod.number(),
+  studentId: zod.string(),
+  content: zod.string(),
+  tutorComment: zod.string().nullish(),
+  reviewedAt: zod.date().nullish(),
+  submittedAt: zod.date(),
+  updatedAt: zod.date().optional(),
+});
+
+/**
+ * @summary Get the caller's submission for an assignment
+ */
+export const GetMySubmissionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetMySubmissionResponse = zod.union([
+  zod.object({
+    id: zod.number(),
+    assignmentId: zod.number(),
+    studentId: zod.string(),
+    content: zod.string(),
+    tutorComment: zod.string().nullish(),
+    reviewedAt: zod.date().nullish(),
+    submittedAt: zod.date(),
+    updatedAt: zod.date().optional(),
+  }),
+  zod.null(),
+]);
+
+/**
+ * @summary List submissions for an assignment (tutor only)
+ */
+export const ListAssignmentSubmissionsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListAssignmentSubmissionsResponseItem = zod
+  .object({
+    id: zod.number(),
+    assignmentId: zod.number(),
+    studentId: zod.string(),
+    content: zod.string(),
+    tutorComment: zod.string().nullish(),
+    reviewedAt: zod.date().nullish(),
+    submittedAt: zod.date(),
+    updatedAt: zod.date().optional(),
+  })
+  .and(
+    zod.object({
+      studentName: zod.string(),
+    }),
+  );
+export const ListAssignmentSubmissionsResponse = zod.array(
+  ListAssignmentSubmissionsResponseItem,
+);
+
+/**
+ * @summary Review a submission (tutor only)
+ */
+export const ReviewSubmissionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ReviewSubmissionBody = zod.object({
+  comment: zod.string().optional(),
+});
+
+export const ReviewSubmissionResponse = zod.object({
+  id: zod.number(),
+  assignmentId: zod.number(),
+  studentId: zod.string(),
+  content: zod.string(),
+  tutorComment: zod.string().nullish(),
+  reviewedAt: zod.date().nullish(),
+  submittedAt: zod.date(),
+  updatedAt: zod.date().optional(),
+});
+
+/**
  * @summary List math tutorial videos
  */
 export const ListVideosResponseItem = zod.object({
@@ -256,5 +402,508 @@ export const DeleteVideoParams = zod.object({
 });
 
 export const DeleteVideoResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List the caller's conversations
+ */
+export const ListConversationsResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.enum(["direct", "group"]),
+  title: zod.string().nullish(),
+  participants: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      role: zod.string().nullish(),
+      imageUrl: zod.string().nullish(),
+    }),
+  ),
+  lastMessage: zod.string().nullish(),
+  lastMessageAt: zod.date(),
+});
+export const ListConversationsResponse = zod.array(
+  ListConversationsResponseItem,
+);
+
+/**
+ * @summary Start a direct or group conversation (direct ones are deduped)
+ */
+
+export const CreateConversationBody = zod.object({
+  participantIds: zod.array(zod.string()).min(1),
+  title: zod.string().optional(),
+});
+
+export const CreateConversationResponse = zod.object({
+  id: zod.number(),
+  type: zod.enum(["direct", "group"]),
+  title: zod.string().nullish(),
+  participants: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      role: zod.string().nullish(),
+      imageUrl: zod.string().nullish(),
+    }),
+  ),
+  lastMessage: zod.string().nullish(),
+  lastMessageAt: zod.date(),
+});
+
+/**
+ * @summary List messages in a conversation
+ */
+export const ListConversationMessagesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListConversationMessagesResponseItem = zod.object({
+  id: zod.number(),
+  senderId: zod.string(),
+  senderName: zod.string().nullish(),
+  senderImageUrl: zod.string().nullish(),
+  conversationId: zod.number().nullish(),
+  recipientId: zod.string().nullish(),
+  content: zod.string(),
+  createdAt: zod.date(),
+});
+export const ListConversationMessagesResponse = zod.array(
+  ListConversationMessagesResponseItem,
+);
+
+/**
+ * @summary Send a message to a conversation
+ */
+export const SendConversationMessageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendConversationMessageBody = zod.object({
+  content: zod.string(),
+});
+
+/**
+ * @summary List files the caller can see
+ */
+export const ListUploadsQueryParams = zod.object({
+  assignmentId: zod.coerce.number().optional(),
+});
+
+export const ListUploadsResponseItem = zod.object({
+  id: zod.number(),
+  assignmentId: zod.number().nullish(),
+  uploadedBy: zod.string(),
+  uploaderName: zod.string(),
+  uploaderRole: zod.string().nullish(),
+  filename: zod.string(),
+  mimeType: zod.string().nullish(),
+  sizeBytes: zod.number().nullish(),
+  note: zod.string().nullish(),
+  createdAt: zod.date(),
+  downloadUrl: zod.string(),
+});
+export const ListUploadsResponse = zod.array(ListUploadsResponseItem);
+
+/**
+ * @summary Upload a file (max 15 MB)
+ */
+export const CreateUploadBody = zod.object({
+  file: zod.instanceof(File),
+  assignmentId: zod.number().optional(),
+  note: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a file
+ */
+export const DeleteUploadParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteUploadResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Download a file
+ */
+export const DownloadUploadParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List the caller's charges (creates any that are owed)
+ */
+export const ListPaymentsResponseItem = zod.object({
+  id: zod.number(),
+  amount: zod.number().describe("Whole dollars"),
+  description: zod.string().nullish(),
+  status: zod.enum([
+    "due",
+    "sent",
+    "received",
+    "void",
+    "refund_due",
+    "refunded",
+  ]),
+  refundDue: zod.number(),
+  studentId: zod.string(),
+  studentName: zod.string(),
+  tutorName: zod.string(),
+  sessionDate: zod.date().nullish(),
+  createdAt: zod.date(),
+  sentAt: zod.date().nullish(),
+  receivedAt: zod.date().nullish(),
+});
+export const ListPaymentsResponse = zod.array(ListPaymentsResponseItem);
+
+/**
+ * @summary Mark a charge as paid (student or parent)
+ */
+export const MarkPaymentSentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const MarkPaymentSentResponse = zod.object({
+  id: zod.number(),
+  tutorId: zod.string(),
+  studentId: zod.string(),
+  sessionId: zod.number().nullish(),
+  amount: zod.number(),
+  description: zod.string().nullish(),
+  status: zod.enum([
+    "due",
+    "sent",
+    "received",
+    "void",
+    "refund_due",
+    "refunded",
+  ]),
+  refundDue: zod.number(),
+  createdAt: zod.date(),
+  sentAt: zod.date().nullish(),
+  receivedAt: zod.date().nullish(),
+});
+
+/**
+ * @summary Confirm a payment was received (tutor only)
+ */
+export const MarkPaymentReceivedParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const MarkPaymentReceivedResponse = zod.object({
+  id: zod.number(),
+  tutorId: zod.string(),
+  studentId: zod.string(),
+  sessionId: zod.number().nullish(),
+  amount: zod.number(),
+  description: zod.string().nullish(),
+  status: zod.enum([
+    "due",
+    "sent",
+    "received",
+    "void",
+    "refund_due",
+    "refunded",
+  ]),
+  refundDue: zod.number(),
+  createdAt: zod.date(),
+  sentAt: zod.date().nullish(),
+  receivedAt: zod.date().nullish(),
+});
+
+/**
+ * @summary Confirm a refund was sent (tutor only)
+ */
+export const MarkPaymentRefundedParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const MarkPaymentRefundedResponse = zod.object({
+  id: zod.number(),
+  tutorId: zod.string(),
+  studentId: zod.string(),
+  sessionId: zod.number().nullish(),
+  amount: zod.number(),
+  description: zod.string().nullish(),
+  status: zod.enum([
+    "due",
+    "sent",
+    "received",
+    "void",
+    "refund_due",
+    "refunded",
+  ]),
+  refundDue: zod.number(),
+  createdAt: zod.date(),
+  sentAt: zod.date().nullish(),
+  receivedAt: zod.date().nullish(),
+});
+
+/**
+ * @summary Get the tutor's hourly rate
+ */
+export const getPaymentSettingsResponseHourlyRateMin = 0;
+export const getPaymentSettingsResponseHourlyRateMax = 100000;
+
+export const GetPaymentSettingsResponse = zod.object({
+  hourlyRate: zod
+    .number()
+    .min(getPaymentSettingsResponseHourlyRateMin)
+    .max(getPaymentSettingsResponseHourlyRateMax),
+});
+
+/**
+ * @summary Set the tutor's hourly rate (tutor only)
+ */
+export const updatePaymentSettingsBodyHourlyRateMin = 0;
+export const updatePaymentSettingsBodyHourlyRateMax = 100000;
+
+export const UpdatePaymentSettingsBody = zod.object({
+  hourlyRate: zod
+    .number()
+    .min(updatePaymentSettingsBodyHourlyRateMin)
+    .max(updatePaymentSettingsBodyHourlyRateMax),
+});
+
+export const updatePaymentSettingsResponseHourlyRateMin = 0;
+export const updatePaymentSettingsResponseHourlyRateMax = 100000;
+
+export const UpdatePaymentSettingsResponse = zod.object({
+  hourlyRate: zod
+    .number()
+    .min(updatePaymentSettingsResponseHourlyRateMin)
+    .max(updatePaymentSettingsResponseHourlyRateMax),
+});
+
+/**
+ * @summary List open slots (tutors see their own)
+ */
+export const ListAvailabilityResponseItem = zod.object({
+  id: zod.number(),
+  tutorId: zod.string().nullish(),
+  startsAt: zod.date(),
+  durationMinutes: zod.number(),
+  topic: zod.string().nullish(),
+  isBooked: zod.enum(["true", "false"]),
+  bookedByStudentId: zod.string().nullish(),
+  sessionId: zod.number().nullish(),
+  createdAt: zod.date(),
+  tutorName: zod
+    .string()
+    .optional()
+    .describe("Only present for students and parents"),
+  tutorProfileImageUrl: zod
+    .string()
+    .nullish()
+    .describe("Only present for students and parents"),
+});
+export const ListAvailabilityResponse = zod.array(ListAvailabilityResponseItem);
+
+/**
+ * @summary Add open slots (tutor only)
+ */
+export const createAvailabilitySlotsBodyDurationMinutesMin = 15;
+export const createAvailabilitySlotsBodyDurationMinutesMax = 240;
+
+export const CreateAvailabilitySlotsBodyItem = zod.object({
+  startsAt: zod.date(),
+  durationMinutes: zod
+    .number()
+    .min(createAvailabilitySlotsBodyDurationMinutesMin)
+    .max(createAvailabilitySlotsBodyDurationMinutesMax)
+    .optional(),
+  topic: zod.string().optional(),
+});
+export const CreateAvailabilitySlotsBody = zod.array(
+  CreateAvailabilitySlotsBodyItem,
+);
+
+/**
+ * @summary Remove an unbooked slot (tutor only)
+ */
+export const DeleteAvailabilitySlotParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteAvailabilitySlotResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Book a slot (student or parent)
+ */
+export const BookAvailabilitySlotParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const BookAvailabilitySlotBody = zod.object({
+  topic: zod.string().optional(),
+});
+
+/**
+ * @summary List the tutor's parent reports (tutor only)
+ */
+export const ListParentFeedbackResponseItem = zod.object({
+  id: zod.number(),
+  tutorId: zod.string().nullish(),
+  studentId: zod.string(),
+  content: zod.string(),
+  period: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const ListParentFeedbackResponse = zod.array(
+  ListParentFeedbackResponseItem,
+);
+
+/**
+ * @summary List parent reports for one student
+ */
+export const ListStudentParentFeedbackParams = zod.object({
+  studentId: zod.coerce.string(),
+});
+
+export const ListStudentParentFeedbackResponseItem = zod.object({
+  id: zod.number(),
+  tutorId: zod.string().nullish(),
+  studentId: zod.string(),
+  content: zod.string(),
+  period: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const ListStudentParentFeedbackResponse = zod.array(
+  ListStudentParentFeedbackResponseItem,
+);
+
+/**
+ * @summary Create or replace the tutor's report for a student (tutor only)
+ */
+export const UpsertParentFeedbackParams = zod.object({
+  studentId: zod.coerce.string(),
+});
+
+export const UpsertParentFeedbackBody = zod.object({
+  content: zod.string().min(1),
+  period: zod.string().optional(),
+});
+
+export const UpsertParentFeedbackResponse = zod.object({
+  id: zod.number(),
+  tutorId: zod.string().nullish(),
+  studentId: zod.string(),
+  content: zod.string(),
+  period: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Delete the tutor's report for a student (tutor only)
+ */
+export const DeleteParentFeedbackParams = zod.object({
+  studentId: zod.coerce.string(),
+});
+
+export const DeleteParentFeedbackResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List the parent's linked students (parent only)
+ */
+export const ListParentLinksResponseItem = zod.object({
+  id: zod.number(),
+  studentId: zod.string().nullish(),
+  studentName: zod.string().nullish(),
+  studentEmail: zod.string().nullish(),
+  linked: zod
+    .boolean()
+    .describe("True only for an approved link to a real student account"),
+  status: zod
+    .enum(["pending", "approved"])
+    .describe(
+      "Links start pending until the student or their tutor approves them",
+    ),
+});
+export const ListParentLinksResponse = zod.array(ListParentLinksResponseItem);
+
+/**
+ * @summary Request a link to a student account by email (parent only; starts pending)
+ */
+export const CreateParentLinkBody = zod.object({
+  studentEmail: zod.string().email(),
+});
+
+export const CreateParentLinkResponse = zod.object({
+  id: zod.number(),
+  studentId: zod.string().nullish(),
+  studentName: zod.string().nullish(),
+  studentEmail: zod.string().nullish(),
+  linked: zod
+    .boolean()
+    .describe("True only for an approved link to a real student account"),
+  status: zod
+    .enum(["pending", "approved"])
+    .describe(
+      "Links start pending until the student or their tutor approves them",
+    ),
+});
+
+/**
+ * @summary Unlink a student (parent only)
+ */
+export const DeleteParentLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteParentLinkResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List pending link requests the caller can approve (the student, or their tutor)
+ */
+export const ListParentLinkRequestsResponseItem = zod.object({
+  id: zod.number(),
+  parentId: zod.string(),
+  parentName: zod.string(),
+  parentEmail: zod.string().nullish(),
+  studentId: zod.string().nullish(),
+  studentName: zod.string().nullish(),
+  createdAt: zod.date(),
+});
+export const ListParentLinkRequestsResponse = zod.array(
+  ListParentLinkRequestsResponseItem,
+);
+
+/**
+ * @summary Approve a parent's link request (the student, or their tutor)
+ */
+export const ApproveParentLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ApproveParentLinkResponse = zod.object({
+  id: zod.number(),
+  status: zod
+    .enum(["pending", "approved"])
+    .describe(
+      "Links start pending until the student or their tutor approves them",
+    ),
+});
+
+/**
+ * @summary Decline a link request, or revoke an approved link (the student, or their tutor)
+ */
+export const DeclineParentLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeclineParentLinkResponse = zod.object({
   success: zod.boolean(),
 });

@@ -1,30 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
-import { customFetch } from "@workspace/api-client-react";
+import { useListPayments, getListPaymentsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Link, useLocation } from "wouter";
 import { AlertCircle, ArrowRight } from "lucide-react";
 
-export interface Payment {
-  id: number;
-  amount: number;
-  description: string | null;
-  status: "due" | "sent" | "received" | "void" | "refund_due" | "refunded" | string;
-  refundDue: number;
-  studentId: string;
-  studentName: string;
-  tutorName: string;
-  sessionDate: string | null;
-  createdAt: string;
-  sentAt: string | null;
-  receivedAt: string | null;
-}
+export type { Payment } from "@workspace/api-client-react";
 
 export function usePayments() {
-  return useQuery({
-    queryKey: ["/api/payments"],
-    queryFn: () => customFetch<Payment[]>("/api/payments"),
-    refetchInterval: 15000,
-    retry: false,
+  return useListPayments({
+    query: { queryKey: getListPaymentsQueryKey(), refetchInterval: 15000, retry: false },
   });
 }
 

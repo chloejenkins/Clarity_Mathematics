@@ -1,6 +1,15 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { customFetch } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useListParentLinks,
+  useCreateParentLink,
+  useDeleteParentLink,
+  useListStudentParentFeedback,
+  getListParentLinksQueryKey,
+  getListStudentParentFeedbackQueryKey,
+  type ParentFeedback,
+  type ParentStudentLink,
+} from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { ClipboardList, User, UserPlus, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
@@ -17,23 +26,6 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
-export interface ParentStudentLink {
-  id: number;
-  studentId: string | null;
-  studentName: string | null;
-  studentEmail: string | null;
-  linked: boolean;
-  status?: "pending" | "approved";
-}
-
-interface FeedbackRecord {
-  id: number;
-  studentId: string;
-  content: string;
-  period: string | null;
-  updatedAt: string;
-}
-
 function errorMessage(e: unknown, fallback: string): string {
   const data = (e as { data?: { error?: string } })?.data;
   return data?.error ?? (e as Error)?.message ?? fallback;
@@ -44,23 +36,23 @@ export default function ParentFeedbackViewPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data: links = [] } = useQuery<ParentStudentLink[]>({
-    queryKey: ["/api/parent-links"],
-    queryFn: () => customFetch("/api/parent-links"),
-    enabled: user?.role === "parent",
+  const { data: links = [] } = useListParentLinks({
+    query: { queryKey: getListParentLinksQueryKey(), enabled: user?.role === "parent" },
   });
 
-  const unlink = useMutation({
-    mutationFn: (id: number) => customFetch(`/api/parent-links/${id}`, { method: "DELETE" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/parent-links"] }),
+  const unlink = useDeleteParentLink({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getListParentLinksQueryKey() }),
+    },
   });
 
   // A parent acting as the family account (young child, no separate login)
   // may have feedback written for their own id.
-  const { data: selfFeedback = [] } = useQuery<FeedbackRecord[]>({
-    queryKey: ["/api/parent-feedback", user?.id],
-    queryFn: () => customFetch(`/api/parent-feedback/${user?.id}`),
-    enabled: user?.role === "parent" && !!user?.id,
+  const { data: selfFeedback = [] } = useListStudentParentFeedback(user?.id ?? "", {
+    query: {
+      queryKey: getListStudentParentFeedbackQueryKey(user?.id ?? ""),
+      enabled: user?.role === "parent" && !!user?.id,
+    },
   });
 
   return (
@@ -100,7 +92,7 @@ export default function ParentFeedbackViewPage() {
           <LinkedStudentFeedback
             key={link.id}
             link={link}
-            onUnlink={() => unlink.mutate(link.id)}
+            onUnlink={() => unlink.mutate({ id: link.id })}
             unlinking={unlink.isPending}
           />
         ))
@@ -120,10 +112,11 @@ function LinkedStudentFeedback({
   onUnlink: () => void;
   unlinking: boolean;
 }) {
-  const { data: feedbackList = [], isLoading } = useQuery<FeedbackRecord[]>({
-    queryKey: ["/api/parent-feedback", link.studentId],
-    queryFn: () => customFetch(`/api/parent-feedback/${link.studentId}`),
-    enabled: !!link.studentId,
+  const { data: feedbackList = [], isLoading } = useListStudentParentFeedback(link.studentId ?? "", {
+    query: {
+      queryKey: getListStudentParentFeedbackQueryKey(link.studentId ?? ""),
+      enabled: !!link.studentId,
+    },
   });
 
   const feedback = feedbackList[0] ?? null;
@@ -175,7 +168,7 @@ function LinkedStudentFeedback({
   );
 }
 
-function FeedbackCard({ feedback }: { feedback: FeedbackRecord }) {
+function FeedbackCard({ feedback }: { feedback: ParentFeedback }) {
   return (
     <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
       {feedback.period && (
@@ -202,21 +195,19 @@ export function LinkChildDialog({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const link = useMutation({
-    mutationFn: () =>
-      customFetch("/api/parent-links", {
-        method: "POST",
-        body: JSON.stringify({ studentEmail: email.trim() }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/parent-links"] });
-      toast({ title: "Request sent", description: "Your child or their tutor will need to approve it." });
-      setEmail("");
-      onOpenChange(false);
+  const link = useCreateParentLink({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListParentLinksQueryKey() });
+        toast({ title: "Request sent", description: "Your child or their tutor will need to approve it." });
+        setEmail("");
+        onOpenChange(false);
+      },
+      onError: (e) =>
+        toast({ title: "Couldn't link", description: errorMessage(e, "Try again."), variant: "destructive" }),
     },
-    onError: (e) =>
-      toast({ title: "Couldn't link", description: errorMessage(e, "Try again."), variant: "destructive" }),
   });
+  const submit = () => link.mutate({ data: { studentEmail: email.trim() } });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -231,14 +222,14 @@ export function LinkChildDialog({
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) link.mutate(); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) submit(); }}
           placeholder="child@example.com"
           className="rounded-lg"
           autoFocus
         />
         <DialogFooter>
           <Button
-            onClick={() => link.mutate()}
+            onClick={submit}
             disabled={!email.trim() || link.isPending}
             className="w-full rounded-lg gap-2"
           >
