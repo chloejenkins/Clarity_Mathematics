@@ -33,21 +33,6 @@ export interface GetCurrentAuthUserResponse {
   user?: User;
 }
 
-export interface ExchangeMobileAuthorizationCodeBody {
-  code: string;
-  state: string;
-  codeVerifier: string;
-  nonce: string;
-}
-
-export interface ExchangeMobileAuthorizationCodeResponse {
-  token: string;
-}
-
-export interface MobileLogoutResponse {
-  success: boolean;
-}
-
 export interface SuccessResponse {
   success: boolean;
 }

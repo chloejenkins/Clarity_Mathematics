@@ -33,27 +33,6 @@ export const GetCurrentAuthUserResponse = zod.object({
 });
 
 /**
- * @summary Exchange mobile auth code
- */
-export const ExchangeMobileAuthorizationCodeBody = zod.object({
-  code: zod.string(),
-  state: zod.string(),
-  codeVerifier: zod.string(),
-  nonce: zod.string(),
-});
-
-export const ExchangeMobileAuthorizationCodeResponse = zod.object({
-  token: zod.string(),
-});
-
-/**
- * @summary Mobile logout
- */
-export const MobileLogoutResponse = zod.object({
-  success: zod.boolean(),
-});
-
-/**
  * @summary List all students (tutor only)
  */
 export const ListUsersResponseItem = zod.object({

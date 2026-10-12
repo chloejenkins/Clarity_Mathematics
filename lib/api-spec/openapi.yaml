@@ -48,38 +48,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetCurrentAuthUserResponse"
 
-  /mobile-auth/token-exchange:
-    post:
-      operationId: exchangeMobileAuthorizationCode
-      tags: [auth]
-      summary: Exchange mobile auth code
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ExchangeMobileAuthorizationCodeBody"
-      responses:
-        "200":
-          description: Token exchange successful
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ExchangeMobileAuthorizationCodeResponse"
-
-  /mobile-auth/logout:
-    post:
-      operationId: mobileLogout
-      tags: [auth]
-      summary: Mobile logout
-      responses:
-        "200":
-          description: Logged out
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MobileLogoutResponse"
-
   /users:
     get:
       operationId: listUsers
@@ -374,39 +342,6 @@ components:
           $ref: "#/components/schemas/User"
       required:
         - authenticated
-
-    ExchangeMobileAuthorizationCodeBody:
-      type: object
-      properties:
-        code:
-          type: string
-        state:
-          type: string
-        codeVerifier:
-          type: string
-        nonce:
-          type: string
-      required:
-        - code
-        - state
-        - codeVerifier
-        - nonce
-
-    ExchangeMobileAuthorizationCodeResponse:
-      type: object
-      properties:
-        token:
-          type: string
-      required:
-        - token
-
-    MobileLogoutResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-      required:
-        - success
 
     SuccessResponse:
       type: object
