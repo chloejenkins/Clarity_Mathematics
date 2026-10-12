@@ -173,12 +173,20 @@ describe("students can't approve or complete sessions", () => {
     expect(fakeDb.writes()).toEqual([]);
   });
 
-  it("still lets the student reschedule", async () => {
+  it("still lets the student reschedule into an open slot", async () => {
     const scheduledAt = "2026-10-21T10:00:00.000Z";
-    fakeDb.queue([session], [{ ...session, scheduledAt: new Date(scheduledAt) }], [{ id: studentA.id, firstName: "Sam" }]);
+    const slot = { id: 4, tutorId: tutorA.id, startsAt: new Date(scheduledAt), durationMinutes: 60, isBooked: "false" };
+    fakeDb.queue(
+      [session], // session lookup
+      [slot], // open slot at the new time
+      [{ ...session, scheduledAt: new Date(scheduledAt) }], // update session
+      [], // release the old slot
+      [], // book the new slot
+      [{ id: studentA.id, firstName: "Sam" }],
+    );
     const res = await request(testApp(sessionsRouter, studentA)).patch("/api/sessions/1").send({ scheduledAt });
     expect(res.status).toBe(200);
-    expect(fakeDb.writes()).toEqual(["update"]);
+    expect(fakeDb.writes()).toEqual(["update", "update", "update"]);
   });
 
   it("lets the tutor approve", async () => {

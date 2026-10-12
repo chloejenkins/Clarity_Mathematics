@@ -78,7 +78,8 @@ describe("sessions/:id ownership", () => {
     fakeDb.queue([session]);
     const res = await request(testApp(sessionsRouter, tutorA)).delete("/api/sessions/1");
     expect(res.status).toBe(200);
-    expect(fakeDb.writes()).toEqual(["delete"]);
+    // The session row goes, and its slot goes back on the open list.
+    expect(fakeDb.writes()).toEqual(["delete", "update"]);
   });
 });
 

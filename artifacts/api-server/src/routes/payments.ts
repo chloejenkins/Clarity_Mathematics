@@ -1,7 +1,9 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { db, paymentsTable, tutoringSessionsTable, usersTable, parentStudentLinksTable } from "@workspace/db";
-import { eq, and, inArray, desc, asc, isNotNull } from "drizzle-orm";
+import { db, paymentsTable, tutoringSessionsTable, usersTable } from "@workspace/db";
+import { eq, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
+import { freeSessionId } from "../lib/billing";
+import { linkedStudentIds, isSelfOrLinkedParent } from "../lib/family";
 
 const router: IRouter = Router();
 
@@ -22,18 +24,6 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-/** Student ids of a parent's linked children. */
-async function linkedStudentIds(parentId: string): Promise<string[]> {
-  const links = await db
-    .select({ studentId: parentStudentLinksTable.studentId })
-    .from(parentStudentLinksTable)
-    .where(and(
-      eq(parentStudentLinksTable.parentId, parentId),
-      eq(parentStudentLinksTable.status, "approved"),
-      isNotNull(parentStudentLinksTable.studentId),
-    ));
-  return links.map((l) => l.studentId).filter((v): v is string => Boolean(v));
-}
 
 /**
  * Ensure a payment row exists for each past, non-cancelled session in the set.
@@ -63,16 +53,11 @@ async function ensurePayments(sessions: SessionRow[]) {
   if (!tutor) return; // no tutor to bill on behalf of
   const rate = tutor.hourlyRate ?? DEFAULT_RATE;
 
-  // Earliest session per student → free.
+  // Earliest non-cancelled session per student → free.
   const firstByStudent = new Map<string, number>();
   for (const sid of new Set(missing.map((s) => s.studentId))) {
-    const [earliest] = await db
-      .select()
-      .from(tutoringSessionsTable)
-      .where(eq(tutoringSessionsTable.studentId, sid))
-      .orderBy(asc(tutoringSessionsTable.scheduledAt))
-      .limit(1);
-    if (earliest) firstByStudent.set(sid, earliest.id);
+    const first = await freeSessionId(sid);
+    if (first !== undefined) firstByStudent.set(sid, first);
   }
 
   const rows = missing.map((s) => {
@@ -161,10 +146,13 @@ router.post("/payments/:id/mark-sent", requireAuth, async (req: Request, res: Re
   const id = Number(req.params.id);
   const [p] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, id)).limit(1);
   if (!p) { res.status(404).json({ error: "Not found" }); return; }
-  const allowed =
-    p.studentId === req.user!.id ||
-    (req.user!.role === "parent" && (await linkedStudentIds(req.user!.id)).includes(p.studentId));
-  if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
+  if (!(await isSelfOrLinkedParent(req.user!, p.studentId))) { res.status(403).json({ error: "Forbidden" }); return; }
+  // Only an unpaid charge can be marked as sent. Otherwise a family could
+  // flip a payment the tutor already confirmed back to "awaiting confirmation".
+  if (p.status !== "due") {
+    res.status(409).json({ error: "This charge isn't awaiting payment" });
+    return;
+  }
   const [updated] = await db
     .update(paymentsTable)
     .set({ status: "sent", sentAt: new Date() })

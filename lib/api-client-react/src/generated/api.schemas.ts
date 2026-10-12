@@ -371,6 +371,8 @@ export interface CreateAvailabilitySlotBody {
 
 export interface BookAvailabilitySlotBody {
   topic?: string;
+  /** For a parent, which linked child the session is for. Defaults to their only linked child. */
+  studentId?: string;
 }
 
 export interface BookAvailabilitySlotResponse {

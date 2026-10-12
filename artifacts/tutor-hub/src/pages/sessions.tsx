@@ -5,6 +5,8 @@ import {
   useUpdateSession,
   useDeleteSession,
   useListAvailability,
+  useListParentLinks,
+  getListParentLinksQueryKey,
   createAvailabilitySlots,
   bookAvailabilitySlot,
   deleteAvailabilitySlot,
@@ -21,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, isToday, isTomorrow, isThisWeek, parseISO } from "date-fns";
+import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import {
   CalendarDays,
   Clock,
@@ -41,8 +43,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 function formatDay(date: Date) {
   if (isToday(date)) return "Today";
   if (isTomorrow(date)) return "Tomorrow";
-  if (isThisWeek(date)) return format(date, "EEEE");
-  return format(date, "EEE, MMM d");
+  // Callers show the date next to this, so only name the day.
+  return format(date, "EEEE");
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -207,17 +209,19 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
 }
 
 // ─── Student: Book a Slot ─────────────────────────────────────────────────────
-function BookSlotDialog({ slot, onBooked }: { slot: Slot; onBooked: () => void }) {
+function BookSlotDialog({ slot, onBooked, children = [] }: { slot: Slot; onBooked: () => void; children?: { id: string; name: string }[] }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState(slot.topic ?? "");
+  const [childId, setChildId] = useState(children.length === 1 ? children[0].id : "");
   const [loading, setLoading] = useState(false);
   const date = new Date(slot.startsAt);
+  const needsChild = children.length > 1 && !childId;
 
   const handleBook = async () => {
     setLoading(true);
     try {
-      await bookAvailabilitySlot(slot.id, { topic: topic.trim() || undefined });
+      await bookAvailabilitySlot(slot.id, { topic: topic.trim() || undefined, studentId: childId || undefined });
       toast({ title: "Session booked! It's confirmed." });
       setOpen(false);
       onBooked();
@@ -254,6 +258,18 @@ function BookSlotDialog({ slot, onBooked }: { slot: Slot; onBooked: () => void }
             {slot.topic && <p className="text-muted-foreground">Topic: {slot.topic}</p>}
           </div>
 
+          {children.length > 1 && (
+            <div className="space-y-1.5">
+              <Label>Who is this session for?</Label>
+              <Select value={childId} onValueChange={setChildId}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Choose a child" /></SelectTrigger>
+                <SelectContent>
+                  {children.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label>What do you want to work on? <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
             <Input
@@ -264,7 +280,7 @@ function BookSlotDialog({ slot, onBooked }: { slot: Slot; onBooked: () => void }
             />
           </div>
 
-          <Button className="w-full rounded-xl" onClick={handleBook} disabled={loading}>
+          <Button className="w-full rounded-xl" onClick={handleBook} disabled={loading || needsChild}>
             {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Booking…</> : <><CheckCircle2 className="h-4 w-4 mr-2" />Confirm Booking</>}
           </Button>
         </div>
@@ -274,9 +290,15 @@ function BookSlotDialog({ slot, onBooked }: { slot: Slot; onBooked: () => void }
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-function RescheduleDialog({ session }: { session: { id: number; scheduledAt: string } }) {
+function RescheduleDialog({ session, openSlots }: {
+  session: { id: number; scheduledAt: string; tutorId?: string | null };
+  // Families can only move a session into one of the tutor's open slots; the
+  // tutor (no openSlots) can pick any time.
+  openSlots?: Slot[];
+}) {
   const [open, setOpen] = useState(false);
   const [dt, setDt] = useState("");
+  const [slotId, setSlotId] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -285,31 +307,66 @@ function RescheduleDialog({ session }: { session: { id: number; scheduledAt: str
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   };
 
+  const choices = openSlots?.filter((s) => !session.tutorId || !s.tutorId || s.tutorId === session.tutorId);
+
   const reschedule = useUpdateSession({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListAvailabilityQueryKey() });
         toast({ title: "Session rescheduled" });
         setOpen(false);
       },
-      onError: () => toast({ title: "Couldn't reschedule", variant: "destructive" }),
+      onError: (e) => {
+        const msg = (e as { data?: { error?: string } })?.data?.error;
+        toast({ title: msg ?? "Couldn't reschedule", variant: "destructive" });
+      },
     },
   });
 
+  const newTime = choices
+    ? choices.find((s) => String(s.id) === slotId)?.startsAt
+    : dt ? new Date(dt).toISOString() : undefined;
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setDt(toLocalInput(session.scheduledAt)); }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) { setDt(toLocalInput(session.scheduledAt)); setSlotId(""); } }}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="flex-1 rounded-xl">Reschedule</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm rounded-2xl">
         <DialogHeader>
           <DialogTitle>Reschedule session</DialogTitle>
-          <DialogDescription>Pick a new date and time.</DialogDescription>
+          <DialogDescription>{choices ? "Pick one of your tutor's open times." : "Pick a new date and time."}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <Label>New date &amp; time</Label>
-          <Input type="datetime-local" value={dt} onChange={(e) => setDt(e.target.value)} className="rounded-xl" />
-          <Button className="w-full rounded-xl" disabled={!dt || reschedule.isPending} onClick={() => reschedule.mutate({ id: session.id, data: { scheduledAt: new Date(dt).toISOString() } })}>
+          {choices ? (
+            choices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">There are no open times right now. Check back soon, or message your tutor.</p>
+            ) : (
+              <>
+                <Label>New time</Label>
+                <Select value={slotId} onValueChange={setSlotId}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="Choose an open time" /></SelectTrigger>
+                  <SelectContent>
+                    {choices.map((s) => {
+                      const d = new Date(s.startsAt);
+                      return (
+                        <SelectItem key={s.id} value={String(s.id)}>
+                          {format(d, "EEE, MMM d")} · {format(d, "h:mm a")} · {s.durationMinutes} min
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </>
+            )
+          ) : (
+            <>
+              <Label>New date &amp; time</Label>
+              <Input type="datetime-local" value={dt} onChange={(e) => setDt(e.target.value)} className="rounded-xl" />
+            </>
+          )}
+          <Button className="w-full rounded-xl" disabled={!newTime || reschedule.isPending} onClick={() => newTime && reschedule.mutate({ id: session.id, data: { scheduledAt: newTime } })}>
             {reschedule.isPending ? "Saving…" : "Confirm new time"}
           </Button>
         </div>
@@ -380,6 +437,7 @@ function LessonNotes({ session, canEdit }: { session: { id: number; notes: strin
 export default function SchedulePage() {
   const { user } = useAuth();
   const isTutor = user?.role === "tutor";
+  const isParent = user?.role === "parent";
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -390,6 +448,14 @@ export default function SchedulePage() {
   const { data: slots = [], refetch: refetchSlots } = useListAvailability({
     query: { queryKey: getListAvailabilityQueryKey(), refetchInterval: 10000 },
   });
+
+  // A parent books for one of their linked children.
+  const { data: links = [] } = useListParentLinks({
+    query: { queryKey: getListParentLinksQueryKey(), enabled: isParent },
+  });
+  const children = links
+    .filter((l) => l.linked && l.studentId)
+    .map((l) => ({ id: l.studentId as string, name: l.studentName ?? "Your child" }));
 
   // Confirmed sessions (from bookings)
   const { data: sessions = [], isLoading: sessionsLoading } = useListSessions(
@@ -489,7 +555,7 @@ export default function SchedulePage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive shrink-0 transition-opacity"
+                          className="h-7 w-7 text-muted-foreground [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive shrink-0 transition-opacity"
                           onClick={() => deleteSlot(slot.id)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -634,7 +700,7 @@ export default function SchedulePage() {
                             {slot.topic}
                           </p>
                         )}
-                        <BookSlotDialog slot={slot} onBooked={() => {
+                        <BookSlotDialog slot={slot} children={children} onBooked={() => {
                           refetchSlots();
                           queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
                         }} />
@@ -670,6 +736,7 @@ export default function SchedulePage() {
                           <span className="text-xs text-muted-foreground">{format(d, "MMM d")}</span>
                         </div>
                         <p className="font-bold text-base">{formatDay(d)}</p>
+                        {isParent && <p className="text-sm font-medium">{session.studentName}</p>}
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                           <Clock className="h-3.5 w-3.5 text-primary" />
                           {format(d, "h:mm a")} · {session.durationMinutes} min
@@ -678,7 +745,7 @@ export default function SchedulePage() {
                         {session.status === "approved" && (
                           <div className="space-y-2 mt-2">
                             <div className="flex">
-                              <RescheduleDialog session={{ id: session.id, scheduledAt: session.scheduledAt }} />
+                              <RescheduleDialog session={{ id: session.id, scheduledAt: session.scheduledAt }} openSlots={unbooked} />
                             </div>
                             <Button size="sm" variant="outline" className="w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleSessionStatus(session.id, "cancelled")}>
                               Cancel Session

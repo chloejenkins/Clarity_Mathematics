@@ -44,7 +44,32 @@ const submitSchema = z.object({
   content: z.string().optional(),
 });
 
-function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
+// A due date is a calendar day. Send it as the end of that day in the
+// tutor's time zone; sending the bare "YYYY-MM-DD" made it midnight UTC, which
+// showed as the day before anywhere west of London.
+function dueDateToIso(day: string): string | undefined {
+  if (!day) return undefined;
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y, m - 1, d, 23, 59).toISOString();
+}
+
+// Assignments saved before that fix are stored at exactly midnight UTC; read
+// those as the calendar day that was picked rather than shifting them.
+function dueDateForDisplay(iso: string): Date {
+  const d = new Date(iso);
+  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0 && d.getUTCMilliseconds() === 0) {
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  }
+  return d;
+}
+
+function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
+  assignmentId: number;
+  // A parent looking at their child's assignment sees the child's work and
+  // the tutor's review, but doesn't submit on the child's behalf.
+  readOnly?: boolean;
+  forName?: string | null;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
@@ -87,6 +112,8 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
             <span className="text-emerald-700">
               Submitted · {format(new Date(existing.submittedAt), "MMM d, h:mm a")}
             </span>
+          ) : readOnly ? (
+            <span className="text-muted-foreground">{forName ? `${forName} hasn't` : "Not"} submitted work yet</span>
           ) : (
             <span className="text-muted-foreground">Submit your work <span className="font-normal">(optional)</span></span>
           )}
@@ -105,7 +132,21 @@ function StudentSubmissionPanel({ assignmentId }: { assignmentId: number }) {
         </div>
       )}
 
-      {expanded && (
+      {expanded && readOnly && (
+        <div className="mt-3 space-y-4">
+          {existing?.content ? (
+            <p className="text-sm whitespace-pre-wrap bg-slate-50 dark:bg-slate-900 rounded-xl p-3">{existing.content}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">No written note.</p>
+          )}
+          <div className="border-t pt-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Attached files</p>
+            <AttachmentList assignmentId={assignmentId} emptyText="No files attached." />
+          </div>
+        </div>
+      )}
+
+      {expanded && !readOnly && (
         <div className="mt-3 space-y-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
@@ -226,7 +267,7 @@ export default function AssignmentsPage() {
   });
 
   const onSubmit = (values: z.infer<typeof createSchema>) => {
-    createMutation.mutate({ data: values }, {
+    createMutation.mutate({ data: { ...values, dueDate: dueDateToIso(values.dueDate ?? "") } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListAssignmentsQueryKey() });
         setIsOpen(false);
@@ -391,7 +432,7 @@ export default function AssignmentsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-4 right-4 h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                    className="absolute top-4 right-4 h-8 w-8 text-muted-foreground [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-destructive"
                     onClick={() => handleDelete(assignment.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -424,7 +465,7 @@ export default function AssignmentsPage() {
                 {assignment.dueDate && (
                   <div className="mt-3 inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-900/50 text-sm font-semibold">
                     <Calendar className="h-4 w-4" />
-                    Due: {format(new Date(assignment.dueDate), "EEE, MMM d, yyyy")}
+                    Due: {format(dueDateForDisplay(assignment.dueDate), "EEE, MMM d, yyyy")}
                   </div>
                 )}
 
@@ -433,7 +474,11 @@ export default function AssignmentsPage() {
 
                 {/* Student submission panel */}
                 {!isTutor && (
-                  <StudentSubmissionPanel assignmentId={assignment.id} />
+                  <StudentSubmissionPanel
+                    assignmentId={assignment.id}
+                    readOnly={assignment.assignedTo !== user?.id}
+                    forName={assignment.assignedToName}
+                  />
                 )}
               </CardContent>
             </Card>

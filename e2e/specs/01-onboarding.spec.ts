@@ -2,7 +2,7 @@ import { test, expect } from "../lib/test";
 import { personas } from "../lib/personas";
 import { apiAs } from "../lib/session";
 import { query } from "../lib/db";
-import { finding } from "../lib/findings";
+import { finding, expectRule } from "../lib/findings";
 
 // Every later spec relies on these accounts, created the way real people
 // create them: by signing in for the first time and picking a role.
@@ -22,9 +22,9 @@ test.describe("first sign-in and onboarding", () => {
     const page = await open(personas.impostor);
     await page.goto("/");
     await page.getByRole("button", { name: /^Tutor/ }).click();
-    await expect(page.getByText(/Tutor accounts require/)).toBeVisible();
+    // The server's TUTOR_EMAILS list decides, and the page shows its answer.
+    await expect(page.getByText(/isn't set up for a tutor account/)).toBeVisible();
 
-    // The browser check is cosmetic; the server must refuse too.
     const api = await apiAs(personas.impostor);
     const res = await api.post("/api/auth/set-role", { data: { role: "tutor" } });
     expect(res.status()).toBe(403);
@@ -55,16 +55,21 @@ test.describe("first sign-in and onboarding", () => {
     await page.getByPlaceholder("child@example.com").fill(personas.student.email);
     await page.getByRole("button", { name: /Link & Continue/ }).click();
     await expect(page.getByRole("heading", { name: "Schedule" })).toBeVisible();
-    const links = await query("select student_id from parent_student_links where parent_id = $1", [personas.parent.id]);
+    const links = await query("select id, student_id, status from parent_student_links where parent_id = $1", [personas.parent.id]);
     expect(links.map((l) => l.student_id)).toEqual([personas.student.id]);
 
-    finding(
+    await expectRule(
       "security",
       "Any parent can link to any student just by knowing their email",
       "POST /api/parent-links only checks that the email belongs to a student account. Nobody (the student, the tutor) " +
         "confirms the relationship, and once linked the parent sees that student's schedule, assignments, payments " +
         "and tutor feedback. Suggest a confirmation step: the tutor approves links, or the student accepts an invite.",
+      () => links[0].status === "pending",
     );
+
+    // The student approves, which the later parent journeys rely on.
+    const student = await apiAs(personas.student);
+    expect((await student.post(`/api/parent-links/${links[0].id}/approve`)).ok()).toBe(true);
   });
 
   test("a signed-up user can return to onboarding and switch role", async ({ open }) => {
@@ -92,14 +97,4 @@ test.describe("first sign-in and onboarding", () => {
     }
   });
 
-  test("tutor onboarding rule is duplicated between browser and server", async () => {
-    finding(
-      "bug",
-      "Tutor sign-up rules disagree between the page and the server",
-      "The onboarding page only allows tutor sign-up for emails ending in @claritymathematics.com, while the server " +
-        "uses the TUTOR_EMAILS allowlist. An allowlisted address on another domain is blocked by the page, and a " +
-        "@claritymathematics.com address missing from TUTOR_EMAILS gets a generic 'Something went wrong'. Let the " +
-        "server decide and show its error message (artifacts/tutor-hub/src/pages/onboarding.tsx:29).",
-    );
-  });
 });

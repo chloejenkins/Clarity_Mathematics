@@ -91,7 +91,7 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${map[status] ?? ""}`}>{labels[status] ?? status}</span>;
 }
 
-function ChargeRow({ p, isTutor }: { p: Payment; isTutor: boolean }) {
+function ChargeRow({ p, isTutor, showStudent }: { p: Payment; isTutor: boolean; showStudent: boolean }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -124,7 +124,7 @@ function ChargeRow({ p, isTutor }: { p: Payment; isTutor: boolean }) {
     <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold truncate">
-          {isTutor ? `${p.studentName} · ` : ""}
+          {showStudent ? `${p.studentName} · ` : ""}
           {p.description || "Tutoring session"}
         </p>
         <p className="text-xs text-muted-foreground">
@@ -200,7 +200,7 @@ function RateEditor() {
             />
             <span className="text-muted-foreground ml-1">/hr</span>
           </div>
-          <Button size="sm" className="h-8 rounded-lg" disabled={save.isPending} onClick={() => save.mutate({ data: { hourlyRate: Math.max(0, Math.round(Number(value) || rate)) } })}>
+          <Button size="sm" className="h-8 rounded-lg" disabled={save.isPending} onClick={() => save.mutate({ data: { hourlyRate: Math.max(0, Math.round(value.trim() === "" || Number.isNaN(Number(value)) ? rate : Number(value))) } })}>
             Save
           </Button>
           <Button size="sm" variant="ghost" className="h-8 rounded-lg" onClick={() => setEditing(false)}>Cancel</Button>
@@ -283,7 +283,7 @@ export default function PaymentsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {list.map((p) => <ChargeRow key={p.id} p={p} isTutor={isTutor} />)}
+            {list.map((p) => <ChargeRow key={p.id} p={p} isTutor={isTutor} showStudent={isTutor || user?.role === "parent"} />)}
           </div>
         )}
         {!isTutor && outstanding.length > 0 && (

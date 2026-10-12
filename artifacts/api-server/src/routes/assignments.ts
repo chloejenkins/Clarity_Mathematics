@@ -8,6 +8,8 @@ import {
   UpdateAssignmentBody,
   DeleteAssignmentResponse,
 } from "@workspace/api-zod";
+import { isSelfOrLinkedParent } from "../lib/family";
+import { deleteAssignmentAttachments } from "./uploads";
 
 type UserRow = typeof usersTable.$inferSelect;
 function displayName(u: UserRow | undefined): string {
@@ -155,11 +157,15 @@ router.delete("/assignments/:id", async (req: Request, res: Response) => {
 
   const id = Number(req.params.id);
   const [existing] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, id)).limit(1);
-  if (existing?.tutorId && existing.tutorId !== req.user.id) {
+  if (!existing) { res.status(404).json({ error: "Assignment not found" }); return; }
+  if (existing.tutorId && existing.tutorId !== req.user.id) {
     res.status(403).json({ error: "You can only delete your own assignments" });
     return;
   }
 
+  // Take the work and files submitted for it along with the assignment.
+  await db.delete(submissionsTable).where(eq(submissionsTable.assignmentId, id));
+  await deleteAssignmentAttachments(id);
   await db.delete(assignmentsTable).where(eq(assignmentsTable.id, id));
   res.json(DeleteAssignmentResponse.parse({ success: true }));
 });
@@ -215,11 +221,18 @@ router.get("/assignments/:id/my-submission", async (req: Request, res: Response)
     return;
   }
 
+  // Returns the submission from the person the assignment is for: the caller
+  // themselves, or (for a parent) their linked child, so a parent can follow
+  // their child's work and the tutor's review.
   const assignmentId = Number(req.params.id);
+  const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, assignmentId)).limit(1);
+  if (!assignment || !assignment.assignedTo) { res.json(null); return; }
+  if (!(await isSelfOrLinkedParent(req.user, assignment.assignedTo))) { res.json(null); return; }
+
   const rows = await db
     .select()
     .from(submissionsTable)
-    .where(and(eq(submissionsTable.assignmentId, assignmentId), eq(submissionsTable.studentId, req.user.id)))
+    .where(and(eq(submissionsTable.assignmentId, assignmentId), eq(submissionsTable.studentId, assignment.assignedTo)))
     .limit(1);
 
   res.json(rows[0] ?? null);
