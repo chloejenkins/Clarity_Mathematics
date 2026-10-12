@@ -45,7 +45,11 @@ router.get("/sessions", async (req: Request, res: Response) => {
     const links = await db
       .select({ studentId: parentStudentLinksTable.studentId })
       .from(parentStudentLinksTable)
-      .where(and(eq(parentStudentLinksTable.parentId, req.user.id), isNotNull(parentStudentLinksTable.studentId)));
+      .where(and(
+        eq(parentStudentLinksTable.parentId, req.user.id),
+        eq(parentStudentLinksTable.status, "approved"),
+        isNotNull(parentStudentLinksTable.studentId),
+      ));
     const childIds = links.map((l) => l.studentId).filter((v): v is string => Boolean(v));
     // Include the parent's own id: a parent who books for a young child as
     // themselves (no separate child account) should see those sessions too.
@@ -143,6 +147,19 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
 
   const parsed = UpdateSessionInput.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
+
+  // Approving, completing and writing lesson notes are the tutor's job. The
+  // student can only cancel or reschedule their own session.
+  if (!isTutor) {
+    if (parsed.data.status !== undefined && parsed.data.status !== "cancelled") {
+      res.status(403).json({ error: "Only your tutor can change a session to that status" });
+      return;
+    }
+    if (parsed.data.notes !== undefined) {
+      res.status(403).json({ error: "Only your tutor can edit lesson notes" });
+      return;
+    }
+  }
 
   const updates: Record<string, unknown> = {};
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;

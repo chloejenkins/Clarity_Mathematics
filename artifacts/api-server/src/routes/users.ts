@@ -1,8 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, usersTable } from "@workspace/db";
-import { parentStudentLinksTable } from "@workspace/db/schema";
-import { eq, or, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { ListUsersResponse } from "@workspace/api-zod";
+import { contactIdsFor } from "../lib/contacts";
 
 const router: IRouter = Router();
 
@@ -14,55 +14,7 @@ router.get("/users", async (req: Request, res: Response) => {
     return;
   }
 
-  const me = req.user;
-  const ids = new Set<string>([me.id]);
-
-  // Parent-student links directly involving me.
-  const myLinks = await db
-    .select()
-    .from(parentStudentLinksTable)
-    .where(
-      or(
-        eq(parentStudentLinksTable.parentId, me.id),
-        eq(parentStudentLinksTable.studentId, me.id),
-      ),
-    );
-  for (const l of myLinks) {
-    ids.add(l.parentId);
-    if (l.studentId) ids.add(l.studentId);
-  }
-
-  if (me.role === "tutor") {
-    // My students, plus the parents linked to them.
-    const students = await db
-      .select({ id: usersTable.id })
-      .from(usersTable)
-      .where(eq(usersTable.tutorId, me.id));
-    const studentIds = students.map((s) => s.id);
-    studentIds.forEach((id) => ids.add(id));
-    if (studentIds.length > 0) {
-      const parentLinks = await db
-        .select()
-        .from(parentStudentLinksTable)
-        .where(inArray(parentStudentLinksTable.studentId, studentIds));
-      parentLinks.forEach((l) => ids.add(l.parentId));
-    }
-  } else {
-    // Student/parent: include my tutor, and the tutor of any linked child.
-    if (me.tutorId) ids.add(me.tutorId);
-    const linkedStudentIds = myLinks
-      .map((l) => l.studentId)
-      .filter((v): v is string => Boolean(v));
-    if (linkedStudentIds.length > 0) {
-      const linkedStudents = await db
-        .select({ tutorId: usersTable.tutorId })
-        .from(usersTable)
-        .where(inArray(usersTable.id, linkedStudentIds));
-      linkedStudents.forEach((s) => {
-        if (s.tutorId) ids.add(s.tutorId);
-      });
-    }
-  }
+  const ids = await contactIdsFor(req.user);
 
   const rows = await db
     .select()
