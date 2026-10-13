@@ -69,6 +69,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
     { title: "Progress", url: "/progress", icon: TrendingUp },
+    { title: "Payments", url: "/payments", icon: CreditCard },
   ];
 
   const navigationItems = isTutor ? tutorNav : isParent ? parentNav : studentNav;

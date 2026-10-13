@@ -20,14 +20,13 @@ test.describe("parent reports: tutor writes, parent reads", () => {
     await page.locator("main").getByRole("button", { name: /Sam Student/ }).click();
     const editor = page.getByPlaceholder(/Write your feedback for the parent here/);
     const placeholder = await editor.getAttribute("placeholder");
-    if (placeholder?.includes("only you can see it")) {
-      finding(
-        "ux",
-        "The report editor says only the tutor can see it",
-        "The placeholder reads 'This is private, only you can see it', but saved reports are shown to the student's " +
-          "linked parents on their Feedback page.",
-      );
-    }
+    await expectRule(
+      "ux",
+      "The report editor says only the tutor can see it",
+      "The placeholder reads 'This is private, only you can see it', but saved reports are shown to the student's " +
+        "linked parents on their Feedback page.",
+      () => !placeholder?.includes("only you can see it"),
+    );
     await page.getByPlaceholder(/Fall 2025/).fill("October, week 2");
     await editor.fill("Sam is confident with factoring now. Next: completing the square.");
     await page.getByRole("button", { name: "Save Report" }).click();

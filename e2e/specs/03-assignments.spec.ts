@@ -19,6 +19,7 @@ test.describe("assignments: post, submit, review", () => {
     await dialog.getByRole("combobox").click();
     const options = page.getByRole("option");
     const optionNames = await options.allInnerTexts();
+    const parentLabelled = (await page.getByRole("group", { name: "Parents" }).getByRole("option", { name: /Pat Parent/ }).count()) > 0;
     await page.getByRole("option", { name: /Sam Student/ }).click();
     await dialog.getByPlaceholder("e.g. Chapter 4 Practice Problems").fill("Quadratics practice set");
     await dialog.getByPlaceholder("e.g. Algebra").fill("Algebra");
@@ -29,14 +30,13 @@ test.describe("assignments: post, submit, review", () => {
     const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
     await expect(card.getByText("For Sam Student")).toBeVisible();
 
-    if (optionNames.some((n) => /Pat Parent/.test(n))) {
-      finding(
-        "ux",
-        "Assignment recipients mix students and parents with no label",
-        `The 'Assign to' list offered: ${optionNames.join(", ")}. Parents appear alongside students without a role ` +
-          "label, which makes it easy to assign homework to a parent by mistake.",
-      );
-    }
+    await expectRule(
+      "ux",
+      "Assignment recipients mix students and parents with no label",
+      `The 'Assign to' list offered: ${optionNames.join(", ")}. Parents appear alongside students without a role ` +
+        "label, which makes it easy to assign homework to a parent by mistake.",
+      () => !optionNames.some((n) => /Pat Parent/.test(n)) || parentLabelled,
+    );
     finding(
       "gap",
       "Tutors can't attach a worksheet to an assignment",
