@@ -55,16 +55,23 @@ function ProfileSync() {
   return null;
 }
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRoute({ component: Component, roles }: {
+  component: React.ComponentType;
+  /** Roles allowed on this page; anyone else is sent to the home page. */
+  roles?: string[];
+}) {
   const { isLoaded, isSignedIn } = useClerkAuth();
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const wrongRole = Boolean(roles && user && user.role !== "pending" && !roles.includes(user.role));
 
   useEffect(() => {
     if (isLoaded && isSignedIn && user?.role === "pending") {
       navigate("/onboarding");
+    } else if (isLoaded && isSignedIn && wrongRole) {
+      navigate("/");
     }
-  }, [isLoaded, isSignedIn, user?.role, navigate]);
+  }, [isLoaded, isSignedIn, user?.role, wrongRole, navigate]);
 
   if (!isLoaded) {
     return (
@@ -81,7 +88,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     return <LandingPage />;
   }
 
-  if (user?.role === "pending") {
+  if (user?.role === "pending" || wrongRole) {
     return null;
   }
 
@@ -101,7 +108,7 @@ function Router() {
       <Route path="/progress"><ProtectedRoute component={ProgressPage} /></Route>
       <Route path="/payments"><ProtectedRoute component={PaymentsPage} /></Route>
       <Route path="/parent-reports"><ProtectedRoute component={ParentReportsPage} /></Route>
-      <Route path="/parent-feedback"><ProtectedRoute component={ParentFeedbackViewPage} /></Route>
+      <Route path="/parent-feedback"><ProtectedRoute component={ParentFeedbackViewPage} roles={["parent"]} /></Route>
       <Route path="/onboarding"><OnboardingPage /></Route>
       <Route path="/privacy"><PrivacyPage /></Route>
       <Route path="/terms"><TermsPage /></Route>

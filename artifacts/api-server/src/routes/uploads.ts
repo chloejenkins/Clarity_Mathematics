@@ -4,7 +4,8 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import fs from "node:fs";
 import { db, attachmentsTable, usersTable } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
+import { linkedStudentIds, isSelfOrLinkedParent } from "../lib/family";
 
 // Local-disk storage. Configurable via UPLOADS_DIR; defaults to <cwd>/uploads.
 const UPLOADS_DIR = process.env.UPLOADS_DIR
@@ -42,6 +43,17 @@ const upload = multer({
 });
 
 const router: IRouter = Router();
+
+/** Remove every file attached to an assignment, from the table and the disk. */
+export async function deleteAssignmentAttachments(assignmentId: number): Promise<void> {
+  const rows = await db
+    .delete(attachmentsTable)
+    .where(eq(attachmentsTable.assignmentId, assignmentId))
+    .returning();
+  for (const att of rows ?? []) {
+    fs.rm(path.join(UPLOADS_DIR, att.storageKey), { force: true }, () => {});
+  }
+}
 
 type UserRow = typeof usersTable.$inferSelect;
 function displayName(u: UserRow | undefined): string {
@@ -129,12 +141,17 @@ router.post("/uploads", requireAuth, uploadSingle, async (req: Request, res: Res
 router.get("/uploads", requireAuth, async (req: Request, res: Response) => {
   const assignmentId = req.query.assignmentId ? Number(req.query.assignmentId) : undefined;
   const conds = [];
+  const forAssignment = assignmentId != null && Number.isInteger(assignmentId);
   if (req.user!.role === "tutor") {
     conds.push(eq(attachmentsTable.tutorId, req.user!.id));
+  } else if (req.user!.role === "parent" && forAssignment) {
+    // On a child's assignment, a parent also sees the files the child attached.
+    const ids = [req.user!.id, ...(await linkedStudentIds(req.user!.id))];
+    conds.push(inArray(attachmentsTable.uploadedBy, ids));
   } else {
     conds.push(eq(attachmentsTable.uploadedBy, req.user!.id));
   }
-  if (assignmentId != null && Number.isInteger(assignmentId)) {
+  if (forAssignment) {
     conds.push(eq(attachmentsTable.assignmentId, assignmentId));
   }
   const rows = await db
@@ -153,11 +170,12 @@ router.get("/uploads/:id/download", requireAuth, async (req: Request, res: Respo
   const [att] = await db.select().from(attachmentsTable).where(eq(attachmentsTable.id, id)).limit(1);
   if (!att) { res.status(404).json({ error: "Not found" }); return; }
 
-  // Only the uploader or the tutor the file is routed to may access it -
-  // NOT any tutor (that would expose every family's files across tutors).
+  // Only the uploader (or their linked parent) or the tutor the file is routed
+  // to may access it - NOT any tutor (that would expose every family's files
+  // across tutors).
   const canAccess =
-    att.uploadedBy === req.user!.id ||
-    att.tutorId === req.user!.id;
+    att.tutorId === req.user!.id ||
+    (await isSelfOrLinkedParent(req.user!, att.uploadedBy));
   if (!canAccess) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const filePath = path.join(UPLOADS_DIR, att.storageKey);

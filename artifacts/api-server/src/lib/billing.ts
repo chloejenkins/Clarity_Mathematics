@@ -1,5 +1,5 @@
 import { db, paymentsTable, tutoringSessionsTable, usersTable } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, ne, and, asc } from "drizzle-orm";
 
 const DEFAULT_RATE = 40;
 
@@ -9,6 +9,23 @@ export interface CancellationOutcome {
   policy: "full_refund" | "half_fee" | "tutor_cancel";
   feeOwed: number; // what the student still owes as a cancellation fee
   refundOwed: number; // what the tutor should refund (if the student had already paid)
+}
+
+/**
+ * The id of a student's free first session: their earliest session that
+ * wasn't cancelled. A cancelled booking never uses up the free session.
+ */
+export async function freeSessionId(studentId: string): Promise<number | undefined> {
+  const [earliest] = await db
+    .select({ id: tutoringSessionsTable.id })
+    .from(tutoringSessionsTable)
+    .where(and(
+      eq(tutoringSessionsTable.studentId, studentId),
+      ne(tutoringSessionsTable.status, "cancelled"),
+    ))
+    .orderBy(asc(tutoringSessionsTable.scheduledAt))
+    .limit(1);
+  return earliest?.id;
 }
 
 /**
@@ -29,14 +46,10 @@ export async function applyCancellation(
   const [tutor] = await db.select().from(usersTable).where(eq(usersTable.role, "tutor")).limit(1);
   const rate = tutor?.hourlyRate ?? DEFAULT_RATE;
 
-  // First session is free.
-  const [earliest] = await db
-    .select()
-    .from(tutoringSessionsTable)
-    .where(eq(tutoringSessionsTable.studentId, session.studentId))
-    .orderBy(asc(tutoringSessionsTable.scheduledAt))
-    .limit(1);
-  const isFirst = earliest?.id === session.id;
+  // First session is free. The session being cancelled is already marked
+  // cancelled, so it can't be the free one: a late cancellation costs half
+  // the normal price, and the free session moves to the next one attended.
+  const isFirst = (await freeSessionId(session.studentId)) === session.id;
   const fullAmount = isFirst ? 0 : Math.max(0, Math.round(((session.durationMinutes ?? 60) / 60) * rate));
 
   let policy: CancellationOutcome["policy"];

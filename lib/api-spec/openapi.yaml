@@ -366,7 +366,7 @@ paths:
     get:
       operationId: getMySubmission
       tags: [assignments]
-      summary: Get the caller's submission for an assignment
+      summary: Get the submission for an assignment from the person it is assigned to (the caller, or a parent's linked child)
       parameters:
         - in: path
           name: id
@@ -1693,6 +1693,9 @@ components:
       properties:
         topic:
           type: string
+        studentId:
+          type: string
+          description: For a parent, which linked child the session is for. Defaults to their only linked child.
 
     BookAvailabilitySlotResponse:
       type: object

@@ -3,7 +3,7 @@ import { personas } from "../lib/personas";
 import { apiAs, expectToast } from "../lib/session";
 import { query } from "../lib/db";
 import { finding, expectRule } from "../lib/findings";
-import { daysFromNow, hoursFromNow, dateInput, timeInput, datetimeLocalInput, clock } from "../lib/time";
+import { daysFromNow, hoursFromNow, dateInput, timeInput, clock } from "../lib/time";
 
 const firstDay = daysFromNow(3, 15, 0);
 const secondTime = daysFromNow(3, 16, 30);
@@ -61,7 +61,7 @@ test.describe("scheduling: tutor posts times, families book them", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Open Slots (3)" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Booked Sessions (1)" })).toBeVisible();
-    await expect(page.getByText("Sam Student")).toBeVisible();
+    await expect(page.getByText("Sam Student", { exact: true })).toBeVisible();
     await expect(page.getByText("Quadratics homework")).toBeVisible();
 
     const labels = await page.getByRole("heading", { name: /Open Slots/ }).locator("xpath=../..").locator("p.font-semibold").allInnerTexts();
@@ -76,23 +76,32 @@ test.describe("scheduling: tutor posts times, families book them", () => {
   });
 
   test("student reschedules the session", async ({ open }) => {
-    const page = await open(personas.student);
-    await page.goto("/");
-    const newTime = daysFromNow(4, 10, 0);
-    await page.getByRole("button", { name: "Reschedule" }).click();
-    const dialog = page.getByRole("dialog", { name: "Reschedule session" });
-    await dialog.locator('input[type="datetime-local"]').fill(datetimeLocalInput(newTime));
-    await dialog.getByRole("button", { name: "Confirm new time" }).click();
-    await expectToast(page, "Session rescheduled");
-    await expect(page.getByText(clock(newTime))).toBeVisible();
-
-    finding(
+    // Off-slot times are refused for families; the tutor can still pick any time.
+    const [{ id: sessionId }] = await query<{ id: number }>(
+      "select id from tutoring_sessions where student_id = $1 order by id desc limit 1",
+      [personas.student.id],
+    );
+    const offSlot = await (await apiAs(personas.student)).patch(`/api/sessions/${sessionId}`, {
+      data: { scheduledAt: daysFromNow(4, 10, 0).toISOString() },
+    });
+    await expectRule(
       "gap",
       "Rescheduling ignores the tutor's availability",
       "Either side can move a booked session to any date and time, including outside the tutor's open slots or on top " +
         "of another booking, and the tutor is not asked to accept it. Suggest rescheduling by picking another open slot " +
         "(which frees the old one), or sending a request the other side confirms.",
+      () => offSlot.status() === 400,
     );
+
+    const page = await open(personas.student);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Reschedule" }).click();
+    const dialog = page.getByRole("dialog", { name: "Reschedule session" });
+    await dialog.getByRole("combobox").click();
+    await page.getByRole("option", { name: new RegExp(clock(secondTime)) }).first().click();
+    await dialog.getByRole("button", { name: "Confirm new time" }).click();
+    await expectToast(page, "Session rescheduled");
+    await expect(page.getByRole("heading", { name: "My Sessions" }).locator("xpath=..").getByText(clock(secondTime))).toBeVisible();
     await expectRule(
       "bug",
       "Rescheduling leaves the original slot marked as booked",
@@ -248,13 +257,17 @@ test.describe("scheduling rules enforced by the server", () => {
     const other = await apiAs(personas.otherStudent);
     const booked = await (await other.post(`/api/availability/${slot[0].id}/book`, { data: {} })).json();
     const del = await other.delete(`/api/sessions/${booked.session.id}`);
-    expect(del.ok()).toBe(true);
-    finding(
+    await expectRule(
       "bug",
       "Deleting a session bypasses the late-cancellation fee and strands the slot",
       "DELETE /api/sessions/:id is open to the student and removes the session outright: no 50% fee for a late " +
         "cancellation, no record for the tutor, and the availability slot stays 'booked' pointing at a session that no " +
         "longer exists. Students should only be able to cancel; deletion (if kept at all) should be tutor-only.",
+      () => del.status() === 403,
     );
+    // The tutor can still delete it, and the time goes back on the open list.
+    expect((await tutor.delete(`/api/sessions/${booked.session.id}`)).ok()).toBe(true);
+    const [freed] = await query<{ is_booked: string }>("select is_booked from availability_slots where id = $1", [slot[0].id]);
+    expect(freed.is_booked).toBe("false");
   });
 });

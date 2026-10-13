@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser } from "@clerk/clerk-react";
+import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserRound, Users, GraduationCap, ArrowRight, CheckCircle, ChevronLeft } from "lucide-react";
@@ -10,7 +11,16 @@ type Step = "role" | "profile-parent" | "profile-student";
 
 export default function OnboardingPage() {
   const { user: clerkUser } = useUser();
+  const { user: appUser } = useAuth();
   const [step, setStep] = useState<Step>("role");
+
+  // The role is chosen once. Someone who already finished sign-up and lands
+  // here again goes back to the app instead of seeing the role choice.
+  useEffect(() => {
+    if (step === "role" && appUser && appUser.role !== "pending") {
+      window.location.href = "/";
+    }
+  }, [step, appUser]);
   const [studentEmail, setStudentEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,20 +35,20 @@ export default function OnboardingPage() {
     setError(null);
 
     if (role === "tutor") {
-      const email = clerkUser?.primaryEmailAddress?.emailAddress ?? "";
-      if (!email.toLowerCase().endsWith("@claritymathematics.com")) {
-        setError(
-          "Tutor accounts require a @claritymathematics.com email. Please choose Student or Parent below."
-        );
-        return;
-      }
+      // Whether this email may be a tutor is decided by the server's
+      // TUTOR_EMAILS list, so ask it rather than guessing from the domain.
       setLoading(true);
       try {
         await setRole("tutor");
         await clerkUser?.reload();
         window.location.href = "/";
-      } catch {
-        setError("Something went wrong. Please try again.");
+      } catch (e) {
+        const code = (e as { data?: { code?: string } })?.data?.code;
+        setError(
+          code === "INVALID_TUTOR_EMAIL"
+            ? "This email isn't set up for a tutor account. Please choose Student or Parent below."
+            : "Something went wrong. Please try again.",
+        );
       } finally {
         setLoading(false);
       }

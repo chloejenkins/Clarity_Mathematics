@@ -1567,7 +1567,7 @@ export const useSubmitAssignment = <
 };
 
 /**
- * @summary Get the caller's submission for an assignment
+ * @summary Get the submission for an assignment from the person it is assigned to (the caller, or a parent's linked child)
  */
 export const getGetMySubmissionUrl = (id: number) => {
   return `/api/assignments/${id}/my-submission`;
@@ -1627,7 +1627,7 @@ export type GetMySubmissionQueryResult = NonNullable<
 export type GetMySubmissionQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get the caller's submission for an assignment
+ * @summary Get the submission for an assignment from the person it is assigned to (the caller, or a parent's linked child)
  */
 
 export function useGetMySubmission<

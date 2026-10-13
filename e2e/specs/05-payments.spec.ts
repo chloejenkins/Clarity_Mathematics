@@ -20,7 +20,9 @@ test.describe("payments: charges, marking paid, confirming", () => {
 
   test("student is charged for a past session at the new rate; the first one is free", async ({ open }) => {
     // A 90-minute session that happened yesterday (the earlier, completed
-    // 'Fractions review' session is the student's first, so it's free).
+    // 'Fractions review' session is the student's first, so it's free). The
+    // student also owes $20 from the late cancellation in the schedule spec
+    // (half of an hour at the $40 rate in force then).
     await query(
       "insert into tutoring_sessions (tutor_id, student_id, scheduled_at, duration_minutes, topic, status) values ($1, $2, $3, 90, 'Exam prep', 'completed')",
       [personas.tutor.id, personas.student.id, daysFromNow(-1, 16, 0).toISOString()],
@@ -28,7 +30,7 @@ test.describe("payments: charges, marking paid, confirming", () => {
     const page = await open(personas.student);
     await page.goto("/");
     const banner = page.getByRole("link", { name: /unpaid session/ });
-    await expect(banner).toContainText("$75 due");
+    await expect(banner).toContainText("$95 due");
     if ((await page.getByRole("link", { name: "Payments", exact: true }).count()) === 0) {
       finding(
         "ux",
@@ -43,7 +45,7 @@ test.describe("payments: charges, marking paid, confirming", () => {
     await expect(page.getByText("First session, free")).toBeVisible();
     const row = page.getByText("Exam prep").locator("xpath=ancestor::div[contains(@class,'rounded-xl')][1]");
     await expect(row.getByText("$75")).toBeVisible();
-    await expect(page.getByText("$75 due")).toBeVisible();
+    await expect(page.getByText("$95 due")).toBeVisible();
 
     await row.getByRole("button", { name: "Mark as paid" }).click();
     await expectToast(page, "Marked as paid");
@@ -74,7 +76,7 @@ test.describe("payments: charges, marking paid, confirming", () => {
       "Parents can't tell which child a charge is for",
       "The parent's charge list shows the description and date but not the child's name (the student name is only " +
         "shown to the tutor), which gets confusing with more than one child.",
-      async () => await page.getByText(/Sam Student/).isVisible(),
+      async () => await page.getByText(/Sam Student/).first().isVisible(),
     );
   });
 

@@ -3,8 +3,14 @@ import { db, usersTable } from "@workspace/db";
 import { availabilitySlotsTable, tutoringSessionsTable } from "@workspace/db/schema";
 import { eq, gte, asc, and } from "drizzle-orm";
 import { z } from "zod";
+import { linkedStudentIds } from "../lib/family";
 
 const router: IRouter = Router();
+
+const BookBody = z.object({
+  topic: z.string().optional(),
+  studentId: z.string().optional(),
+});
 
 const CreateSlotBody = z.object({
   startsAt: z.string().min(1, "Date/time required"),
@@ -114,13 +120,39 @@ router.post("/availability/:id/book", async (req: Request, res: Response) => {
   if (!slot) { res.status(404).json({ error: "Slot not found" }); return; }
   if (slot.isBooked === "true") { res.status(409).json({ error: "This slot is already booked" }); return; }
 
-  const topic = (req.body as { topic?: string }).topic;
+  const body = BookBody.safeParse(req.body ?? {});
+  if (!body.success) { res.status(400).json({ error: "Invalid request body" }); return; }
+  const { topic, studentId: requestedStudentId } = body.data;
+
+  // A session belongs to the student who attends it. When a parent books,
+  // file it under the child they picked, or their only linked child, so the
+  // child sees it and charges and notes land on the right person. A parent
+  // with no linked child books as the family account themselves.
+  let studentId = req.user.id;
+  if (req.user.role === "parent") {
+    const children = await linkedStudentIds(req.user.id);
+    if (requestedStudentId && requestedStudentId !== req.user.id) {
+      if (!children.includes(requestedStudentId)) {
+        res.status(403).json({ error: "You can only book for your linked children" });
+        return;
+      }
+      studentId = requestedStudentId;
+    } else if (!requestedStudentId && children.length === 1) {
+      studentId = children[0];
+    } else if (!requestedStudentId && children.length > 1) {
+      res.status(400).json({ error: "Choose which child this session is for", code: "CHOOSE_CHILD" });
+      return;
+    }
+  } else if (requestedStudentId && requestedStudentId !== req.user.id) {
+    res.status(403).json({ error: "Students can only book for themselves" });
+    return;
+  }
 
   const [session] = await db
     .insert(tutoringSessionsTable)
     .values({
       tutorId: slot.tutorId ?? null,
-      studentId: req.user.id,
+      studentId,
       scheduledAt: slot.startsAt,
       durationMinutes: slot.durationMinutes,
       topic: topic ?? slot.topic ?? null,
@@ -130,7 +162,7 @@ router.post("/availability/:id/book", async (req: Request, res: Response) => {
 
   await db
     .update(availabilitySlotsTable)
-    .set({ isBooked: "true", bookedByStudentId: req.user.id, sessionId: session.id })
+    .set({ isBooked: "true", bookedByStudentId: studentId, sessionId: session.id })
     .where(eq(availabilitySlotsTable.id, id));
 
   res.status(201).json({ session, slotId: id });

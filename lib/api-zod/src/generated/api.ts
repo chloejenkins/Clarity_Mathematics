@@ -302,7 +302,7 @@ export const SubmitAssignmentResponse = zod.object({
 });
 
 /**
- * @summary Get the caller's submission for an assignment
+ * @summary Get the submission for an assignment from the person it is assigned to (the caller, or a parent's linked child)
  */
 export const GetMySubmissionParams = zod.object({
   id: zod.coerce.number(),
@@ -742,6 +742,12 @@ export const BookAvailabilitySlotParams = zod.object({
 
 export const BookAvailabilitySlotBody = zod.object({
   topic: zod.string().optional(),
+  studentId: zod
+    .string()
+    .optional()
+    .describe(
+      "For a parent, which linked child the session is for. Defaults to their only linked child.",
+    ),
 });
 
 /**
