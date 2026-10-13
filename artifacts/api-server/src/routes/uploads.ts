@@ -3,7 +3,7 @@ import multer from "multer";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import fs from "node:fs";
-import { db, attachmentsTable, usersTable } from "@workspace/db";
+import { db, attachmentsTable, assignmentsTable, usersTable } from "@workspace/db";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { linkedStudentIds, isSelfOrLinkedParent } from "../lib/family";
 
@@ -89,6 +89,23 @@ async function resolveTutorId(user: Express.User): Promise<string | null> {
   return t?.id ?? null;
 }
 
+/**
+ * Whether `user` is on the family side of an assignment: the person it was
+ * given to, or their linked parent. They can see the worksheets the tutor
+ * attached to it.
+ */
+async function familyOfAssignment(
+  user: Express.User,
+  assignment: typeof assignmentsTable.$inferSelect | undefined,
+): Promise<boolean> {
+  return Boolean(assignment) && (await isSelfOrLinkedParent(user, assignment!.assignedTo));
+}
+
+async function findAssignment(id: number) {
+  const [a] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, id)).limit(1);
+  return a;
+}
+
 async function hydrate(rows: (typeof attachmentsTable.$inferSelect)[]) {
   if (rows.length === 0) return [];
   const users = await db.select().from(usersTable);
@@ -117,12 +134,29 @@ router.post("/uploads", requireAuth, uploadSingle, async (req: Request, res: Res
   const rawId = req.body?.assignmentId;
   const assignmentId = rawId != null && rawId !== "" ? Number(rawId) : null;
   const note = typeof req.body?.note === "string" ? req.body.note.slice(0, 1000) : null;
-  const tutorId = await resolveTutorId(req.user!);
+  let tutorId = await resolveTutorId(req.user!);
+
+  // A file on an assignment is either the tutor's worksheet (only the tutor who
+  // set it) or the work of the person it was given to.
+  if (assignmentId != null) {
+    const assignment = Number.isInteger(assignmentId) ? await findAssignment(assignmentId) : undefined;
+    const allowed = assignment && (req.user!.role === "tutor"
+      ? !assignment.tutorId || assignment.tutorId === req.user!.id
+      : assignment.assignedTo === req.user!.id);
+    if (!allowed) {
+      fs.rm(req.file.path, { force: true }, () => {});
+      res.status(assignment ? 403 : 404).json({
+        error: assignment ? "You can't attach files to this assignment" : "Assignment not found",
+      });
+      return;
+    }
+    if (req.user!.role !== "tutor" && assignment!.tutorId) tutorId = assignment!.tutorId;
+  }
 
   const [row] = await db
     .insert(attachmentsTable)
     .values({
-      assignmentId: assignmentId != null && Number.isInteger(assignmentId) ? assignmentId : null,
+      assignmentId,
       uploadedBy: req.user!.id,
       tutorId,
       filename: req.file.originalname,
@@ -144,9 +178,13 @@ router.get("/uploads", requireAuth, async (req: Request, res: Response) => {
   const forAssignment = assignmentId != null && Number.isInteger(assignmentId);
   if (req.user!.role === "tutor") {
     conds.push(eq(attachmentsTable.tutorId, req.user!.id));
-  } else if (req.user!.role === "parent" && forAssignment) {
-    // On a child's assignment, a parent also sees the files the child attached.
-    const ids = [req.user!.id, ...(await linkedStudentIds(req.user!.id))];
+  } else if (forAssignment) {
+    // On a child's assignment, a parent also sees the files the child attached,
+    // and the family sees the worksheets the tutor attached.
+    const ids = [req.user!.id];
+    if (req.user!.role === "parent") ids.push(...(await linkedStudentIds(req.user!.id)));
+    const assignment = await findAssignment(assignmentId!);
+    if (assignment?.tutorId && (await familyOfAssignment(req.user!, assignment))) ids.push(assignment.tutorId);
     conds.push(inArray(attachmentsTable.uploadedBy, ids));
   } else {
     conds.push(eq(attachmentsTable.uploadedBy, req.user!.id));
@@ -173,9 +211,14 @@ router.get("/uploads/:id/download", requireAuth, async (req: Request, res: Respo
   // Only the uploader (or their linked parent) or the tutor the file is routed
   // to may access it - NOT any tutor (that would expose every family's files
   // across tutors).
-  const canAccess =
+  let canAccess =
     att.tutorId === req.user!.id ||
     (await isSelfOrLinkedParent(req.user!, att.uploadedBy));
+  // A worksheet the tutor attached to an assignment is for that assignment's family.
+  if (!canAccess && att.assignmentId != null) {
+    const assignment = await findAssignment(att.assignmentId);
+    canAccess = assignment?.tutorId === att.uploadedBy && (await familyOfAssignment(req.user!, assignment));
+  }
   if (!canAccess) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const filePath = path.join(UPLOADS_DIR, att.storageKey);

@@ -145,10 +145,11 @@ export interface CreateAssignmentBody {
 }
 
 export interface UpdateAssignmentBody {
+  /** @minLength 1 */
   title?: string;
-  description?: string;
-  dueDate?: string;
-  subject?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  subject?: string | null;
 }
 
 export interface Video {

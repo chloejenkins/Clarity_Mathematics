@@ -249,10 +249,10 @@ export const UpdateAssignmentParams = zod.object({
 });
 
 export const UpdateAssignmentBody = zod.object({
-  title: zod.string().optional(),
-  description: zod.string().optional(),
-  dueDate: zod.date().optional(),
-  subject: zod.string().optional(),
+  title: zod.string().min(1).optional(),
+  description: zod.string().nullish(),
+  dueDate: zod.date().nullish(),
+  subject: zod.string().nullish(),
 });
 
 export const UpdateAssignmentResponse = zod.object({

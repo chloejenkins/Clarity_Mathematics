@@ -4,6 +4,7 @@ import {
   useListAssignments,
   useCreateAssignment,
   useDeleteAssignment,
+  useUpdateAssignment,
   useListUsers,
   useGetMySubmission,
   useSubmitAssignment,
@@ -12,6 +13,7 @@ import {
   getListAssignmentsQueryKey,
   getGetMySubmissionQueryKey,
   getListAssignmentSubmissionsQueryKey,
+  type Assignment,
   type AssignmentSubmission,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,9 +30,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { BookOpen, Calendar, Trash2, Plus, CheckCircle, ChevronDown, ChevronUp, Paperclip, User } from "lucide-react";
+import { BookOpen, Calendar, Trash2, Plus, CheckCircle, ChevronDown, ChevronUp, Paperclip, Pencil, User, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { FileUploadButton, AttachmentList } from "@/components/attachments";
+import { FileUploadButton, AttachmentList, useAttachments } from "@/components/attachments";
 
 const createSchema = z.object({
   assignedTo: z.string().min(1, "Choose who this is for"),
@@ -39,6 +41,8 @@ const createSchema = z.object({
   dueDate: z.string().optional(),
   subject: z.string().optional(),
 });
+
+const editSchema = createSchema.omit({ assignedTo: true });
 
 const submitSchema = z.object({
   content: z.string().optional(),
@@ -141,7 +145,7 @@ function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
           )}
           <div className="border-t pt-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Attached files</p>
-            <AttachmentList assignmentId={assignmentId} emptyText="No files attached." />
+            <AttachmentList assignmentId={assignmentId} from="family" emptyText="No files attached." />
           </div>
         </div>
       )}
@@ -178,7 +182,7 @@ function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Attached files</p>
               <FileUploadButton assignmentId={assignmentId} label="Attach a file" />
             </div>
-            <AttachmentList assignmentId={assignmentId} canDelete emptyText="No files attached yet." />
+            <AttachmentList assignmentId={assignmentId} from="family" canDelete emptyText="No files attached yet." />
           </div>
         </div>
       )}
@@ -187,19 +191,126 @@ function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
 }
 
 
+// Shown to the family only when the tutor attached something.
+function WorksheetList({ assignmentId }: { assignmentId: number }) {
+  const { data } = useAttachments(assignmentId);
+  if (!data?.some((a) => a.uploaderRole === "tutor")) return null;
+  return (
+    <div className="mt-4 border-t pt-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <FileText className="h-3.5 w-3.5" /> From your tutor
+      </p>
+      <AttachmentList assignmentId={assignmentId} from="tutor" />
+    </div>
+  );
+}
+
 function AssignmentSubmissionReview({ assignmentId }: { assignmentId: number }) {
   const { data: submissions = [] } = useListAssignmentSubmissions(assignmentId);
 
   return (
     <div className="mt-4 border-t pt-3 space-y-3">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Submission &amp; files</p>
-      <AttachmentList assignmentId={assignmentId} showUploader emptyText="No files submitted yet." />
+      <AttachmentList assignmentId={assignmentId} from="family" showUploader emptyText="No files submitted yet." />
       {submissions.length === 0 ? (
         <p className="text-xs text-muted-foreground">No written submission yet.</p>
       ) : (
         submissions.map((s) => <SubmissionReviewRow key={s.id} sub={s} assignmentId={assignmentId} />)
       )}
     </div>
+  );
+}
+
+// The tutor fixes a typo or moves the due date without losing the submission.
+function EditAssignmentDialog({ assignment }: { assignment: Assignment }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const updateMutation = useUpdateAssignment();
+
+  const current = () => ({
+    title: assignment.title,
+    subject: assignment.subject ?? "",
+    description: assignment.description ?? "",
+    dueDate: assignment.dueDate ? format(dueDateForDisplay(assignment.dueDate), "yyyy-MM-dd") : "",
+  });
+  const form = useForm<z.infer<typeof editSchema>>({
+    resolver: zodResolver(editSchema),
+    defaultValues: current(),
+  });
+
+  const onSubmit = (values: z.infer<typeof editSchema>) => {
+    updateMutation.mutate(
+      {
+        id: assignment.id,
+        data: {
+          title: values.title,
+          subject: values.subject?.trim() || null,
+          description: values.description?.trim() || null,
+          dueDate: dueDateToIso(values.dueDate ?? "") ?? null,
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListAssignmentsQueryKey() });
+          setOpen(false);
+          toast({ title: "Assignment updated" });
+        },
+        onError: () => toast({ title: "Failed to update assignment", variant: "destructive" }),
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) form.reset(current()); }}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Edit assignment">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px] rounded-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit Assignment</DialogTitle>
+          <DialogDescription>
+            {assignment.assignedToName ? `For ${assignment.assignedToName}. ` : ""}Their submission and files stay as they are.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl><Input className="rounded-xl" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="subject" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <FormControl><Input className="rounded-xl" {...field} /></FormControl>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="dueDate" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Due Date <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <FormControl><Input type="date" className="rounded-xl" {...field} /></FormControl>
+                </FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Instructions <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                <FormControl><Textarea className="rounded-xl min-h-[100px]" {...field} /></FormControl>
+              </FormItem>
+            )} />
+            <Button type="submit" className="w-full rounded-xl mt-2" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -429,14 +540,18 @@ export default function AssignmentsPage() {
             <Card key={assignment.id} className="border-none shadow-md hover:shadow-lg transition-shadow rounded-2xl overflow-hidden group">
               <CardHeader className="bg-slate-50 dark:bg-slate-900 border-b px-6 pt-5 pb-4 relative">
                 {isTutor && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-4 right-4 h-8 w-8 text-muted-foreground [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-destructive"
-                    onClick={() => handleDelete(assignment.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="absolute top-4 right-4 flex gap-1 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <EditAssignmentDialog assignment={assignment} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      title="Delete assignment"
+                      onClick={() => handleDelete(assignment.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
                 <div className="flex items-center gap-2 mb-2">
                   {assignment.subject && (
@@ -449,7 +564,7 @@ export default function AssignmentsPage() {
                     Posted {format(new Date(assignment.createdAt), "MMM d")}
                   </span>
                 </div>
-                <CardTitle className="text-xl font-bold leading-tight pr-6">{assignment.title}</CardTitle>
+                <CardTitle className="text-xl font-bold leading-tight pr-16">{assignment.title}</CardTitle>
                 {(isTutor || isParent) && assignment.assignedToName && (
                   <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
                     <User className="h-3 w-3" /> For {assignment.assignedToName}
@@ -467,6 +582,19 @@ export default function AssignmentsPage() {
                     <Calendar className="h-4 w-4" />
                     Due: {format(dueDateForDisplay(assignment.dueDate), "EEE, MMM d, yyyy")}
                   </div>
+                )}
+
+                {/* Worksheets the tutor attached for the family to download */}
+                {isTutor ? (
+                  <div className="mt-4 border-t pt-3">
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Worksheets</p>
+                      <FileUploadButton assignmentId={assignment.id} label="Attach worksheet" />
+                    </div>
+                    <AttachmentList assignmentId={assignment.id} from="tutor" canDelete emptyText="No worksheets attached." />
+                  </div>
+                ) : (
+                  <WorksheetList assignmentId={assignment.id} />
                 )}
 
                 {/* Tutor: the student's submission (text + files) and review */}

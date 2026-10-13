@@ -37,19 +37,24 @@ test.describe("assignments: post, submit, review", () => {
           "label, which makes it easy to assign homework to a parent by mistake.",
       );
     }
-    finding(
-      "gap",
-      "Tutors can't attach a worksheet to an assignment",
-      "The New Assignment form has no file upload, and files the tutor uploads are not listed for the student " +
-        "(GET /api/uploads only returns a student's own uploads). Worksheets have to go through chat or email. " +
-        "Suggest attachments on the assignment that its recipient (and their parent) can download.",
-    );
-    finding(
-      "gap",
-      "Assignments can't be edited after posting",
-      "There is no edit action on an assignment card, although the API supports PATCH /api/assignments/:id. A typo " +
-        "or a moved due date means deleting and re-posting, which also loses any submission.",
-    );
+  });
+
+  test("tutor edits the assignment and attaches a worksheet", async ({ open }) => {
+    const page = await open(personas.tutor);
+    await page.goto("/");
+    await navigate(page, "Assignments");
+    const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
+
+    await card.getByTitle("Edit assignment").click();
+    const dialog = page.getByRole("dialog", { name: "Edit Assignment" });
+    await dialog.locator("textarea").fill("Solve problems 1-12 and show your working.");
+    await dialog.getByRole("button", { name: "Save Changes" }).click();
+    await expectToast(page, "Assignment updated");
+    await expect(card.getByText("Solve problems 1-12 and show your working.")).toBeVisible();
+
+    await card.locator('input[type="file"]').setInputFiles(fixture("practice-sheet.txt"));
+    await expectToast(page, "File uploaded");
+    await expect(card.getByText("practice-sheet.txt")).toBeVisible();
   });
 
   test("student sees the assignment with the right due date", async ({ open }) => {
@@ -57,6 +62,10 @@ test.describe("assignments: post, submit, review", () => {
     await page.goto("/");
     await navigate(page, "Assignments");
     await expect(page.getByText("Quadratics practice set")).toBeVisible();
+    await expect(page.getByText("From your tutor")).toBeVisible();
+    const download = page.waitForEvent("download");
+    await page.getByText("practice-sheet.txt").locator("xpath=ancestor::div[contains(@class,'rounded-lg')][1]").getByTitle("Download").click();
+    expect((await download).suggestedFilename()).toBe("practice-sheet.txt");
     const expected = dueDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
     const shown = await page.getByText(/^Due:/).first().innerText();
     await expectRule(
@@ -124,6 +133,7 @@ test.describe("assignments: post, submit, review", () => {
     await navigate(page, "Assignments");
     await expect(page.getByText("Quadratics practice set")).toBeVisible();
     await expect(page.getByText("For Sam Student")).toBeVisible();
+    await expect(page.getByText("practice-sheet.txt")).toBeVisible();
     const parentSeesChildSubmission = await page.getByText(/^Submitted ·/).isVisible();
     await expectRule(
       "bug",

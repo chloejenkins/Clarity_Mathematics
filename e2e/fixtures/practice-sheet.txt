@@ -1,0 +1,1 @@
+Practice sheet: factor x^2 + 5x + 6, then solve x^2 - 9 = 0.
