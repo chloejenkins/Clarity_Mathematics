@@ -39,7 +39,7 @@ export default function ParentReportsPage() {
 
   const { data: allUsers } = useListUsers();
 
-  const students = (allUsers ?? []).filter((u) => u.id !== user.id);
+  const students = (allUsers ?? []).filter((u) => u.role === "student");
 
   const { data: feedback, isLoading: feedbackLoading } = useListStudentParentFeedback(selectedStudentId ?? "", {
     query: {
@@ -96,7 +96,7 @@ export default function ParentReportsPage() {
           <ClipboardList className="h-6 w-6 text-primary" /> Parent Reports
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Private notes for parents only, students cannot see this page.
+          Reports for parents. Each one appears on the linked parents' Feedback page; students never see them.
         </p>
       </div>
 
@@ -167,7 +167,7 @@ export default function ParentReportsPage() {
                   <div className="space-y-2">
                     <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Report</label>
                     <Textarea
-                      placeholder="Write your feedback for the parent here. This is private, only you can see it."
+                      placeholder="Write your feedback for the parent here. Parents linked to this student will see it; the student won't."
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       className="rounded-xl min-h-[200px] resize-none"
