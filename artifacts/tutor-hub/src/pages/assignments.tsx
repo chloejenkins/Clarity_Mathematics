@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -426,7 +426,7 @@ export default function AssignmentsPage() {
             <DialogContent className="sm:max-w-[500px] rounded-2xl">
               <DialogHeader>
                 <DialogTitle>Post New Assignment</DialogTitle>
-                <DialogDescription>Assign to one student or parent. Only them (and a linked parent) will see it.</DialogDescription>
+                <DialogDescription>Assign to one student or parent. Only that person, and any parent linked to them, will see it.</DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
@@ -443,11 +443,18 @@ export default function AssignmentsPage() {
                           {recipients.length === 0 && (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">No students or parents yet</div>
                           )}
-                          {recipients.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>
-                              {recipientLabel(u)} · <span className="capitalize text-muted-foreground">{u.role}</span>
-                            </SelectItem>
-                          ))}
+                          {([["student", "Students"], ["parent", "Parents"]] as const).map(([role, heading]) => {
+                            const group = recipients.filter((u) => u.role === role);
+                            if (group.length === 0) return null;
+                            return (
+                              <SelectGroup key={role}>
+                                <SelectLabel>{heading}</SelectLabel>
+                                {group.map((u) => (
+                                  <SelectItem key={u.id} value={u.id}>{recipientLabel(u)}</SelectItem>
+                                ))}
+                              </SelectGroup>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                       <FormMessage />

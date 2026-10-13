@@ -31,16 +31,15 @@ test.describe("payments: charges, marking paid, confirming", () => {
     await page.goto("/");
     const banner = page.getByRole("link", { name: /unpaid session/ });
     await expect(banner).toContainText("$95 due");
-    if ((await page.getByRole("link", { name: "Payments", exact: true }).count()) === 0) {
-      finding(
-        "ux",
-        "Students are told they owe money but have no Payments page in their menu",
-        "The student menu has no Payments entry, yet students are billed for their own sessions and see a " +
-          "'You have 1 unpaid session, $75 due' banner. Students who pay for themselves (older students, adult " +
-          "learners) can only reach Payments through that banner. Either add Payments to the student menu or bill " +
-          "the linked parent and hide the banner from students who have one.",
-      );
-    }
+    await expectRule(
+      "ux",
+      "Students are told they owe money but have no Payments page in their menu",
+      "The student menu has no Payments entry, yet students are billed for their own sessions and see a " +
+        "'You have 1 unpaid session, $75 due' banner. Students who pay for themselves (older students, adult " +
+        "learners) can only reach Payments through that banner. Either add Payments to the student menu or bill " +
+        "the linked parent and hide the banner from students who have one.",
+      async () => (await page.getByRole("link", { name: "Payments", exact: true }).count()) > 0,
+    );
     await banner.click();
     await expect(page.getByText("First session, free")).toBeVisible();
     const row = page.getByText("Exam prep").locator("xpath=ancestor::div[contains(@class,'rounded-xl')][1]");
