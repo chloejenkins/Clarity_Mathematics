@@ -5,7 +5,6 @@ import { eq, desc, and, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import {
   ListAssignmentsResponse,
-  UpdateAssignmentBody,
   DeleteAssignmentResponse,
 } from "@workspace/api-zod";
 import { isSelfOrLinkedParent } from "../lib/family";
@@ -23,6 +22,15 @@ const CreateAssignmentInput = z.object({
   description: z.string().optional(),
   dueDate: z.string().optional(), // ISO string; parsed to a Date below
   subject: z.string().optional(),
+});
+
+// The generated UpdateAssignmentBody expects a Date object for dueDate, which
+// JSON can't carry, so the route parses its own copy. null clears a field.
+const UpdateAssignmentInput = z.object({
+  title: z.string().trim().min(1).optional(),
+  description: z.string().nullish(),
+  dueDate: z.string().datetime({ offset: true }).nullish(),
+  subject: z.string().nullish(),
 });
 
 const router: IRouter = Router();
@@ -133,14 +141,16 @@ router.patch("/assignments/:id", async (req: Request, res: Response) => {
     return;
   }
 
-  const parsed = UpdateAssignmentBody.safeParse(req.body);
+  const parsed = UpdateAssignmentInput.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
 
-  const updates: Record<string, unknown> = {};
-  if (parsed.data.title !== undefined) updates.title = parsed.data.title;
-  if (parsed.data.description !== undefined) updates.description = parsed.data.description;
-  if (parsed.data.subject !== undefined) updates.subject = parsed.data.subject;
-  if (parsed.data.dueDate !== undefined) updates.dueDate = new Date(parsed.data.dueDate);
+  const updates: Partial<typeof assignmentsTable.$inferInsert> = {};
+  const { title, description, subject, dueDate } = parsed.data;
+  if (title !== undefined) updates.title = title;
+  if (description !== undefined) updates.description = description?.trim() || null;
+  if (subject !== undefined) updates.subject = subject?.trim() || null;
+  if (dueDate !== undefined) updates.dueDate = dueDate ? new Date(dueDate) : null;
+  if (Object.keys(updates).length === 0) { res.status(400).json({ error: "Nothing to update" }); return; }
 
   const [updated] = await db
     .update(assignmentsTable)
@@ -148,7 +158,10 @@ router.patch("/assignments/:id", async (req: Request, res: Response) => {
     .where(eq(assignmentsTable.id, id))
     .returning();
 
-  res.json(updated);
+  const [recipient] = updated?.assignedTo
+    ? await db.select().from(usersTable).where(eq(usersTable.id, updated.assignedTo)).limit(1)
+    : [];
+  res.json({ ...updated, assignedToName: recipient ? displayName(recipient) : null });
 });
 
 router.delete("/assignments/:id", async (req: Request, res: Response) => {

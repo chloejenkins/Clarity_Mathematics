@@ -186,28 +186,37 @@ function AttachmentRow({
   );
 }
 
+/** Files the current user can see, optionally on one assignment. */
+export function useAttachments(assignmentId?: number, directOnly?: boolean) {
+  const qs = assignmentId != null ? `?assignmentId=${assignmentId}` : "";
+  return useQuery({
+    queryKey: ["/api/uploads", assignmentId ?? (directOnly ? "direct" : "all")],
+    queryFn: () => customFetch<Attachment[]>(`/api/uploads${qs}`),
+  });
+}
+
 export function AttachmentList({
   assignmentId,
   directOnly,
   showUploader,
   canDelete,
   emptyText,
+  from,
 }: {
   assignmentId?: number;
   /** When true, show only files not tied to an assignment (direct sends). */
   directOnly?: boolean;
+  /** Only the tutor's worksheets, or only the family's own files. */
+  from?: "tutor" | "family";
   showUploader?: boolean;
   canDelete?: boolean;
   emptyText?: string;
 }) {
-  const qs = assignmentId != null ? `?assignmentId=${assignmentId}` : "";
-  const { data } = useQuery({
-    queryKey: ["/api/uploads", assignmentId ?? (directOnly ? "direct" : "all")],
-    queryFn: () => customFetch<Attachment[]>(`/api/uploads${qs}`),
-  });
+  const { data } = useAttachments(assignmentId, directOnly);
 
   let items = data ?? [];
   if (directOnly) items = items.filter((a) => a.assignmentId == null);
+  if (from) items = items.filter((a) => (a.uploaderRole === "tutor") === (from === "tutor"));
 
   if (items.length === 0) {
     return emptyText ? (

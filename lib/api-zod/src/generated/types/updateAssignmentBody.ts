@@ -7,8 +7,9 @@
  */
 
 export interface UpdateAssignmentBody {
+  /** @minLength 1 */
   title?: string;
-  description?: string;
-  dueDate?: Date;
-  subject?: string;
+  description?: string | null;
+  dueDate?: Date | null;
+  subject?: string | null;
 }
