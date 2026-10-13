@@ -23,5 +23,4 @@ export {
   SyncProfileResponse,
   UpdateAssignmentBody,
   UpdateSessionBody,
-  UpsertParentFeedbackBody,
 } from "./generated/api";

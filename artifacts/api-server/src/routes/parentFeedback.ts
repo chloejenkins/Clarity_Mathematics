@@ -1,14 +1,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { parentFeedbackTable, parentStudentLinksTable } from "@workspace/db/schema";
+import { parentFeedbackTable, parentStudentLinksTable, usersTable } from "@workspace/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { z } from "zod";
 
 const router: IRouter = Router();
 
-const UpsertBody = z.object({
-  content: z.string().min(1),
-  period: z.string().optional(),
+const SaveBody = z.object({
+  content: z.string().trim().min(1),
+  period: z.string().nullish(),
 });
 
 function tutorOnly(req: Request, res: Response): req is Request & Express.AuthedRequest {
@@ -41,7 +41,7 @@ router.get("/parent-feedback/:studentId", async (req: Request, res: Response) =>
       .select()
       .from(parentFeedbackTable)
       .where(eq(parentFeedbackTable.studentId, String(req.params.studentId)))
-      .orderBy(desc(parentFeedbackTable.updatedAt));
+      .orderBy(desc(parentFeedbackTable.createdAt), desc(parentFeedbackTable.id));
     res.json(rows);
     return;
   }
@@ -65,7 +65,7 @@ router.get("/parent-feedback/:studentId", async (req: Request, res: Response) =>
       .select()
       .from(parentFeedbackTable)
       .where(eq(parentFeedbackTable.studentId, String(req.params.studentId)))
-      .orderBy(desc(parentFeedbackTable.updatedAt));
+      .orderBy(desc(parentFeedbackTable.createdAt), desc(parentFeedbackTable.id));
     res.json(rows);
     return;
   }
@@ -73,53 +73,69 @@ router.get("/parent-feedback/:studentId", async (req: Request, res: Response) =>
   res.status(403).json({ error: "Access denied" });
 });
 
-router.put("/parent-feedback/:studentId", async (req: Request, res: Response) => {
+// Each save adds a dated entry, so parents keep the history of past periods.
+router.post("/parent-feedback/:studentId", async (req: Request, res: Response) => {
   if (!tutorOnly(req, res)) return;
-  const parsed = UpsertBody.safeParse(req.body);
+  const parsed = SaveBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid body" });
+    res.status(400).json({ error: "Write the report before saving" });
     return;
   }
 
-  const existing = await db
-    .select()
-    .from(parentFeedbackTable)
-    .where(and(
-      eq(parentFeedbackTable.studentId, String(req.params.studentId)),
-      eq(parentFeedbackTable.tutorId, req.user.id),
-    ))
-    .limit(1);
-
-  if (existing.length > 0) {
-    const [updated] = await db
-      .update(parentFeedbackTable)
-      .set({ content: parsed.data.content, period: parsed.data.period ?? null })
-      .where(and(
-        eq(parentFeedbackTable.studentId, String(req.params.studentId)),
-        eq(parentFeedbackTable.tutorId, req.user.id),
-      ))
-      .returning();
-    res.json(updated);
-  } else {
-    const [created] = await db
-      .insert(parentFeedbackTable)
-      .values({
-        tutorId: req.user.id,
-        studentId: String(req.params.studentId),
-        content: parsed.data.content,
-        period: parsed.data.period ?? null,
-      })
-      .returning();
-    res.status(201).json(created);
+  // Reports are about a student, or a parent acting as the family account.
+  const studentId = String(req.params.studentId);
+  const [subject] = await db.select().from(usersTable).where(eq(usersTable.id, studentId)).limit(1);
+  if (!subject || (subject.role !== "student" && subject.role !== "parent")) {
+    res.status(404).json({ error: "Student not found" });
+    return;
   }
+
+  const [created] = await db
+    .insert(parentFeedbackTable)
+    .values({
+      tutorId: req.user.id,
+      studentId,
+      content: parsed.data.content,
+      period: parsed.data.period?.trim() || null,
+    })
+    .returning();
+  res.status(201).json(created);
 });
 
-router.delete("/parent-feedback/:studentId", async (req: Request, res: Response) => {
+/** The report with this id, if the calling tutor wrote it; otherwise sends the error. */
+async function ownEntry(req: Request & Express.AuthedRequest, res: Response) {
+  const id = Number(req.params.id);
+  const [entry] = Number.isInteger(id)
+    ? await db.select().from(parentFeedbackTable).where(eq(parentFeedbackTable.id, id)).limit(1)
+    : [];
+  if (!entry) { res.status(404).json({ error: "Report not found" }); return null; }
+  if (entry.tutorId !== req.user.id) { res.status(403).json({ error: "You can only change your own reports" }); return null; }
+  return entry;
+}
+
+router.patch("/parent-feedback/entries/:id", async (req: Request, res: Response) => {
   if (!tutorOnly(req, res)) return;
-  await db.delete(parentFeedbackTable).where(and(
-    eq(parentFeedbackTable.studentId, String(req.params.studentId)),
-    eq(parentFeedbackTable.tutorId, req.user.id),
-  ));
+  const parsed = SaveBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Write the report before saving" });
+    return;
+  }
+  const entry = await ownEntry(req, res);
+  if (!entry) return;
+
+  const [updated] = await db
+    .update(parentFeedbackTable)
+    .set({ content: parsed.data.content, period: parsed.data.period?.trim() || null })
+    .where(eq(parentFeedbackTable.id, entry.id))
+    .returning();
+  res.json(updated);
+});
+
+router.delete("/parent-feedback/entries/:id", async (req: Request, res: Response) => {
+  if (!tutorOnly(req, res)) return;
+  const entry = await ownEntry(req, res);
+  if (!entry) return;
+  await db.delete(parentFeedbackTable).where(eq(parentFeedbackTable.id, entry.id));
   res.json({ success: true });
 });
 

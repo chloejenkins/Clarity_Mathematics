@@ -391,10 +391,10 @@ export interface ParentFeedback {
   updatedAt: string;
 }
 
-export interface UpsertParentFeedbackBody {
+export interface SaveParentFeedbackBody {
   /** @minLength 1 */
   content: string;
-  period?: string;
+  period?: string | null;
 }
 
 /**

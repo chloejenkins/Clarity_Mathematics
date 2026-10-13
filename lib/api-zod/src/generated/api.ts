@@ -767,7 +767,7 @@ export const ListParentFeedbackResponse = zod.array(
 );
 
 /**
- * @summary List parent reports for one student
+ * @summary List parent reports for one student, newest first
  */
 export const ListStudentParentFeedbackParams = zod.object({
   studentId: zod.coerce.string(),
@@ -787,18 +787,30 @@ export const ListStudentParentFeedbackResponse = zod.array(
 );
 
 /**
- * @summary Create or replace the tutor's report for a student (tutor only)
+ * @summary Add a new dated report for a student (tutor only); earlier reports are kept
  */
-export const UpsertParentFeedbackParams = zod.object({
+export const CreateParentFeedbackParams = zod.object({
   studentId: zod.coerce.string(),
 });
 
-export const UpsertParentFeedbackBody = zod.object({
+export const CreateParentFeedbackBody = zod.object({
   content: zod.string().min(1),
-  period: zod.string().optional(),
+  period: zod.string().nullish(),
 });
 
-export const UpsertParentFeedbackResponse = zod.object({
+/**
+ * @summary Edit one of the tutor's reports (tutor only)
+ */
+export const UpdateParentFeedbackParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateParentFeedbackBody = zod.object({
+  content: zod.string().min(1),
+  period: zod.string().nullish(),
+});
+
+export const UpdateParentFeedbackResponse = zod.object({
   id: zod.number(),
   tutorId: zod.string().nullish(),
   studentId: zod.string(),
@@ -809,10 +821,10 @@ export const UpsertParentFeedbackResponse = zod.object({
 });
 
 /**
- * @summary Delete the tutor's report for a student (tutor only)
+ * @summary Delete one of the tutor's reports (tutor only)
  */
 export const DeleteParentFeedbackParams = zod.object({
-  studentId: zod.coerce.string(),
+  id: zod.coerce.number(),
 });
 
 export const DeleteParentFeedbackResponse = zod.object({

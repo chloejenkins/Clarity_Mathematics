@@ -840,7 +840,7 @@ paths:
     get:
       operationId: listStudentParentFeedback
       tags: [parentFeedback]
-      summary: List parent reports for one student
+      summary: List parent reports for one student, newest first
       parameters:
         - in: path
           name: studentId
@@ -856,10 +856,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ParentFeedback"
-    put:
-      operationId: upsertParentFeedback
+    post:
+      operationId: createParentFeedback
       tags: [parentFeedback]
-      summary: Create or replace the tutor's report for a student (tutor only)
+      summary: Add a new dated report for a student (tutor only); earlier reports are kept
       parameters:
         - in: path
           name: studentId
@@ -871,7 +871,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpsertParentFeedbackBody"
+              $ref: "#/components/schemas/SaveParentFeedbackBody"
+      responses:
+        "201":
+          description: Report created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentFeedback"
+
+  /parent-feedback/entries/{id}:
+    patch:
+      operationId: updateParentFeedback
+      tags: [parentFeedback]
+      summary: Edit one of the tutor's reports (tutor only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveParentFeedbackBody"
       responses:
         "200":
           description: Report updated
@@ -879,22 +904,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ParentFeedback"
-        "201":
-          description: Report created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ParentFeedback"
     delete:
       operationId: deleteParentFeedback
       tags: [parentFeedback]
-      summary: Delete the tutor's report for a student (tutor only)
+      summary: Delete one of the tutor's reports (tutor only)
       parameters:
         - in: path
-          name: studentId
+          name: id
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: Deleted
@@ -1740,7 +1759,7 @@ components:
         - createdAt
         - updatedAt
 
-    UpsertParentFeedbackBody:
+    SaveParentFeedbackBody:
       type: object
       properties:
         content:
@@ -1748,6 +1767,7 @@ components:
           minLength: 1
         period:
           type: string
+          nullable: true
       required:
         - content
 

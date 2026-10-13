@@ -77,7 +77,7 @@ export default function ParentFeedbackViewPage() {
             <User className="h-4 w-4 text-muted-foreground" />
             <p className="font-semibold text-foreground">Your sessions</p>
           </div>
-          <FeedbackCard feedback={selfFeedback[0]} />
+          <FeedbackHistory reports={selfFeedback} />
         </div>
       )}
 
@@ -119,8 +119,6 @@ function LinkedStudentFeedback({
     },
   });
 
-  const feedback = feedbackList[0] ?? null;
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -155,15 +153,24 @@ function LinkedStudentFeedback({
         </div>
       ) : isLoading ? (
         <Skeleton className="h-24 rounded-2xl" />
-      ) : !feedback ? (
+      ) : feedbackList.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
           title="No feedback yet"
           description="Your tutor hasn't shared any feedback yet. Check back soon."
         />
       ) : (
-        <FeedbackCard feedback={feedback} />
+        <FeedbackHistory reports={feedbackList} />
       )}
+    </div>
+  );
+}
+
+// Every report the tutor has written, newest first.
+function FeedbackHistory({ reports }: { reports: ParentFeedback[] }) {
+  return (
+    <div className="space-y-3">
+      {reports.map((r) => <FeedbackCard key={r.id} feedback={r} />)}
     </div>
   );
 }
@@ -178,7 +185,7 @@ function FeedbackCard({ feedback }: { feedback: ParentFeedback }) {
       )}
       <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{feedback.content}</p>
       <p className="text-xs text-muted-foreground">
-        Last updated {format(new Date(feedback.updatedAt), "MMMM d, yyyy")}
+        {format(new Date(feedback.createdAt), "MMMM d, yyyy")}
       </p>
     </div>
   );

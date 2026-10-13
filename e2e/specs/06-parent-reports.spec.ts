@@ -1,7 +1,7 @@
 import { test, expect } from "../lib/test";
 import { personas } from "../lib/personas";
 import { apiAs, expectToast, navigate } from "../lib/session";
-import { finding, expectRule } from "../lib/findings";
+import { expectRule } from "../lib/findings";
 
 test.describe("parent reports: tutor writes, parent reads", () => {
   test("tutor writes a report for the student", async ({ open }) => {
@@ -31,12 +31,24 @@ test.describe("parent reports: tutor writes, parent reads", () => {
     await editor.fill("Sam is confident with factoring now. Next: completing the square.");
     await page.getByRole("button", { name: "Save Report" }).click();
     await expectToast(page, "Report saved");
-    finding(
-      "gap",
-      "Only one parent report per student is kept",
-      "Saving a report overwrites the previous one (PUT /api/parent-feedback/:studentId upserts a single row), so " +
-        "there's no history of past periods for the parent to look back on. Keep each report as its own entry.",
-    );
+    await expect(page.getByText("Past reports (1)")).toBeVisible();
+
+    // A second report is added alongside the first rather than replacing it.
+    await page.getByPlaceholder(/Fall 2025/).fill("October, week 3");
+    await editor.fill("Completing the square is coming along; practise with fractions.");
+    await page.getByRole("button", { name: "Save Report" }).click();
+    await expectToast(page, "Report saved");
+    await expect(page.getByText("Past reports (2)")).toBeVisible();
+    await expect(page.getByText("Sam is confident with factoring now.")).toBeVisible();
+
+    // Editing an earlier report changes it in place.
+    const second = page.getByText("Completing the square is coming along").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
+    await second.getByTitle("Edit report").click();
+    await editor.fill("Completing the square is coming along; practise with fractions and negatives.");
+    await page.getByRole("button", { name: "Save Changes" }).click();
+    await expectToast(page, "Report updated");
+    await expect(page.getByText("practise with fractions and negatives.")).toBeVisible();
+    await expect(page.getByText("Past reports (2)")).toBeVisible();
   });
 
   test("parent reads the report on their Feedback page", async ({ open }) => {
@@ -45,6 +57,8 @@ test.describe("parent reports: tutor writes, parent reads", () => {
     await page.getByRole("link", { name: /Feedback/ }).first().click();
     await expect(page.getByText("Sam is confident with factoring now.")).toBeVisible();
     await expect(page.getByText("October, week 2")).toBeVisible();
+    await expect(page.getByText("practise with fractions and negatives.")).toBeVisible();
+    await expect(page.getByText("October, week 3")).toBeVisible();
   });
 
   test("students can't read the parent report", async ({ open }) => {
