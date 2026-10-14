@@ -39,6 +39,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PastSessionsCheck, needsCheck } from "@/components/past-sessions-check";
 
 function formatDay(date: Date) {
   if (isToday(date)) return "Today";
@@ -501,7 +502,14 @@ export default function SchedulePage() {
   const unbooked = slots.filter(s => s.isBooked === "false");
   const booked   = slots.filter(s => s.isBooked === "true");
 
-  const upcomingSessions = [...sessions].filter(s => s.status === "approved" || s.status === "pending")
+  // Booked sessions whose time is over wait for the tutor to say whether they happened.
+  const toCheck = isTutor
+    ? [...sessions].filter((s) => needsCheck(s))
+        .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+    : [];
+
+  const upcomingSessions = [...sessions]
+    .filter(s => (s.status === "approved" || s.status === "pending") && !toCheck.includes(s))
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
   const pastSessions = [...sessions].filter(s => s.status === "completed" || s.status === "cancelled")
@@ -527,6 +535,8 @@ export default function SchedulePage() {
       {isTutor ? (
         /* ── TUTOR VIEW ── */
         <div className="space-y-8">
+          <PastSessionsCheck sessions={toCheck} onMark={handleSessionStatus} busy={updateMutation.isPending} />
+
           {/* Unbooked slots */}
           <section>
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
