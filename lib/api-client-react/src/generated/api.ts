@@ -45,6 +45,7 @@ import type {
   PaymentRecord,
   PaymentSettings,
   ReviewSubmissionBody,
+  SaveParentFeedbackBody,
   SendConversationMessageBody,
   SendMessageBody,
   SetRoleBody,
@@ -58,7 +59,6 @@ import type {
   UpdateAssignmentBody,
   UpdateSessionBody,
   UpdatedTutoringSession,
-  UpsertParentFeedbackBody,
   User,
   Video,
 } from "./api.schemas";
@@ -3674,7 +3674,7 @@ export function useListParentFeedback<
 }
 
 /**
- * @summary List parent reports for one student
+ * @summary List parent reports for one student, newest first
  */
 export const getListStudentParentFeedbackUrl = (studentId: string) => {
   return `/api/parent-feedback/${studentId}`;
@@ -3739,7 +3739,7 @@ export type ListStudentParentFeedbackQueryResult = NonNullable<
 export type ListStudentParentFeedbackQueryError = ErrorType<unknown>;
 
 /**
- * @summary List parent reports for one student
+ * @summary List parent reports for one student, newest first
  */
 
 export function useListStudentParentFeedback<
@@ -3769,43 +3769,43 @@ export function useListStudentParentFeedback<
 }
 
 /**
- * @summary Create or replace the tutor's report for a student (tutor only)
+ * @summary Add a new dated report for a student (tutor only); earlier reports are kept
  */
-export const getUpsertParentFeedbackUrl = (studentId: string) => {
+export const getCreateParentFeedbackUrl = (studentId: string) => {
   return `/api/parent-feedback/${studentId}`;
 };
 
-export const upsertParentFeedback = async (
+export const createParentFeedback = async (
   studentId: string,
-  upsertParentFeedbackBody: UpsertParentFeedbackBody,
+  saveParentFeedbackBody: SaveParentFeedbackBody,
   options?: RequestInit,
 ): Promise<ParentFeedback> => {
-  return customFetch<ParentFeedback>(getUpsertParentFeedbackUrl(studentId), {
+  return customFetch<ParentFeedback>(getCreateParentFeedbackUrl(studentId), {
     ...options,
-    method: "PUT",
+    method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(upsertParentFeedbackBody),
+    body: JSON.stringify(saveParentFeedbackBody),
   });
 };
 
-export const getUpsertParentFeedbackMutationOptions = <
+export const getCreateParentFeedbackMutationOptions = <
   TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof upsertParentFeedback>>,
+    Awaited<ReturnType<typeof createParentFeedback>>,
     TError,
-    { studentId: string; data: BodyType<UpsertParentFeedbackBody> },
+    { studentId: string; data: BodyType<SaveParentFeedbackBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof upsertParentFeedback>>,
+  Awaited<ReturnType<typeof createParentFeedback>>,
   TError,
-  { studentId: string; data: BodyType<UpsertParentFeedbackBody> },
+  { studentId: string; data: BodyType<SaveParentFeedbackBody> },
   TContext
 > => {
-  const mutationKey = ["upsertParentFeedback"];
+  const mutationKey = ["createParentFeedback"];
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -3815,59 +3815,145 @@ export const getUpsertParentFeedbackMutationOptions = <
     : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof upsertParentFeedback>>,
-    { studentId: string; data: BodyType<UpsertParentFeedbackBody> }
+    Awaited<ReturnType<typeof createParentFeedback>>,
+    { studentId: string; data: BodyType<SaveParentFeedbackBody> }
   > = (props) => {
     const { studentId, data } = props ?? {};
 
-    return upsertParentFeedback(studentId, data, requestOptions);
+    return createParentFeedback(studentId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type UpsertParentFeedbackMutationResult = NonNullable<
-  Awaited<ReturnType<typeof upsertParentFeedback>>
+export type CreateParentFeedbackMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createParentFeedback>>
 >;
-export type UpsertParentFeedbackMutationBody =
-  BodyType<UpsertParentFeedbackBody>;
-export type UpsertParentFeedbackMutationError = ErrorType<unknown>;
+export type CreateParentFeedbackMutationBody = BodyType<SaveParentFeedbackBody>;
+export type CreateParentFeedbackMutationError = ErrorType<unknown>;
 
 /**
- * @summary Create or replace the tutor's report for a student (tutor only)
+ * @summary Add a new dated report for a student (tutor only); earlier reports are kept
  */
-export const useUpsertParentFeedback = <
+export const useCreateParentFeedback = <
   TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof upsertParentFeedback>>,
+    Awaited<ReturnType<typeof createParentFeedback>>,
     TError,
-    { studentId: string; data: BodyType<UpsertParentFeedbackBody> },
+    { studentId: string; data: BodyType<SaveParentFeedbackBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
-  Awaited<ReturnType<typeof upsertParentFeedback>>,
+  Awaited<ReturnType<typeof createParentFeedback>>,
   TError,
-  { studentId: string; data: BodyType<UpsertParentFeedbackBody> },
+  { studentId: string; data: BodyType<SaveParentFeedbackBody> },
   TContext
 > => {
-  return useMutation(getUpsertParentFeedbackMutationOptions(options));
+  return useMutation(getCreateParentFeedbackMutationOptions(options));
 };
 
 /**
- * @summary Delete the tutor's report for a student (tutor only)
+ * @summary Edit one of the tutor's reports (tutor only)
  */
-export const getDeleteParentFeedbackUrl = (studentId: string) => {
-  return `/api/parent-feedback/${studentId}`;
+export const getUpdateParentFeedbackUrl = (id: number) => {
+  return `/api/parent-feedback/entries/${id}`;
+};
+
+export const updateParentFeedback = async (
+  id: number,
+  saveParentFeedbackBody: SaveParentFeedbackBody,
+  options?: RequestInit,
+): Promise<ParentFeedback> => {
+  return customFetch<ParentFeedback>(getUpdateParentFeedbackUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(saveParentFeedbackBody),
+  });
+};
+
+export const getUpdateParentFeedbackMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateParentFeedback>>,
+    TError,
+    { id: number; data: BodyType<SaveParentFeedbackBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateParentFeedback>>,
+  TError,
+  { id: number; data: BodyType<SaveParentFeedbackBody> },
+  TContext
+> => {
+  const mutationKey = ["updateParentFeedback"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateParentFeedback>>,
+    { id: number; data: BodyType<SaveParentFeedbackBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateParentFeedback(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateParentFeedbackMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateParentFeedback>>
+>;
+export type UpdateParentFeedbackMutationBody = BodyType<SaveParentFeedbackBody>;
+export type UpdateParentFeedbackMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Edit one of the tutor's reports (tutor only)
+ */
+export const useUpdateParentFeedback = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateParentFeedback>>,
+    TError,
+    { id: number; data: BodyType<SaveParentFeedbackBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateParentFeedback>>,
+  TError,
+  { id: number; data: BodyType<SaveParentFeedbackBody> },
+  TContext
+> => {
+  return useMutation(getUpdateParentFeedbackMutationOptions(options));
+};
+
+/**
+ * @summary Delete one of the tutor's reports (tutor only)
+ */
+export const getDeleteParentFeedbackUrl = (id: number) => {
+  return `/api/parent-feedback/entries/${id}`;
 };
 
 export const deleteParentFeedback = async (
-  studentId: string,
+  id: number,
   options?: RequestInit,
 ): Promise<SuccessResponse> => {
-  return customFetch<SuccessResponse>(getDeleteParentFeedbackUrl(studentId), {
+  return customFetch<SuccessResponse>(getDeleteParentFeedbackUrl(id), {
     ...options,
     method: "DELETE",
   });
@@ -3880,14 +3966,14 @@ export const getDeleteParentFeedbackMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof deleteParentFeedback>>,
     TError,
-    { studentId: string },
+    { id: number },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof deleteParentFeedback>>,
   TError,
-  { studentId: string },
+  { id: number },
   TContext
 > => {
   const mutationKey = ["deleteParentFeedback"];
@@ -3901,11 +3987,11 @@ export const getDeleteParentFeedbackMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof deleteParentFeedback>>,
-    { studentId: string }
+    { id: number }
   > = (props) => {
-    const { studentId } = props ?? {};
+    const { id } = props ?? {};
 
-    return deleteParentFeedback(studentId, requestOptions);
+    return deleteParentFeedback(id, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -3918,7 +4004,7 @@ export type DeleteParentFeedbackMutationResult = NonNullable<
 export type DeleteParentFeedbackMutationError = ErrorType<unknown>;
 
 /**
- * @summary Delete the tutor's report for a student (tutor only)
+ * @summary Delete one of the tutor's reports (tutor only)
  */
 export const useDeleteParentFeedback = <
   TError = ErrorType<unknown>,
@@ -3927,14 +4013,14 @@ export const useDeleteParentFeedback = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof deleteParentFeedback>>,
     TError,
-    { studentId: string },
+    { id: number },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof deleteParentFeedback>>,
   TError,
-  { studentId: string },
+  { id: number },
   TContext
 > => {
   return useMutation(getDeleteParentFeedbackMutationOptions(options));
