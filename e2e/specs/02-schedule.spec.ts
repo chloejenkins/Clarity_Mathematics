@@ -166,26 +166,31 @@ test.describe("scheduling: tutor posts times, families book them", () => {
     }
   });
 
-  test("tutor completes a past session and writes lesson notes the student can read", async ({ open }) => {
-    // A session that already happened: booked last week, never marked complete.
+  test("tutor confirms a past session happened and writes lesson notes the student can read", async ({ open }) => {
+    // Two sessions that already happened: booked earlier, never marked.
     const past = daysFromNow(-2, 17, 0);
     await query(
-      "insert into tutoring_sessions (tutor_id, student_id, scheduled_at, duration_minutes, topic, status) values ($1, $2, $3, 60, 'Fractions review', 'approved')",
-      [personas.tutor.id, personas.student.id, past.toISOString()],
+      "insert into tutoring_sessions (tutor_id, student_id, scheduled_at, duration_minutes, topic, status) values ($1, $2, $3, 60, 'Fractions review', 'approved'), ($1, $2, $4, 60, 'Missed session', 'approved')",
+      // The missed one comes after the first, so the first stays the student's free session.
+      [personas.tutor.id, personas.student.id, past.toISOString(), daysFromNow(-1, 10, 0).toISOString()],
     );
 
     const tutor = await open(personas.tutor);
-    await tutor.goto("/");
-    const card = tutor.locator("main").getByText("Fractions review").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
-    await expectRule(
-      "gap",
-      "Sessions that already happened still show as upcoming",
-      "A session whose time has passed stays under 'Booked Sessions' until the tutor clicks Mark Completed; nothing " +
-        "prompts them. Suggest listing past-due sessions separately with a one-click 'Did this happen?' and an " +
-        "automatic reminder.",
-      async () => !(await tutor.getByRole("heading", { name: /Booked Sessions/ }).locator("xpath=../..").getByText("Fractions review").isVisible()),
-    );
-    await card.getByRole("button", { name: "Mark Completed" }).click();
+    await tutor.goto("/assignments");
+    await expect(tutor.getByText("2 past sessions need checking: did they happen?")).toBeVisible();
+    await tutor.getByText("2 past sessions need checking").click();
+
+    // Past-due sessions leave Booked Sessions for the "Did these happen?" list.
+    const toCheck = tutor.getByRole("heading", { name: /Did these happen\?/ }).locator("xpath=..");
+    const booked = tutor.getByRole("heading", { name: /Booked Sessions/ }).locator("xpath=..");
+    await expect(booked.getByText("Fractions review")).toHaveCount(0);
+
+    await toCheck.getByText("Missed session").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]")
+      .getByRole("button", { name: "It didn't happen" }).click();
+    await expectToast(tutor, "Session cancelled");
+
+    await toCheck.getByText("Fractions review").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]")
+      .getByRole("button", { name: "It happened" }).click();
     await expectToast(tutor, "Session marked as completed");
     await tutor.getByRole("button", { name: "Add lesson notes" }).first().click();
     await tutor.getByPlaceholder(/What we covered/).fill("Worked through equivalent fractions. Homework: p. 42 #1-10.");

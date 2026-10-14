@@ -33,6 +33,7 @@ import { Logo } from "@/components/logo";
 import { PaymentBanner } from "@/components/payment-banner";
 import { SessionReminderBanner } from "@/components/session-reminder-banner";
 import { ParentLinkRequestsBanner } from "@/components/parent-link-requests-banner";
+import { PastSessionsBanner } from "@/components/past-sessions-check";
 
 interface LayoutProps {
   children: ReactNode;
@@ -190,6 +191,7 @@ export function AppLayout({ children }: LayoutProps) {
             <div className="max-w-5xl mx-auto h-full">
               <ParentLinkRequestsBanner />
               <SessionReminderBanner />
+              <PastSessionsBanner />
               <PaymentBanner />
               {children}
             </div>
