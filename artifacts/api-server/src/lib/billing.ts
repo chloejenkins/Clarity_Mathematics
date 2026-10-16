@@ -6,7 +6,7 @@ const DEFAULT_RATE = 40;
 type SessionRow = typeof tutoringSessionsTable.$inferSelect;
 
 export interface CancellationOutcome {
-  policy: "full_refund" | "half_fee" | "tutor_cancel";
+  policy: "full_refund" | "half_fee" | "tutor_cancel" | "no_show";
   feeOwed: number; // what the student still owes as a cancellation fee
   refundOwed: number; // what the tutor should refund (if the student had already paid)
 }
@@ -76,11 +76,13 @@ async function moveFreeCredit(studentId: string): Promise<void> {
  *   - tutor cancels (any time)      → no fee (full refund)
  *   - student cancels > 24h before  → no fee (full refund)
  *   - student cancels ≤ 24h before  → 50% fee
+ *   - tutor marks a no-show         → 50% fee, like a late cancellation
  * If the student had already paid, records the refund amount to send back manually.
  */
 export async function applyCancellation(
   session: SessionRow,
   cancelledByRole: string,
+  noShow = false,
 ): Promise<CancellationOutcome> {
   const now = Date.now();
   const scheduled = session.scheduledAt ? new Date(session.scheduledAt).getTime() : now;
@@ -97,7 +99,10 @@ export async function applyCancellation(
 
   let policy: CancellationOutcome["policy"];
   let fee: number;
-  if (cancelledByRole === "tutor") {
+  if (noShow) {
+    policy = "no_show";
+    fee = Math.round(fullAmount * 0.5);
+  } else if (cancelledByRole === "tutor") {
     policy = "tutor_cancel";
     fee = 0;
   } else if (hoursUntil > 24) {
@@ -116,6 +121,7 @@ export async function applyCancellation(
 
   let feeOwed = 0;
   let refundOwed = 0;
+  const feeDescription = noShow ? "No-show (50% fee)" : "Late cancellation (50% fee)";
 
   if (existing && isFreeSessionCharge(existing)) {
     // The free first session was cancelled. Nothing was paid for it, so charge
@@ -124,7 +130,7 @@ export async function applyCancellation(
     await db
       .update(paymentsTable)
       .set(fee > 0
-        ? { amount: fee, status: "due", receivedAt: null, description: "Late cancellation (50% fee)" }
+        ? { amount: fee, status: "due", receivedAt: null, description: feeDescription }
         : { amount: 0, status: "void", description: "Cancelled (no charge)" })
       .where(eq(paymentsTable.id, existing.id));
     feeOwed = fee;
@@ -139,7 +145,7 @@ export async function applyCancellation(
         refundDue: refundOwed,
         amount: fee,
         description:
-          policy === "half_fee" ? "Late cancellation (50% fee)" : "Cancelled, refund due",
+          fee > 0 ? feeDescription : "Cancelled, refund due",
       })
       .where(eq(paymentsTable.id, existing.id));
   } else if (existing) {
@@ -147,7 +153,7 @@ export async function applyCancellation(
     if (fee > 0) {
       await db
         .update(paymentsTable)
-        .set({ amount: fee, status: "due", description: "Late cancellation (50% fee)" })
+        .set({ amount: fee, status: "due", description: feeDescription })
         .where(eq(paymentsTable.id, existing.id));
       feeOwed = fee;
     } else {
@@ -165,7 +171,7 @@ export async function applyCancellation(
         studentId: session.studentId,
         sessionId: session.id,
         amount: fee,
-        description: "Late cancellation (50% fee)",
+        description: feeDescription,
         status: "due",
       });
       feeOwed = fee;

@@ -33,6 +33,7 @@ async function sessionAccess(user: Express.User, session: SessionRow): Promise<"
 
 const UpdateSessionInput = z.object({
   status: z.enum(["pending", "approved", "cancelled", "completed"]).optional(),
+  noShow: z.boolean().optional(), // tutor only, with status "cancelled": charge the 50% fee
   notes: z.string().optional(),
   scheduledAt: z.string().optional(), // ISO string; parsed to a Date below
 });
@@ -168,6 +169,18 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
   const parsed = UpdateSessionInput.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
 
+  const noShow = parsed.data.noShow === true;
+  if (noShow) {
+    if (!isTutor) {
+      res.status(403).json({ error: "Only your tutor can mark a no-show" });
+      return;
+    }
+    if (parsed.data.status !== "cancelled" || existing.status !== "approved") {
+      res.status(400).json({ error: "Only a booked session can be marked as a no-show" });
+      return;
+    }
+  }
+
   // Approving, completing and writing lesson notes are the tutor's job. The
   // student (or their parent) can only cancel or reschedule the session.
   if (!isTutor) {
@@ -227,7 +240,7 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
   let cancellation = undefined;
   if (updates.status === "cancelled" && existing.status !== "cancelled") {
     await releaseSlotForSession(id);
-    cancellation = await applyCancellation(updated, req.user.role);
+    cancellation = await applyCancellation(updated, req.user.role, noShow);
   }
 
   const student = await db.select().from(usersTable).where(eq(usersTable.id, updated.studentId)).then(r => r[0]);

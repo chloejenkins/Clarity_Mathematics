@@ -73,6 +73,7 @@ export const SessionCancellationPolicy = {
   full_refund: "full_refund",
   half_fee: "half_fee",
   tutor_cancel: "tutor_cancel",
+  no_show: "no_show",
 } as const;
 
 /**
@@ -103,6 +104,8 @@ export const UpdateSessionBodyStatus = {
 
 export interface UpdateSessionBody {
   status?: UpdateSessionBodyStatus;
+  /** Tutor only, with status "cancelled": the student didn't turn up, so the 50% late-cancellation fee applies whatever the timing */
+  noShow?: boolean;
   notes?: string;
   scheduledAt?: string;
 }

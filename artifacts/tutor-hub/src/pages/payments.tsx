@@ -377,7 +377,7 @@ export default function PaymentsPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground leading-snug">50% refund</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">If cancelled within 24 hours of session.</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">If cancelled within 24 hours of session, or missed.</p>
             </div>
           </div>
           <div className="bg-card border border-border rounded-2xl p-4 flex items-start gap-3 shadow-sm">

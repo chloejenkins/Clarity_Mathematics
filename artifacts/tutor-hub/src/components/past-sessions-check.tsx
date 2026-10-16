@@ -2,7 +2,7 @@ import { useListSessions, getListSessionsQueryKey, type TutoringSession } from "
 import { useAuth } from "@workspace/replit-auth-web";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
-import { ArrowRight, CheckCircle2, ClipboardCheck, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardCheck, UserX, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -57,7 +57,7 @@ export function PastSessionsCheck({
   busy,
 }: {
   sessions: TutoringSession[];
-  onMark: (id: number, status: "completed" | "cancelled") => void;
+  onMark: (id: number, status: "completed" | "cancelled", noShow?: boolean) => void;
   busy?: boolean;
 }) {
   if (sessions.length === 0) return null;
@@ -67,7 +67,7 @@ export function PastSessionsCheck({
         <ClipboardCheck className="h-4 w-4" /> Did these happen? ({sessions.length})
       </h2>
       <p className="text-xs text-muted-foreground mb-4">
-        "It didn't happen" cancels the session with no charge to the family.
+        "Student didn't show" charges the 50% late-cancellation fee. "It was cancelled" has no charge.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {sessions.map((s) => {
@@ -79,7 +79,7 @@ export function PastSessionsCheck({
                   <p className="font-semibold text-sm">{s.studentName} · {format(d, "EEE, MMM d, h:mm a")}</p>
                   <p className="text-xs text-muted-foreground">{s.durationMinutes} min{s.topic ? ` · ${s.topic}` : ""}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button size="sm" className="flex-1 rounded-xl gap-1.5" disabled={busy} onClick={() => onMark(s.id, "completed")}>
                     <CheckCircle2 className="h-4 w-4" /> It happened
                   </Button>
@@ -88,9 +88,18 @@ export function PastSessionsCheck({
                     variant="outline"
                     className="flex-1 rounded-xl gap-1.5"
                     disabled={busy}
+                    onClick={() => onMark(s.id, "cancelled", true)}
+                  >
+                    <UserX className="h-4 w-4" /> Student didn't show
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 rounded-xl gap-1.5"
+                    disabled={busy}
                     onClick={() => onMark(s.id, "cancelled")}
                   >
-                    <XCircle className="h-4 w-4" /> It didn't happen
+                    <XCircle className="h-4 w-4" /> It was cancelled
                   </Button>
                 </div>
               </CardContent>

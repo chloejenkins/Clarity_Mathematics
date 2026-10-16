@@ -474,8 +474,8 @@ export default function SchedulePage() {
     }
   };
 
-  const handleSessionStatus = (id: number, status: "completed" | "cancelled") => {
-    updateMutation.mutate({ id, data: { status } }, {
+  const handleSessionStatus = (id: number, status: "completed" | "cancelled", noShow = false) => {
+    updateMutation.mutate({ id, data: noShow ? { status, noShow } : { status } }, {
       onSuccess: (res) => {
         queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
@@ -483,15 +483,19 @@ export default function SchedulePage() {
         if (status === "cancelled" && cancellation) {
           const { policy, feeOwed, refundOwed } = cancellation;
           let desc =
-            policy === "tutor_cancel"
-              ? "Full refund, the student owes nothing."
-              : policy === "full_refund"
-                ? "Cancelled more than 24h ahead, no charge."
-                : feeOwed
-                  ? `Within 24h, a 50% fee ($${feeOwed}) applies.`
-                  : "Within 24h, 50% fee applies.";
+            policy === "no_show"
+              ? feeOwed
+                ? `Marked as a no-show, a 50% fee ($${feeOwed}) applies.`
+                : "Marked as a no-show, 50% fee applies."
+              : policy === "tutor_cancel"
+                ? "Full refund, the student owes nothing."
+                : policy === "full_refund"
+                  ? "Cancelled more than 24h ahead, no charge."
+                  : feeOwed
+                    ? `Within 24h, a 50% fee ($${feeOwed}) applies.`
+                    : "Within 24h, 50% fee applies.";
           if (refundOwed) desc += ` Refund $${refundOwed} to the student.`;
-          toast({ title: "Session cancelled", description: desc });
+          toast({ title: policy === "no_show" ? "No-show recorded" : "Session cancelled", description: desc });
         } else {
           toast({ title: `Session marked as ${status}` });
         }
