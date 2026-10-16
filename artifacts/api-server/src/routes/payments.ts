@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import { db, paymentsTable, tutoringSessionsTable, usersTable } from "@workspace/db";
 import { eq, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
-import { freeSessionId } from "../lib/billing";
+import { freeSessionId, FREE_SESSION_DESCRIPTION } from "../lib/billing";
 import { linkedStudentIds, isSelfOrLinkedParent } from "../lib/family";
 
 const router: IRouter = Router();
@@ -68,7 +68,7 @@ async function ensurePayments(sessions: SessionRow[]) {
       studentId: s.studentId,
       sessionId: s.id,
       amount,
-      description: isFirst ? "First session, free" : (s.topic || "Tutoring session"),
+      description: isFirst ? FREE_SESSION_DESCRIPTION : (s.topic || "Tutoring session"),
       status: amount === 0 ? "received" : "due",
       receivedAt: amount === 0 ? new Date() : null,
     };

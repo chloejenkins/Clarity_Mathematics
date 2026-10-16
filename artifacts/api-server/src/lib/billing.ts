@@ -28,6 +28,49 @@ export async function freeSessionId(studentId: string): Promise<number | undefin
   return earliest?.id;
 }
 
+export const FREE_SESSION_DESCRIPTION = "First session, free";
+
+type PaymentRow = typeof paymentsTable.$inferSelect;
+
+function isFreeSessionCharge(p: PaymentRow): boolean {
+  return p.amount === 0 && p.description === FREE_SESSION_DESCRIPTION;
+}
+
+/**
+ * After the session holding a student's free credit is cancelled, make their
+ * new earliest session the free one. If it hasn't been charged yet, nothing
+ * to do: it is billed as free when its charge is created. If it was charged
+ * and is unpaid, the charge drops to $0; if it was already paid (or marked
+ * sent), the amount becomes a refund to send back.
+ */
+async function moveFreeCredit(studentId: string): Promise<void> {
+  const nextFree = await freeSessionId(studentId);
+  if (nextFree === undefined) return;
+  const [charge] = await db
+    .select()
+    .from(paymentsTable)
+    .where(eq(paymentsTable.sessionId, nextFree))
+    .limit(1);
+  if (!charge || isFreeSessionCharge(charge) || charge.amount === 0) return;
+
+  if (charge.status === "due") {
+    await db
+      .update(paymentsTable)
+      .set({ amount: 0, status: "received", receivedAt: new Date(), description: FREE_SESSION_DESCRIPTION })
+      .where(eq(paymentsTable.id, charge.id));
+  } else if (charge.status === "sent" || charge.status === "received") {
+    await db
+      .update(paymentsTable)
+      .set({
+        amount: 0,
+        status: "refund_due",
+        refundDue: charge.amount,
+        description: `${FREE_SESSION_DESCRIPTION} (refund due)`,
+      })
+      .where(eq(paymentsTable.id, charge.id));
+  }
+}
+
 /**
  * Apply the cancellation refund policy to a session's charge:
  *   - tutor cancels (any time)      → no fee (full refund)
@@ -74,7 +117,19 @@ export async function applyCancellation(
   let feeOwed = 0;
   let refundOwed = 0;
 
-  if (existing && (existing.status === "received" || existing.status === "sent")) {
+  if (existing && isFreeSessionCharge(existing)) {
+    // The free first session was cancelled. Nothing was paid for it, so charge
+    // the fee (if any) in its place, and give the free credit to the student's
+    // next session.
+    await db
+      .update(paymentsTable)
+      .set(fee > 0
+        ? { amount: fee, status: "due", receivedAt: null, description: "Late cancellation (50% fee)" }
+        : { amount: 0, status: "void", description: "Cancelled (no charge)" })
+      .where(eq(paymentsTable.id, existing.id));
+    feeOwed = fee;
+    await moveFreeCredit(session.studentId);
+  } else if (existing && (existing.status === "received" || existing.status === "sent")) {
     // Student already paid (or claims to have) → refund the difference above the fee.
     refundOwed = Math.max(0, existing.amount - fee);
     await db
