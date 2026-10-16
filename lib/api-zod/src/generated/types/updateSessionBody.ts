@@ -9,6 +9,8 @@ import type { UpdateSessionBodyStatus } from "./updateSessionBodyStatus";
 
 export interface UpdateSessionBody {
   status?: UpdateSessionBodyStatus;
+  /** Tutor only, with status "cancelled": the student didn't turn up, so the 50% late-cancellation fee applies whatever the timing */
+  noShow?: boolean;
   notes?: string;
   scheduledAt?: Date;
 }

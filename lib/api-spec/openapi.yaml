@@ -1142,7 +1142,7 @@ components:
       properties:
         policy:
           type: string
-          enum: [full_refund, half_fee, tutor_cancel]
+          enum: [full_refund, half_fee, tutor_cancel, no_show]
         feeOwed:
           type: integer
           description: Cancellation fee the student still owes, in whole dollars
@@ -1169,6 +1169,11 @@ components:
         status:
           type: string
           enum: [pending, approved, cancelled, completed]
+        noShow:
+          type: boolean
+          description: >-
+            Tutor only, with status "cancelled": the student didn't turn up, so the
+            50% late-cancellation fee applies whatever the timing
         notes:
           type: string
         scheduledAt:

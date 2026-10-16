@@ -186,7 +186,7 @@ test.describe("scheduling: tutor posts times, families book them", () => {
     await expect(booked.getByText("Fractions review")).toHaveCount(0);
 
     await toCheck.getByText("Missed session").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]")
-      .getByRole("button", { name: "It didn't happen" }).click();
+      .getByRole("button", { name: "It was cancelled" }).click();
     await expectToast(tutor, "Session cancelled");
 
     await toCheck.getByText("Fractions review").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]")

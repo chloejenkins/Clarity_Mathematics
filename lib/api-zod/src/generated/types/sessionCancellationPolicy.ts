@@ -13,4 +13,5 @@ export const SessionCancellationPolicy = {
   full_refund: "full_refund",
   half_fee: "half_fee",
   tutor_cancel: "tutor_cancel",
+  no_show: "no_show",
 } as const;

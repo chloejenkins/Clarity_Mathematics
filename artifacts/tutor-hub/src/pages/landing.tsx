@@ -179,6 +179,7 @@ export default function LandingPage() {
                   ["First lesson", "Free, no commitment."],
                   ["Cancel 24h ahead", "Full refund."],
                   ["Cancel within 24h", "50% refund."],
+                  ["Missed lesson", "Charged at 50%."],
                 ].map(([term, desc]) => (
                   <div key={term} className="flex gap-5">
                     <dt className="w-36 shrink-0 font-semibold text-[15px]" style={{ color: INK }}>

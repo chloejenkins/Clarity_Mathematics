@@ -1,5 +1,5 @@
 // The first session is free. When the session holding that credit is
-// cancelled (including "It didn't happen" after it was already billed), the
+// cancelled (including "It was cancelled" after it was already billed), the
 // credit moves to the student's next session.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";

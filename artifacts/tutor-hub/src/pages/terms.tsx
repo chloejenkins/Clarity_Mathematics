@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/logo";
 
-const LAST_UPDATED = "July 23, 2026";
+const LAST_UPDATED = "October 16, 2026";
 const CONTACT_EMAIL = "chloejenkins@claritymathematics.com";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -64,7 +64,8 @@ export default function TermsPage() {
             <ul className="list-disc pl-5 space-y-1.5">
               <li>the first session is free;</li>
               <li>cancel more than 24 hours before a session for a full (100%) refund;</li>
-              <li>cancel within 24 hours of a session for a 50% refund.</li>
+              <li>cancel within 24 hours of a session for a 50% refund;</li>
+              <li>a session missed without cancelling (a no-show) is charged at 50%, the same as a late cancellation.</li>
             </ul>
             <p>
               We ask that you give as much notice as possible so the time can be offered to other

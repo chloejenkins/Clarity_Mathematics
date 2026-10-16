@@ -140,6 +140,12 @@ export const UpdateSessionBody = zod.object({
   status: zod
     .enum(["pending", "approved", "cancelled", "completed"])
     .optional(),
+  noShow: zod
+    .boolean()
+    .optional()
+    .describe(
+      'Tutor only, with status \"cancelled\": the student didn\'t turn up, so the 50% late-cancellation fee applies whatever the timing',
+    ),
   notes: zod.string().optional(),
   scheduledAt: zod.date().optional(),
 });
@@ -160,7 +166,12 @@ export const UpdateSessionResponse = zod
     zod.object({
       cancellation: zod
         .object({
-          policy: zod.enum(["full_refund", "half_fee", "tutor_cancel"]),
+          policy: zod.enum([
+            "full_refund",
+            "half_fee",
+            "tutor_cancel",
+            "no_show",
+          ]),
           feeOwed: zod
             .number()
             .describe(
