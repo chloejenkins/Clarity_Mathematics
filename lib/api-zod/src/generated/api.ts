@@ -391,6 +391,7 @@ export const ListVideosResponseItem = zod.object({
   description: zod.string().nullish(),
   url: zod.string(),
   subject: zod.string().nullish(),
+  tutorId: zod.string().nullish(),
   createdAt: zod.date(),
 });
 export const ListVideosResponse = zod.array(ListVideosResponseItem);
@@ -403,6 +404,30 @@ export const CreateVideoBody = zod.object({
   description: zod.string().optional(),
   url: zod.string(),
   subject: zod.string().optional(),
+});
+
+/**
+ * @summary Edit a video in the library (tutor only)
+ */
+export const UpdateVideoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateVideoBody = zod.object({
+  title: zod.string().min(1).optional(),
+  description: zod.string().nullish(),
+  url: zod.string().min(1).optional(),
+  subject: zod.string().nullish(),
+});
+
+export const UpdateVideoResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  url: zod.string(),
+  subject: zod.string().nullish(),
+  tutorId: zod.string().nullish(),
+  createdAt: zod.date(),
 });
 
 /**

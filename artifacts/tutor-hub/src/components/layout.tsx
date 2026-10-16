@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Camera,
   TrendingUp,
+  Video,
 } from "lucide-react";
 import {
   Sidebar,
@@ -52,6 +53,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Schedule", url: "/", icon: CalendarDays },
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
+    { title: "Video Library", url: "/videos", icon: Video },
     { title: "Payments", url: "/payments", icon: CreditCard },
     { title: "Parent Reports", url: "/parent-reports", icon: ClipboardList },
   ];
@@ -60,6 +62,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Schedule", url: "/", icon: CalendarDays },
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
+    { title: "Video Library", url: "/videos", icon: Video },
     { title: "Progress", url: "/progress", icon: TrendingUp },
     { title: "Payments", url: "/payments", icon: CreditCard },
     { title: "Feedback", url: "/parent-feedback", icon: ClipboardList },
@@ -69,6 +72,7 @@ export function AppLayout({ children }: LayoutProps) {
     { title: "Schedule", url: "/", icon: CalendarDays },
     { title: "Chat", url: "/chat", icon: MessageSquare },
     { title: "Assignments", url: "/assignments", icon: BookOpen },
+    { title: "Video Library", url: "/videos", icon: Video },
     { title: "Progress", url: "/progress", icon: TrendingUp },
     { title: "Payments", url: "/payments", icon: CreditCard },
   ];

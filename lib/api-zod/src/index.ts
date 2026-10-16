@@ -23,4 +23,5 @@ export {
   SyncProfileResponse,
   UpdateAssignmentBody,
   UpdateSessionBody,
+  UpdateVideoBody,
 } from "./generated/api";

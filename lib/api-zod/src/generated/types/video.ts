@@ -12,5 +12,6 @@ export interface Video {
   description?: string | null;
   url: string;
   subject?: string | null;
+  tutorId?: string | null;
   createdAt: Date;
 }

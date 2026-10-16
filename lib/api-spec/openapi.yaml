@@ -462,6 +462,29 @@ paths:
                 $ref: "#/components/schemas/Video"
 
   /videos/{id}:
+    patch:
+      operationId: updateVideo
+      tags: [videos]
+      summary: Edit a video in the library (tutor only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVideoBody"
+      responses:
+        "200":
+          description: Updated video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
     delete:
       operationId: deleteVideo
       tags: [videos]
@@ -1306,6 +1329,9 @@ components:
         subject:
           type: string
           nullable: true
+        tutorId:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -1329,6 +1355,22 @@ components:
       required:
         - title
         - url
+
+    UpdateVideoBody:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          nullable: true
+        url:
+          type: string
+          minLength: 1
+        subject:
+          type: string
+          nullable: true
 
     SyncProfileResponse:
       type: object

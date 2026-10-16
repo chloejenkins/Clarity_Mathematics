@@ -13,6 +13,7 @@ import SchedulePage from "@/pages/sessions";
 import ChatPage from "@/pages/chat";
 import AssignmentsPage from "@/pages/assignments";
 import ProgressPage from "@/pages/progress";
+import VideosPage from "@/pages/videos";
 import PaymentsPage from "@/pages/payments";
 import ParentReportsPage from "@/pages/parent-reports";
 import ParentFeedbackViewPage from "@/pages/parent-feedback-view";
@@ -106,6 +107,7 @@ function Router() {
       <Route path="/chat"><ProtectedRoute component={ChatPage} /></Route>
       <Route path="/assignments"><ProtectedRoute component={AssignmentsPage} /></Route>
       <Route path="/progress"><ProtectedRoute component={ProgressPage} /></Route>
+      <Route path="/videos"><ProtectedRoute component={VideosPage} /></Route>
       <Route path="/payments"><ProtectedRoute component={PaymentsPage} /></Route>
       <Route path="/parent-reports"><ProtectedRoute component={ParentReportsPage} /></Route>
       <Route path="/parent-feedback"><ProtectedRoute component={ParentFeedbackViewPage} roles={["parent"]} /></Route>

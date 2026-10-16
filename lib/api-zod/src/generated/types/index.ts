@@ -59,6 +59,7 @@ export * from "./updateAssignmentBody";
 export * from "./updatedTutoringSession";
 export * from "./updateSessionBody";
 export * from "./updateSessionBodyStatus";
+export * from "./updateVideoBody";
 export * from "./user";
 export * from "./userRole";
 export * from "./video";

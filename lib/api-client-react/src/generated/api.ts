@@ -58,6 +58,7 @@ import type {
   TutoringSession,
   UpdateAssignmentBody,
   UpdateSessionBody,
+  UpdateVideoBody,
   UpdatedTutoringSession,
   User,
   Video,
@@ -1989,6 +1990,93 @@ export const useCreateVideo = <
   TContext
 > => {
   return useMutation(getCreateVideoMutationOptions(options));
+};
+
+/**
+ * @summary Edit a video in the library (tutor only)
+ */
+export const getUpdateVideoUrl = (id: number) => {
+  return `/api/videos/${id}`;
+};
+
+export const updateVideo = async (
+  id: number,
+  updateVideoBody: UpdateVideoBody,
+  options?: RequestInit,
+): Promise<Video> => {
+  return customFetch<Video>(getUpdateVideoUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateVideoBody),
+  });
+};
+
+export const getUpdateVideoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVideo>>,
+    TError,
+    { id: number; data: BodyType<UpdateVideoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateVideo>>,
+  TError,
+  { id: number; data: BodyType<UpdateVideoBody> },
+  TContext
+> => {
+  const mutationKey = ["updateVideo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateVideo>>,
+    { id: number; data: BodyType<UpdateVideoBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateVideo(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateVideoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateVideo>>
+>;
+export type UpdateVideoMutationBody = BodyType<UpdateVideoBody>;
+export type UpdateVideoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Edit a video in the library (tutor only)
+ */
+export const useUpdateVideo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVideo>>,
+    TError,
+    { id: number; data: BodyType<UpdateVideoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateVideo>>,
+  TError,
+  { id: number; data: BodyType<UpdateVideoBody> },
+  TContext
+> => {
+  return useMutation(getUpdateVideoMutationOptions(options));
 };
 
 /**

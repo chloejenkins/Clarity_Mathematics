@@ -161,6 +161,7 @@ export interface Video {
   description?: string | null;
   url: string;
   subject?: string | null;
+  tutorId?: string | null;
   createdAt: string;
 }
 
@@ -169,6 +170,15 @@ export interface CreateVideoBody {
   description?: string;
   url: string;
   subject?: string;
+}
+
+export interface UpdateVideoBody {
+  /** @minLength 1 */
+  title?: string;
+  description?: string | null;
+  /** @minLength 1 */
+  url?: string;
+  subject?: string | null;
 }
 
 export interface SyncProfileResponse {

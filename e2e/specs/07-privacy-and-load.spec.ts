@@ -2,7 +2,7 @@ import { test, expect } from "../lib/test";
 import { personas } from "../lib/personas";
 import { apiAs } from "../lib/session";
 import { query } from "../lib/db";
-import { finding, expectRule } from "../lib/findings";
+import { expectRule } from "../lib/findings";
 
 // Cross-family checks made straight against the API, the way someone poking
 // at the site with their browser's dev tools would.
@@ -56,13 +56,37 @@ test.describe("one family can't see another's data", () => {
     const api = await apiAs(personas.student);
     const res = await api.post("/api/videos", { data: { title: "x", url: "https://example.com" } });
     expect(res.status()).toBe(403);
-    finding(
-      "gap",
-      "The video library isn't reachable",
-      "There's a Videos page and video API (list, share, delete), but /videos isn't routed in App.tsx and isn't in " +
-        "any menu, so recorded lessons can't be shared. Either wire it up (ideally per student, with the tutor " +
-        "choosing who sees each video) or remove it.",
-    );
+  });
+});
+
+test.describe("video library", () => {
+  test("a video the tutor adds is open to every student, grouped by topic", async ({ open }) => {
+    const tutor = await apiAs(personas.tutor);
+    const title = `Adding fractions ${Date.now()}`;
+    const created = await tutor.post("/api/videos", {
+      data: { title, url: "https://youtu.be/dQw4w9WgXcQ", subject: "Fractions & decimals" },
+    });
+    expect(created.status()).toBe(201);
+    const { id } = (await created.json()) as { id: number };
+
+    // A student from another family sees it too: the library is shared.
+    const page = await open(personas.otherStudent);
+    await page.goto("/");
+    await page.getByRole("link", { name: "Video Library" }).click();
+    await expect(page.getByRole("heading", { name: "Video Library" })).toBeVisible();
+    const section = page.getByRole("region", { name: "Fractions & decimals" });
+    await expect(section.getByText(title)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add Video" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: `Edit ${title}` })).toHaveCount(0);
+
+    await page.getByLabel("Search videos").fill("no such video");
+    await expect(page.getByText("No videos match your search.")).toBeVisible();
+
+    // The tutor can retitle it and remove it; another student can't.
+    const student = await apiAs(personas.otherStudent);
+    expect((await student.delete(`/api/videos/${id}`)).status()).toBe(403);
+    expect((await tutor.patch(`/api/videos/${id}`, { data: { subject: "Fractions" } })).status()).toBe(200);
+    expect((await tutor.delete(`/api/videos/${id}`)).status()).toBe(200);
   });
 });
 
