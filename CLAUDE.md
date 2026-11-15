@@ -74,6 +74,9 @@ then update the route handler and any frontend callers — don't hand-edit files
   large external-package allowlist for native/unbundleable deps and a banner that polyfills
   `require`/`__dirname` for CJS deps pulled into the ESM bundle
 - Health check: `GET /api/healthz` (used by Replit's production health check, see `artifact.toml`)
+- When `STATIC_DIR` is set (production on Render), `src/lib/webApp.ts` also serves the built
+  tutor-hub pages with an `index.html` fallback for client-side routes, so the site and `/api` run as
+  one service. Unset on Replit/local dev, where nothing changes
 
 ### `lib/db` (Drizzle ORM + PostgreSQL)
 
@@ -130,3 +133,9 @@ vs. expecting a parse failure accordingly.
   package is actually started in deployment
 - `scripts/` (`@workspace/scripts`) is a workspace package for one-off/utility `.ts` scripts, each
   exposed as an npm script and run via `pnpm --filter @workspace/scripts run <script>`
+
+### Live hosting (Render)
+
+The live site (claritymathematics.com) is described by `render.yaml`: one Node web service (frontend
+build + API server with `STATIC_DIR`), a persistent disk for `UPLOADS_DIR`, and Render Postgres, with
+`pnpm --filter db run push` as the pre-deploy step. Setup steps and env vars: `docs/hosting.md`.
