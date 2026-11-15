@@ -7,12 +7,15 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { apiRateLimiter } from "./middlewares/rateLimit";
+import { mountWebApp } from "./lib/webApp";
 
 const app: Express = express();
 
-// Behind Replit's proxy, trust exactly one hop so req.ip is the real client
-// IP (not the proxy), which the rate limiter keys on.
-app.set("trust proxy", 1);
+// Behind the host's proxy, trust that many hops so req.ip is the real client
+// IP (not the proxy), which the rate limiter keys on. Defaults to 1 (Replit);
+// set TRUST_PROXY_HOPS if a host puts more proxies in front of the app.
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? "1");
+app.set("trust proxy", Number.isInteger(trustProxyHops) && trustProxyHops >= 0 ? trustProxyHops : 1);
 
 // Allowed browser origins. Configure via CORS_ORIGINS (comma-separated);
 // defaults to the local dev frontend. Non-browser requests (no Origin header,
@@ -41,6 +44,11 @@ app.use(
     },
   }),
 );
+// In production on a single host, the API server also serves the built web
+// pages (see lib/webApp.ts). Mounted before CORS, rate limiting and Clerk so
+// page and asset loads skip them; /api requests fall through to the router.
+mountWebApp(app, process.env.STATIC_DIR);
+
 app.use(
   cors({
     credentials: true,
