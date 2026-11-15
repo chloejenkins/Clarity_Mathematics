@@ -761,9 +761,11 @@ export default function SchedulePage() {
                             <div className="flex">
                               <RescheduleDialog session={{ id: session.id, scheduledAt: session.scheduledAt }} openSlots={unbooked} />
                             </div>
-                            <Button size="sm" variant="outline" className="w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleSessionStatus(session.id, "cancelled")}>
-                              Cancel Session
-                            </Button>
+                            {d.getTime() > Date.now() && (
+                              <Button size="sm" variant="outline" className="w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleSessionStatus(session.id, "cancelled")}>
+                                Cancel Session
+                              </Button>
+                            )}
                           </div>
                         )}
                       </CardContent>

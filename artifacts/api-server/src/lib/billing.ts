@@ -1,5 +1,5 @@
 import { db, paymentsTable, tutoringSessionsTable, usersTable } from "@workspace/db";
-import { eq, ne, and, asc } from "drizzle-orm";
+import { eq, ne, and, or, gt, asc } from "drizzle-orm";
 
 const DEFAULT_RATE = 40;
 
@@ -13,7 +13,8 @@ export interface CancellationOutcome {
 
 /**
  * The id of a student's free first session: their earliest session that
- * wasn't cancelled. A cancelled booking never uses up the free session.
+ * wasn't cancelled. A cancelled booking never uses up the free session, and
+ * neither does a request whose time passed without the tutor approving it.
  */
 export async function freeSessionId(studentId: string): Promise<number | undefined> {
   const [earliest] = await db
@@ -22,6 +23,10 @@ export async function freeSessionId(studentId: string): Promise<number | undefin
     .where(and(
       eq(tutoringSessionsTable.studentId, studentId),
       ne(tutoringSessionsTable.status, "cancelled"),
+      or(
+        ne(tutoringSessionsTable.status, "pending"),
+        gt(tutoringSessionsTable.scheduledAt, new Date()),
+      ),
     ))
     .orderBy(asc(tutoringSessionsTable.scheduledAt))
     .limit(1);
@@ -179,4 +184,26 @@ export async function applyCancellation(
   }
 
   return { policy, feeOwed, refundOwed };
+}
+
+/**
+ * Settle the charge of a session the tutor deleted. Call after the session
+ * row is gone. An unpaid charge is voided, so the family isn't left owing
+ * for a session that no longer exists; a paid one is left as it is, for the
+ * tutor to refund if they choose. If the session held the student's free
+ * credit, it moves to their next session.
+ */
+export async function voidDeletedSessionCharge(session: SessionRow): Promise<void> {
+  const [charge] = await db
+    .select()
+    .from(paymentsTable)
+    .where(eq(paymentsTable.sessionId, session.id))
+    .limit(1);
+  if (charge && (charge.status === "due" || isFreeSessionCharge(charge))) {
+    await db
+      .update(paymentsTable)
+      .set({ amount: 0, status: "void", description: "Session deleted (no charge)" })
+      .where(eq(paymentsTable.id, charge.id));
+  }
+  await moveFreeCredit(session.studentId);
 }

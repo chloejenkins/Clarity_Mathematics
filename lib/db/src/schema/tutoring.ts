@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, varchar } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, varchar, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -143,7 +143,11 @@ export const paymentsTable = pgTable("payments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   sentAt: timestamp("sent_at", { withTimezone: true }),
   receivedAt: timestamp("received_at", { withTimezone: true }),
-});
+}, (t) => [
+  // One charge per session, so two page loads billing the same session at
+  // once can't both create a charge. Manual charges (null session) are exempt.
+  uniqueIndex("payments_session_id_unique").on(t.sessionId),
+]);
 
 export type Payment = typeof paymentsTable.$inferSelect;
 
