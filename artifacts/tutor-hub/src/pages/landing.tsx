@@ -7,23 +7,24 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { Logo, LogoTile } from "@/components/logo";
 
 // Rows in the inset grouped lists below, laid out like iOS Settings:
-// a small coloured icon square, a title and a line of detail.
+// a small icon square (one blue that deepens step by step, matching the
+// logo tile), a title and a line of detail.
 const steps = [
   {
     icon: CalendarDays,
-    tint: "bg-[#0071E3]",
+    tint: "bg-[#0A84FF]",
     title: "Choose a time",
     body: "Pick an open slot from the calendar. Booking is instant, and the first lesson is free.",
   },
   {
     icon: MessageSquare,
-    tint: "bg-[#248A3D]",
+    tint: "bg-[#0062D1]",
     title: "Meet one-on-one",
     body: "Private lessons, with messaging between sessions for quick questions.",
   },
   {
     icon: TrendingUp,
-    tint: "bg-[#C93400]",
+    tint: "bg-[#003E8A]",
     title: "Track progress",
     body: "Lesson notes, assignments, and progress in one place.",
   },
