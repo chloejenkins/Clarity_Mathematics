@@ -26,14 +26,20 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 
 /**
- * Ensure a payment row exists for each past, non-cancelled session in the set.
+ * Ensure a payment row exists for each past, booked session in the set.
  * Idempotent, only creates charges that don't exist yet. The student's earliest
  * session is free (matches the "first session free" policy).
  */
 async function ensurePayments(sessions: SessionRow[]) {
   const now = Date.now();
+  // Only booked sessions are billed: a request the tutor never approved, or a
+  // cancelled session, never becomes a charge.
   const billable = sessions.filter(
-    (s) => s.studentId && s.scheduledAt && new Date(s.scheduledAt).getTime() < now && s.status !== "cancelled",
+    (s) =>
+      s.studentId &&
+      s.scheduledAt &&
+      new Date(s.scheduledAt).getTime() < now &&
+      (s.status === "approved" || s.status === "completed"),
   );
   if (billable.length === 0) return;
 
@@ -73,7 +79,8 @@ async function ensurePayments(sessions: SessionRow[]) {
       receivedAt: amount === 0 ? new Date() : null,
     };
   });
-  await db.insert(paymentsTable).values(rows);
+  // Another request may have billed some of these sessions since we looked.
+  await db.insert(paymentsTable).values(rows).onConflictDoNothing({ target: paymentsTable.sessionId });
 }
 
 async function hydrate(rows: PaymentRow[]) {

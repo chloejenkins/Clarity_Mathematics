@@ -5,7 +5,7 @@ import {
   ListSessionsResponse,
   DeleteSessionResponse,
 } from "@workspace/api-zod";
-import { applyCancellation } from "../lib/billing";
+import { applyCancellation, voidDeletedSessionCharge } from "../lib/billing";
 import { isSelfOrLinkedParent } from "../lib/family";
 import { releaseSlotForSession, findOpenSlot, bookSlot } from "../lib/slots";
 import { z } from "zod";
@@ -192,6 +192,17 @@ router.patch("/sessions/:id", async (req: Request, res: Response) => {
       res.status(403).json({ error: "Only your tutor can edit lesson notes" });
       return;
     }
+    // Once a session has started, cancelling it would cut its charge to the
+    // late-cancellation fee after the lesson was given. A missed session is
+    // the tutor's to record, as a no-show.
+    if (
+      parsed.data.status === "cancelled" &&
+      existing.status !== "cancelled" &&
+      (existing.status === "completed" || new Date(existing.scheduledAt).getTime() <= Date.now())
+    ) {
+      res.status(400).json({ error: "This session has already started, so it can't be cancelled. Message your tutor instead." });
+      return;
+    }
   }
 
   const updates: Record<string, unknown> = {};
@@ -269,6 +280,7 @@ router.delete("/sessions/:id", async (req: Request, res: Response) => {
 
   await db.delete(tutoringSessionsTable).where(eq(tutoringSessionsTable.id, id));
   await releaseSlotForSession(id);
+  await voidDeletedSessionCharge(existing);
   res.json(DeleteSessionResponse.parse({ success: true }));
 });
 
