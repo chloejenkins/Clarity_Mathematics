@@ -128,14 +128,11 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)]">
+    <div className="flex flex-col h-[calc(100dvh-6rem-env(safe-area-inset-bottom))] min-h-[24rem] md:h-[calc(100dvh-6rem)]">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <MessageSquare className="h-8 w-8 text-primary" />
-            Chat
-          </h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="page-title">Chat</h1>
+          <p className="page-subtitle">
             Direct messages and group conversations.
           </p>
         </div>
@@ -148,11 +145,11 @@ export default function ChatPage() {
       <div className="flex gap-4 flex-1 min-h-0">
         {/* Conversation list, full-width on mobile, hidden once a chat is open */}
         <Card className={cn(
-          "w-full md:w-72 flex-shrink-0 border-none shadow-md rounded-2xl flex-col overflow-hidden",
+          "w-full md:w-72 flex-shrink-0   rounded-2xl flex-col overflow-hidden",
           activeConv ? "hidden md:flex" : "flex",
         )}>
           <div className="p-3 border-b bg-card">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <p className="eyebrow">
               Conversations
             </p>
           </div>
@@ -181,13 +178,13 @@ export default function ChatPage() {
                   onClick={() => setSelectedId(c.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
                     isSelected
-                      ? "bg-primary text-primary-foreground shadow-sm"
+                      ? "bg-primary text-primary-foreground"
                       : "hover:bg-secondary/50 text-foreground"
                   }`}
                 >
                   <Avatar className={`h-9 w-9 border ${isSelected ? "border-primary-foreground/30" : "border-border"}`}>
                     {c.type === "group" ? (
-                      <AvatarFallback className="bg-primary/15 text-primary">
+                      <AvatarFallback className={isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-brand-soft text-brand"}>
                         <Users className="h-4 w-4" />
                       </AvatarFallback>
                     ) : (
@@ -213,7 +210,7 @@ export default function ChatPage() {
 
         {/* Chat area, hidden on mobile until a conversation is opened */}
         <Card className={cn(
-          "flex-1 border-none shadow-md rounded-2xl flex-col overflow-hidden min-h-0",
+          "flex-1   rounded-2xl flex-col overflow-hidden min-h-0",
           activeConv ? "flex" : "hidden md:flex",
         )}>
           {!activeConv ? (
@@ -232,7 +229,7 @@ export default function ChatPage() {
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
-                <Avatar className="h-9 w-9 border border-border shadow-sm">
+                <Avatar className="h-9 w-9 border border-border">
                   {activeConv.type === "group" ? (
                     <AvatarFallback className="bg-primary/10 text-primary">
                       <Users className="h-4 w-4" />
@@ -281,14 +278,14 @@ export default function ChatPage() {
                         <div className={`flex items-end gap-2 max-w-[75%] ${isMe ? "flex-row-reverse" : "flex-row"}`}>
                           <Avatar className="h-7 w-7 shrink-0">
                             <AvatarImage src={msg.senderImageUrl ?? undefined} />
-                            <AvatarFallback className="text-[10px] font-bold">
+                            <AvatarFallback className="text-xs font-bold">
                               {getInitials(msg.senderName)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col gap-1">
                             {/* Show sender name in group chats for non-me messages */}
                             {!isMe && activeConv.type === "group" && (
-                              <span className="text-[11px] font-semibold text-muted-foreground ml-1">
+                              <span className="text-xs font-semibold text-muted-foreground ml-1">
                                 {msg.senderName}
                               </span>
                             )}
@@ -299,7 +296,7 @@ export default function ChatPage() {
                             }`}>
                               {msg.content}
                             </div>
-                            <span className={`text-[10px] text-muted-foreground ${isMe ? "text-right mr-1" : "ml-1"}`}>
+                            <span className={`text-xs text-muted-foreground ${isMe ? "text-right mr-1" : "ml-1"}`}>
                               {formatMsgTime(msg.createdAt)}
                             </span>
                           </div>
@@ -325,7 +322,7 @@ export default function ChatPage() {
                     type="submit"
                     size="icon"
                     disabled={sendMutation.isPending || !draft.trim()}
-                    className="h-11 w-11 rounded-full shadow-md shrink-0"
+                    className="h-11 w-11 rounded-full shrink-0"
                   >
                     <Send className="h-4 w-4 ml-0.5" />
                   </Button>
@@ -430,7 +427,7 @@ function NewConversationDialog({
                 onClick={() => toggle(u.id)}
                 className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left ${
                   isSel ? "bg-primary/10" : "hover:bg-muted"
-                }`}
+                  }`}
               >
                 <Avatar className="h-9 w-9 border border-border">
                   <AvatarImage src={u.profileImageUrl ?? undefined} />

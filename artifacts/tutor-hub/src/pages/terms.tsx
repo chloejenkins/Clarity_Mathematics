@@ -8,32 +8,32 @@ const CONTACT_EMAIL = "chloejenkins@claritymathematics.com";
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-      <div className="space-y-3 text-sm leading-relaxed text-slate-600">{children}</div>
+      <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
+      <div className="space-y-3 text-[15px] leading-relaxed text-foreground/80">{children}</div>
     </section>
   );
 }
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-dvh bg-background">
+      <header className="border-b border-border bg-background">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+          <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to home
           </Link>
-          <Logo style={{ color: "#1b2740", fontSize: "1.05rem" }} />
+          <Logo className="text-foreground" style={{ fontSize: "1.05rem" }} />
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-10 md:py-14">
         <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900">Terms &amp; Conditions</h1>
-          <p className="text-sm text-slate-400 mt-2">Last updated: {LAST_UPDATED}</p>
+          <h1 className="page-title">Terms &amp; Conditions</h1>
+          <p className="text-sm text-muted-foreground mt-2">Last updated: {LAST_UPDATED}</p>
         </div>
 
         <div className="space-y-8">
-          <p className="text-sm leading-relaxed text-slate-600">
+          <p className="text-[15px] leading-relaxed text-foreground/80">
             These Terms &amp; Conditions ("Terms") govern your use of Clarity Mathematics (the
             "Service"), a private one-on-one math tutoring platform. By creating an account or using the
             Service, you agree to these Terms. If you do not agree, please do not use the Service.
@@ -128,7 +128,7 @@ export default function TermsPage() {
             <p>
               We may update these Terms from time to time; the "Last updated" date above reflects the
               latest version. For any questions about these Terms, contact us at{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-blue-700 font-medium hover:underline">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-foreground underline underline-offset-4 decoration-foreground/30 hover:decoration-foreground">
                 {CONTACT_EMAIL}
               </a>
               .
@@ -136,11 +136,11 @@ export default function TermsPage() {
           </Section>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-slate-200 flex items-center gap-4">
-          <Link href="/" className="text-sm text-blue-700 font-medium hover:underline">
+        <div className="mt-12 pt-6 border-t border-border flex items-center gap-4">
+          <Link href="/" className="text-sm text-foreground font-medium underline-offset-4 hover:underline">
             ← Back to Clarity Mathematics
           </Link>
-          <Link href="/privacy" className="text-sm text-slate-400 hover:text-slate-700">
+          <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
             Privacy Policy
           </Link>
         </div>

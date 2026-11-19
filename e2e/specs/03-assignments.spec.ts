@@ -27,7 +27,7 @@ test.describe("assignments: post, submit, review", () => {
     await dialog.getByPlaceholder(/Describe what students should do/).fill("Solve problems 1-10 and show your working.");
     await dialog.getByRole("button", { name: /Post Assignment/ }).click();
     await expectToast(page, "Assignment posted!");
-    const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
+    const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::*[@data-card][1]");
     await expect(card.getByText("For Sam Student")).toBeVisible();
 
     await expectRule(
@@ -43,7 +43,7 @@ test.describe("assignments: post, submit, review", () => {
     const page = await open(personas.tutor);
     await page.goto("/");
     await navigate(page, "Assignments");
-    const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
+    const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::*[@data-card][1]");
 
     await card.getByTitle("Edit assignment").click();
     const dialog = page.getByRole("dialog", { name: "Edit Assignment" });
@@ -64,7 +64,7 @@ test.describe("assignments: post, submit, review", () => {
     await expect(page.getByText("Quadratics practice set")).toBeVisible();
     await expect(page.getByText("From your tutor")).toBeVisible();
     const download = page.waitForEvent("download");
-    await page.getByText("practice-sheet.txt").locator("xpath=ancestor::div[contains(@class,'rounded-lg')][1]").getByTitle("Download").click();
+    await page.getByText("practice-sheet.txt").locator("xpath=ancestor::*[@data-card][1]").getByTitle("Download").click();
     expect((await download).suggestedFilename()).toBe("practice-sheet.txt");
     const expected = dueDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
     const shown = await page.getByText(/^Due:/).first().innerText();
@@ -108,7 +108,7 @@ test.describe("assignments: post, submit, review", () => {
     await expect(page.getByText("worksheet.txt")).toBeVisible(); // under "Files sent to you"
 
     const download = page.waitForEvent("download");
-    await page.getByText("homework.txt").locator("xpath=ancestor::div[contains(@class,'rounded-lg')][1]").getByTitle("Download").click();
+    await page.getByText("homework.txt").locator("xpath=ancestor::*[@data-card][1]").getByTitle("Download").click();
     const file = await download;
     expect(file.suggestedFilename()).toBe("homework.txt");
 

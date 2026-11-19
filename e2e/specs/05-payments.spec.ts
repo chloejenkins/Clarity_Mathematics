@@ -42,7 +42,7 @@ test.describe("payments: charges, marking paid, confirming", () => {
     );
     await banner.click();
     await expect(page.getByText("First session, free")).toBeVisible();
-    const row = page.getByText("Exam prep").locator("xpath=ancestor::div[contains(@class,'rounded-xl')][1]");
+    const row = page.getByText("Exam prep").locator("xpath=ancestor::*[@data-card][1]");
     await expect(row.getByText("$75")).toBeVisible();
     await expect(page.getByText("$95 due")).toBeVisible();
 
@@ -60,7 +60,7 @@ test.describe("payments: charges, marking paid, confirming", () => {
     const student = await open(personas.student);
     await student.goto("/payments");
     const popup = student.waitForEvent("popup");
-    await student.getByText("Exam prep").locator("xpath=ancestor::div[contains(@class,'rounded-xl')][1]").getByTitle("Receipt").click();
+    await student.getByText("Exam prep").locator("xpath=ancestor::*[@data-card][1]").getByTitle("Receipt").click();
     const receipt = await popup;
     await expect(receipt.getByText("Payment Receipt")).toBeVisible();
     await expect(receipt.getByText("$75.00")).toBeVisible();

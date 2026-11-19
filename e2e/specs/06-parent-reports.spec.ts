@@ -42,7 +42,7 @@ test.describe("parent reports: tutor writes, parent reads", () => {
     await expect(page.getByText("Sam is confident with factoring now.")).toBeVisible();
 
     // Editing an earlier report changes it in place.
-    const second = page.getByText("Completing the square is coming along").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
+    const second = page.getByText("Completing the square is coming along").locator("xpath=ancestor::*[@data-card][1]");
     await second.getByTitle("Edit report").click();
     await editor.fill("Completing the square is coming along; practise with fractions and negatives.");
     await page.getByRole("button", { name: "Save Changes" }).click();
