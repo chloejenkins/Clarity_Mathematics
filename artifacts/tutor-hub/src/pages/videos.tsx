@@ -162,13 +162,10 @@ export default function VideosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 text-white p-8 rounded-3xl shadow-xl bg-[url('https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&q=80')] bg-cover bg-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
-        <div className="relative z-10">
-          <h1 className="text-3xl md:text-4xl font-display font-bold flex items-center gap-3">
-            <div className="bg-primary/20 p-2 rounded-xl text-primary-foreground"><Video className="h-8 w-8" /></div> Video Library
-          </h1>
-          <p className="text-slate-300 mt-2 max-w-lg">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="page-title">Video Library</h1>
+          <p className="page-subtitle">
             {isTutor
               ? "Short lessons on the basics. Every student can watch the videos you add here."
               : "Short lessons on the basics. Watch any time to refresh a topic."}
@@ -176,8 +173,8 @@ export default function VideosPage() {
         </div>
 
         {isTutor && (
-          <Button size="lg" onClick={openAdd} className="rounded-xl shadow-lg relative z-10 bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="mr-2 h-5 w-5" /> Add Video
+          <Button onClick={openAdd} className="gap-2">
+            <Plus className="h-4 w-4" /> Add Video
           </Button>
         )}
       </div>
@@ -311,7 +308,7 @@ function VideoCard({ video, isPlaying, onPlay, onEdit, onDelete }: {
   const ytId = getYouTubeId(video.url);
 
   return (
-    <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden flex flex-col group bg-card">
+    <Card className="transition-all duration-300 rounded-xl overflow-hidden flex flex-col group bg-card">
       <div className="relative aspect-video bg-black flex-shrink-0">
         {isPlaying && ytId ? (
           <iframe
@@ -350,12 +347,12 @@ function VideoCard({ video, isPlaying, onPlay, onEdit, onDelete }: {
             {(onEdit || onDelete) && (
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 {onEdit && (
-                  <Button variant="secondary" size="icon" className="shadow-md h-8 w-8" aria-label={`Edit ${video.title}`} onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                  <Button variant="secondary" size="icon" className="h-8 w-8" aria-label={`Edit ${video.title}`} onClick={(e) => { e.stopPropagation(); onEdit(); }}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                 )}
                 {onDelete && (
-                  <Button variant="destructive" size="icon" className="shadow-md h-8 w-8" aria-label={`Remove ${video.title}`} onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                  <Button variant="destructive" size="icon" className="h-8 w-8" aria-label={`Remove ${video.title}`} onClick={(e) => { e.stopPropagation(); onDelete(); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}

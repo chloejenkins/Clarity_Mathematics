@@ -146,7 +146,7 @@ test.describe("scheduling: tutor posts times, families book them", () => {
 
     const page = await open(personas.student);
     await page.goto("/");
-    await page.getByText(clock(soon)).first().locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]").getByRole("button", { name: "Book This Time" }).click();
+    await page.getByText(clock(soon)).first().locator("xpath=ancestor::*[@data-card][1]").getByRole("button", { name: "Book This Time" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Confirm Booking" }).click();
     await expectToast(page, "Session booked! It's confirmed.");
     page.on("dialog", (d) => d.accept());
@@ -185,11 +185,11 @@ test.describe("scheduling: tutor posts times, families book them", () => {
     const booked = tutor.getByRole("heading", { name: /Booked Sessions/ }).locator("xpath=..");
     await expect(booked.getByText("Fractions review")).toHaveCount(0);
 
-    await toCheck.getByText("Missed session").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]")
+    await toCheck.getByText("Missed session").locator("xpath=ancestor::*[@data-card][1]")
       .getByRole("button", { name: "It was cancelled" }).click();
     await expectToast(tutor, "Session cancelled");
 
-    await toCheck.getByText("Fractions review").locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]")
+    await toCheck.getByText("Fractions review").locator("xpath=ancestor::*[@data-card][1]")
       .getByRole("button", { name: "It happened" }).click();
     await expectToast(tutor, "Session marked as completed");
     await tutor.getByRole("button", { name: "Add lesson notes" }).first().click();

@@ -125,10 +125,8 @@ export default function ParentReportsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
-          <ClipboardList className="h-6 w-6 text-primary" /> Parent Reports
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h1 className="page-title">Parent Reports</h1>
+        <p className="page-subtitle">
           Reports for parents. Each one appears on the linked parents' Feedback page; students never see them.
         </p>
       </div>
@@ -136,7 +134,7 @@ export default function ParentReportsPage() {
       <div className="grid sm:grid-cols-3 gap-4">
         {/* Student list */}
         <div className="sm:col-span-1 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Students</p>
+          <p className="eyebrow mb-2">Students</p>
           {students.length === 0 && (
             <p className="text-sm text-muted-foreground">No students yet.</p>
           )}
@@ -146,7 +144,7 @@ export default function ParentReportsPage() {
               onClick={() => handleSelectStudent(s.id)}
               className={`w-full text-left px-3 py-2.5 rounded-xl text-sm flex items-center gap-2 transition-all border ${
                 selectedStudentId === s.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "bg-card border-border text-foreground hover:bg-muted"
               }`}
             >
@@ -175,7 +173,7 @@ export default function ParentReportsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Period / Label (optional)</label>
+                <label className="eyebrow">Period / Label (optional)</label>
                 <Input
                   placeholder="e.g. Fall 2025, Week 3…"
                   value={period}
@@ -185,7 +183,7 @@ export default function ParentReportsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Report</label>
+                <label className="eyebrow">Report</label>
                 <Textarea
                   placeholder="Write your feedback for the parent here. Parents linked to this student will see it; the student won't."
                   value={draft}
@@ -207,7 +205,7 @@ export default function ParentReportsPage() {
               </div>
 
               <div className="pt-2 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="eyebrow">
                   Past reports{reports.length > 0 ? ` (${reports.length})` : ""}
                 </p>
                 {reportsLoading ? (
@@ -218,12 +216,13 @@ export default function ParentReportsPage() {
                   reports.map((r) => (
                     <div
                       key={r.id}
-                      className={`bg-card border rounded-2xl p-4 space-y-2 ${editing?.id === r.id ? "border-primary" : "border-border"}`}
+                      data-card=""
+                      className={`bg-card border rounded-xl p-4 space-y-2 ${editing?.id === r.id ? "border-primary" : "border-transparent"}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           {r.period && (
-                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground truncate">{r.period}</p>
+                            <p className="eyebrow truncate">{r.period}</p>
                           )}
                           <p className="text-xs text-muted-foreground">{format(new Date(r.createdAt), "MMM d, yyyy")}</p>
                         </div>

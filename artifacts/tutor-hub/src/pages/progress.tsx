@@ -1,13 +1,13 @@
 import { useListAssignments, useListSessions } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, CalendarCheck, BookOpen, CheckCircle, FileText, Clock, AlertCircle } from "lucide-react";
+import { CalendarCheck, BookOpen, CheckCircle, FileText, Clock, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import type { LucideIcon } from "lucide-react";
 
 function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string | number }) {
   return (
-    <Card className="border-none shadow-sm rounded-2xl">
+    <Card className="rounded-xl">
       <CardContent className="p-4">
         <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2">
           <Icon className="h-4 w-4" />
@@ -52,10 +52,8 @@ export default function ProgressPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <TrendingUp className="h-8 w-8 text-primary" /> Progress
-        </h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="page-title">Progress</h1>
+        <p className="page-subtitle">
           {who} sessions, assignments, and recent lesson notes at a glance.
         </p>
       </div>
@@ -68,17 +66,17 @@ export default function ProgressPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">To do</h2>
+        <h2 className="eyebrow">To do</h2>
         {todo.length === 0 ? (
-          <div className="bg-card border border-border rounded-2xl p-5 text-sm text-muted-foreground flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-emerald-600" /> All caught up, nothing outstanding.
+          <div className="bg-card rounded-xl p-5 text-sm text-muted-foreground flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-success" /> All caught up, nothing outstanding.
           </div>
         ) : (
           <div className="space-y-2">
             {todo.map((a) => {
               const overdue = a.dueDate ? new Date(a.dueDate).getTime() < now : false;
               return (
-                <div key={a.id} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between gap-3">
+                <div key={a.id} className="bg-card rounded-xl p-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{a.title}</p>
                     {a.dueDate && (
@@ -89,7 +87,7 @@ export default function ProgressPage() {
                       </p>
                     )}
                   </div>
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 shrink-0">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-warning-soft text-warning shrink-0">
                     Not submitted
                   </span>
                 </div>
@@ -100,13 +98,13 @@ export default function ProgressPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Recent lesson notes</h2>
+        <h2 className="eyebrow">Recent lesson notes</h2>
         {recentNotes.length === 0 ? (
           <p className="text-sm text-muted-foreground">No lesson notes yet, they'll appear after completed sessions.</p>
         ) : (
           <div className="space-y-2">
             {recentNotes.map((s) => (
-              <div key={s.id} className="bg-card border border-border rounded-xl p-4">
+              <div key={s.id} className="bg-card rounded-xl p-4">
                 <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-1">
                   <FileText className="h-3.5 w-3.5" />
                   {format(new Date(s.scheduledAt), "EEE, MMM d")}

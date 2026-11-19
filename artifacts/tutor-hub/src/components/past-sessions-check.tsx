@@ -39,7 +39,7 @@ export function PastSessionsBanner() {
   return (
     <Link
       href="/"
-      className="flex items-center gap-3 rounded-xl border px-4 py-3 mb-5 text-sm font-medium hover:shadow-sm transition-shadow bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-200"
+      className="flex items-center gap-3 rounded-xl border px-4 py-3 mb-5 text-sm font-medium bg-warning-soft border-warning-border text-warning"
     >
       <ClipboardCheck className="h-4 w-4 shrink-0" />
       <span className="flex-1">{text}</span>
@@ -63,7 +63,7 @@ export function PastSessionsCheck({
   if (sessions.length === 0) return null;
   return (
     <section>
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+      <h2 className="eyebrow mb-1 flex items-center gap-2">
         <ClipboardCheck className="h-4 w-4" /> Did these happen? ({sessions.length})
       </h2>
       <p className="text-xs text-muted-foreground mb-4">
@@ -73,7 +73,7 @@ export function PastSessionsCheck({
         {sessions.map((s) => {
           const d = new Date(s.scheduledAt);
           return (
-            <Card key={s.id} className="border border-amber-200 dark:border-amber-900/50 shadow-sm rounded-2xl">
+            <Card key={s.id} className="border border-warning-border rounded-xl">
               <CardContent className="p-4 space-y-3">
                 <div>
                   <p className="font-semibold text-sm">{s.studentName} · {format(d, "EEE, MMM d, h:mm a")}</p>

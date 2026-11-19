@@ -1,10 +1,11 @@
 import type { CSSProperties } from "react";
 
 /**
- * The Clarity Mathematics wordmark, rendered as crisp text so it stays legible
- * and sharp at any size and inherits color from its context (currentColor).
- * Size it by setting `fontSize` (via style) or a text-* class on the wrapper;
- * all internal sizing is in `em`, so it scales as one unit.
+ * Clarity Mathematics mark: an app-icon tile (Apple blue, continuous-corner
+ * square) holding an open "C" arc with a point at its centre, the idea of
+ * a clear lens. The wordmark is set in the system font so it sits
+ * naturally next to the rest of the interface. Sized in `em`: set
+ * `fontSize` (style) or a text-* class on the wrapper to scale it.
  */
 export function Logo({
   className,
@@ -19,31 +20,47 @@ export function Logo({
     <span
       className={`inline-flex items-center select-none leading-none ${className ?? ""}`}
       style={style}
+      role="img"
       aria-label="Clarity Mathematics"
     >
-      {/* Monogram: C | M */}
-      <span
-        className="font-display font-semibold inline-flex items-center"
-        style={{ fontSize: "1.7em", letterSpacing: "0.01em" }}
-      >
-        <span>C</span>
-        <span
-          aria-hidden
-          className="bg-current"
-          style={{ width: "1.5px", height: "0.92em", margin: "0 0.14em", opacity: 0.35 }}
-        />
-        <span>M</span>
-      </span>
-
+      <LogoTile size="1.75em" />
       {showWordmark && (
         <span
-          className="flex flex-col font-semibold uppercase"
-          style={{ fontSize: "0.5em", letterSpacing: "0.19em", lineHeight: 1.18, marginLeft: "0.7em" }}
+          aria-hidden
+          className="font-semibold tracking-[-0.01em] whitespace-nowrap"
+          style={{ marginLeft: "0.55em", fontSize: "1em" }}
         >
-          <span>Clarity</span>
-          <span>Mathematics</span>
+          Clarity Mathematics
         </span>
       )}
     </span>
+  );
+}
+
+export function LogoTile({ size = "2em" }: { size?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      width={size}
+      height={size}
+      aria-hidden
+      className="shrink-0"
+    >
+      <defs>
+        <linearGradient id="cm-tile" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2b8cff" />
+          <stop offset="1" stopColor="#0062d1" />
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="14.5" fill="url(#cm-tile)" />
+      <path
+        d="M43.5 22.2A15 15 0 1 0 43.5 41.8"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+      <circle cx="32" cy="32" r="3.6" fill="#fff" />
+    </svg>
   );
 }

@@ -8,32 +8,32 @@ const CONTACT_EMAIL = "chloejenkins@claritymathematics.com";
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-      <div className="space-y-3 text-sm leading-relaxed text-slate-600">{children}</div>
+      <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
+      <div className="space-y-3 text-[15px] leading-relaxed text-foreground/80">{children}</div>
     </section>
   );
 }
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-dvh bg-background">
+      <header className="border-b border-border bg-background">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+          <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to home
           </Link>
-          <Logo style={{ color: "#1b2740", fontSize: "1.05rem" }} />
+          <Logo className="text-foreground" style={{ fontSize: "1.05rem" }} />
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-10 md:py-14">
         <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900">Privacy Policy</h1>
-          <p className="text-sm text-slate-400 mt-2">Last updated: {LAST_UPDATED}</p>
+          <h1 className="page-title">Privacy Policy</h1>
+          <p className="text-sm text-muted-foreground mt-2">Last updated: {LAST_UPDATED}</p>
         </div>
 
         <div className="space-y-8">
-          <p className="text-sm leading-relaxed text-slate-600">
+          <p className="text-[15px] leading-relaxed text-foreground/80">
             Clarity Mathematics ("we," "us") provides a private one-on-one math tutoring platform for
             scheduling lessons, messaging, sharing assignments, and tracking progress. This policy
             explains what information we collect, how we use it, and the choices you have. We collect
@@ -52,24 +52,24 @@ export default function PrivacyPage() {
             <p>We collect the following, most of which you provide directly:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong className="text-slate-700">Account information</strong>: your name, email
+                <strong className="text-muted-foreground">Account information</strong>: your name, email
                 address, username, and (if you add one) a profile photo. Sign-in and account security
                 are handled by our authentication provider, Clerk.
               </li>
               <li>
-                <strong className="text-slate-700">Role and relationships</strong>: whether you are a
+                <strong className="text-muted-foreground">Role and relationships</strong>: whether you are a
                 tutor, student, or parent, and any parent–student links you create.
               </li>
               <li>
-                <strong className="text-slate-700">Tutoring activity</strong>: sessions you book or
+                <strong className="text-muted-foreground">Tutoring activity</strong>: sessions you book or
                 schedule, availability, lesson notes, assignments, and work you submit.
               </li>
               <li>
-                <strong className="text-slate-700">Messages</strong>: the content of direct and group
+                <strong className="text-muted-foreground">Messages</strong>: the content of direct and group
                 conversations you send through the platform.
               </li>
               <li>
-                <strong className="text-slate-700">Payment records</strong>: the amount, date, and
+                <strong className="text-muted-foreground">Payment records</strong>: the amount, date, and
                 status of payments for sessions. Payments themselves are made outside the platform
                 through Venmo or Zelle, so we do not collect or store card numbers or bank details.
               </li>
@@ -102,17 +102,17 @@ export default function PrivacyPage() {
             <p>We share information only in these limited ways:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong className="text-slate-700">Within your tutoring relationship</strong>: a
+                <strong className="text-muted-foreground">Within your tutoring relationship</strong>: a
                 tutor and their student (and a linked parent) can see the sessions, assignments,
                 messages, and notes relevant to that relationship.
               </li>
               <li>
-                <strong className="text-slate-700">Service providers</strong>: we use trusted
+                <strong className="text-muted-foreground">Service providers</strong>: we use trusted
                 providers to run the platform, such as Clerk for authentication and our hosting
                 provider for storing data. They may process information only on our behalf.
               </li>
               <li>
-                <strong className="text-slate-700">Legal reasons</strong>: if required by law or to
+                <strong className="text-muted-foreground">Legal reasons</strong>: if required by law or to
                 protect the safety and rights of our users.
               </li>
             </ul>
@@ -156,7 +156,7 @@ export default function PrivacyPage() {
           <Section title="10. Contact us">
             <p>
               If you have questions about this policy or your information, contact us at{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-blue-700 font-medium hover:underline">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-foreground underline underline-offset-4 decoration-foreground/30 hover:decoration-foreground">
                 {CONTACT_EMAIL}
               </a>
               .
@@ -164,11 +164,11 @@ export default function PrivacyPage() {
           </Section>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-slate-200 flex items-center gap-4">
-          <Link href="/" className="text-sm text-blue-700 font-medium hover:underline">
+        <div className="mt-12 pt-6 border-t border-border flex items-center gap-4">
+          <Link href="/" className="text-sm text-foreground font-medium underline-offset-4 hover:underline">
             ← Back to Clarity Mathematics
           </Link>
-          <Link href="/terms" className="text-sm text-slate-400 hover:text-slate-700">
+          <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">
             Terms &amp; Conditions
           </Link>
         </div>

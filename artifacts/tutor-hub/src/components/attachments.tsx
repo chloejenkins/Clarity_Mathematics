@@ -147,7 +147,7 @@ function AttachmentRow({
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
+    <div data-card="" className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2">
       <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
         <FileText className="h-4 w-4" />
       </div>

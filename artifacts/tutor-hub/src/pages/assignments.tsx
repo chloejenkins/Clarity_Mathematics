@@ -108,12 +108,12 @@ function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
       >
         <span className="flex items-center gap-2">
           {existing ? (
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
           ) : (
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           )}
           {existing ? (
-            <span className="text-emerald-700">
+            <span className="text-success">
               Submitted · {format(new Date(existing.submittedAt), "MMM d, h:mm a")}
             </span>
           ) : readOnly ? (
@@ -126,8 +126,8 @@ function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
       </button>
 
       {existing && (existing.reviewedAt || existing.tutorComment) && (
-        <div className="mt-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl p-3">
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+        <div className="mt-3 bg-success-soft border border-success-border rounded-xl p-3">
+          <p className="text-xs font-semibold text-success flex items-center gap-1.5">
             <CheckCircle className="h-3.5 w-3.5" /> Reviewed by your tutor
           </p>
           {existing.tutorComment && (
@@ -139,12 +139,12 @@ function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
       {expanded && readOnly && (
         <div className="mt-3 space-y-4">
           {existing?.content ? (
-            <p className="text-sm whitespace-pre-wrap bg-slate-50 dark:bg-slate-900 rounded-xl p-3">{existing.content}</p>
+            <p className="text-sm whitespace-pre-wrap bg-muted rounded-xl p-3">{existing.content}</p>
           ) : (
             <p className="text-sm text-muted-foreground">No written note.</p>
           )}
           <div className="border-t pt-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Attached files</p>
+            <p className="eyebrow mb-2">Attached files</p>
             <AttachmentList assignmentId={assignmentId} from="family" emptyText="No files attached." />
           </div>
         </div>
@@ -179,7 +179,7 @@ function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
 
           <div className="border-t pt-3">
             <div className="flex items-center justify-between mb-2 gap-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Attached files</p>
+              <p className="eyebrow">Attached files</p>
               <FileUploadButton assignmentId={assignmentId} label="Attach a file" />
             </div>
             <AttachmentList assignmentId={assignmentId} from="family" canDelete emptyText="No files attached yet." />
@@ -197,7 +197,7 @@ function WorksheetList({ assignmentId }: { assignmentId: number }) {
   if (!data?.some((a) => a.uploaderRole === "tutor")) return null;
   return (
     <div className="mt-4 border-t pt-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+      <p className="eyebrow mb-2 flex items-center gap-1.5">
         <FileText className="h-3.5 w-3.5" /> From your tutor
       </p>
       <AttachmentList assignmentId={assignmentId} from="tutor" />
@@ -210,7 +210,7 @@ function AssignmentSubmissionReview({ assignmentId }: { assignmentId: number }) 
 
   return (
     <div className="mt-4 border-t pt-3 space-y-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Submission &amp; files</p>
+      <p className="eyebrow">Submission &amp; files</p>
       <AttachmentList assignmentId={assignmentId} from="family" showUploader emptyText="No files submitted yet." />
       {submissions.length === 0 ? (
         <p className="text-xs text-muted-foreground">No written submission yet.</p>
@@ -333,9 +333,9 @@ function SubmissionReviewRow({ sub, assignmentId }: { sub: AssignmentSubmission;
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-semibold">{sub.studentName}</p>
         {sub.reviewedAt ? (
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Reviewed</span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-success-soft text-success">Reviewed</span>
         ) : (
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Awaiting review</span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-warning-soft text-warning">Awaiting review</span>
         )}
       </div>
       {sub.content ? (
@@ -406,10 +406,8 @@ export default function AssignmentsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-primary" /> Assignments
-          </h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="page-title">Assignments</h1>
+          <p className="page-subtitle">
             {isTutor
               ? "Post homework and practice materials for your students."
               : "Your homework and practice materials. Submit your work directly here."}
@@ -419,7 +417,7 @@ export default function AssignmentsPage() {
         {isTutor && (
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button size="lg" className="rounded-xl shadow-md gap-2">
+              <Button size="lg" className="rounded-xl gap-2">
                 <Plus className="h-5 w-5" /> New Assignment
               </Button>
             </DialogTrigger>
@@ -502,7 +500,7 @@ export default function AssignmentsPage() {
       </div>
 
       {!isTutor && (
-        <Card className="border-none shadow-sm rounded-2xl">
+        <Card className="rounded-xl">
           <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -519,9 +517,9 @@ export default function AssignmentsPage() {
       )}
 
       {isTutor && (
-        <Card className="border-none shadow-sm rounded-2xl">
+        <Card className="rounded-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <CardTitle className="eyebrow flex items-center gap-2">
               <Paperclip className="h-4 w-4" /> Files sent to you
             </CardTitle>
           </CardHeader>
@@ -544,8 +542,8 @@ export default function AssignmentsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {sorted.map(assignment => (
-            <Card key={assignment.id} className="border-none shadow-md hover:shadow-lg transition-shadow rounded-2xl overflow-hidden group">
-              <CardHeader className="bg-slate-50 dark:bg-slate-900 border-b px-6 pt-5 pb-4 relative">
+            <Card key={assignment.id} className="rounded-xl overflow-hidden group">
+              <CardHeader className="border-b px-6 pt-5 pb-4 relative">
                 {isTutor && (
                   <div className="absolute top-4 right-4 flex gap-1 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <EditAssignmentDialog assignment={assignment} />
@@ -585,7 +583,7 @@ export default function AssignmentsPage() {
                   </p>
                 )}
                 {assignment.dueDate && (
-                  <div className="mt-3 inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-900/50 text-sm font-semibold">
+                  <div className="mt-3 inline-flex items-center gap-2 bg-warning-soft text-warning px-3 py-1.5 rounded-lg border border-warning-border text-sm font-semibold">
                     <Calendar className="h-4 w-4" />
                     Due: {format(dueDateForDisplay(assignment.dueDate), "EEE, MMM d, yyyy")}
                   </div>
@@ -595,7 +593,7 @@ export default function AssignmentsPage() {
                 {isTutor ? (
                   <div className="mt-4 border-t pt-3">
                     <div className="flex items-center justify-between mb-2 gap-2">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Worksheets</p>
+                      <p className="eyebrow">Worksheets</p>
                       <FileUploadButton assignmentId={assignment.id} label="Attach worksheet" />
                     </div>
                     <AttachmentList assignmentId={assignment.id} from="tutor" canDelete emptyText="No worksheets attached." />

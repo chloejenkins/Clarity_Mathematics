@@ -1,4 +1,4 @@
-import { CreditCard, Gift, Clock, RefreshCcw, Copy, CheckCircle, Wallet, Check, Loader2, Pencil, Receipt } from "lucide-react";
+import { Gift, Clock, RefreshCcw, Copy, CheckCircle, Wallet, Check, Loader2, Pencil, Receipt } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
@@ -29,7 +29,7 @@ function CopyButton({ text }: { text: string }) {
   };
   return (
     <button onClick={handleCopy} className="ml-2 text-muted-foreground hover:text-foreground transition-colors" title="Copy">
-      {copied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? <CheckCircle className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
 }
@@ -46,9 +46,8 @@ function openReceipt(p: Payment) {
   const date = paidAt ? format(new Date(paidAt), "MMMM d, yyyy") : "-";
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Receipt, Clarity Mathematics</title>
     <style>
-      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;padding:40px;max-width:400px;margin:0 auto;}
-      h1{font-family:Georgia,'Times New Roman',serif;color:#c9a227;font-size:30px;margin:0;letter-spacing:-1px;}
-      .sub{color:#64748b;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1d1d1f;padding:40px;max-width:400px;margin:0 auto;}
+      h1{color:#0071e3;font-size:22px;font-weight:700;margin:0;}
       h2{font-size:15px;margin:28px 0 12px;}
       .row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid #e2e8f0;font-size:14px;}
       .row .label{color:#64748b;}
@@ -57,7 +56,7 @@ function openReceipt(p: Payment) {
       .paid{display:inline-block;margin-top:14px;background:#dcfce7;color:#166534;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.5px;}
       .foot{margin-top:36px;color:#94a3b8;font-size:11px;text-align:center;}
     </style></head><body>
-    <h1>CM</h1><div class="sub">Clarity Mathematics</div>
+    <h1>Clarity Mathematics</h1>
     <h2>Payment Receipt</h2>
     <div class="row"><span class="label">Description</span><span>${escapeHtml(p.description || "Tutoring session")}</span></div>
     ${p.studentName ? `<div class="row"><span class="label">Student</span><span>${escapeHtml(p.studentName)}</span></div>` : ""}
@@ -73,12 +72,12 @@ function openReceipt(p: Payment) {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    due: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
-    sent: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300",
-    received: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
-    void: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+    due: "bg-warning-soft text-warning",
+    sent: "bg-info-soft text-info",
+    received: "bg-success-soft text-success",
+    void: "bg-muted text-muted-foreground",
     refund_due: "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300",
-    refunded: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+    refunded: "bg-success-soft text-success",
   };
   const labels: Record<string, string> = {
     due: "Unpaid",
@@ -88,7 +87,7 @@ function StatusBadge({ status }: { status: string }) {
     refund_due: "Refund due",
     refunded: "Refunded",
   };
-  return <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${map[status] ?? ""}`}>{labels[status] ?? status}</span>;
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[status] ?? ""}`}>{labels[status] ?? status}</span>;
 }
 
 function ChargeRow({ p, isTutor, showStudent }: { p: Payment; isTutor: boolean; showStudent: boolean }) {
@@ -121,7 +120,7 @@ function ChargeRow({ p, isTutor, showStudent }: { p: Payment; isTutor: boolean; 
   });
 
   return (
-    <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3">
+    <div data-card="" className="flex items-center gap-3 px-4 py-3 min-h-14">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold truncate">
           {showStudent ? `${p.studentName} · ` : ""}
@@ -238,10 +237,8 @@ export default function PaymentsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-primary" /> Payments
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h1 className="page-title">Payments</h1>
+          <p className="page-subtitle">
             {isTutor ? "Charges per session, and payment confirmations." : "Pay after each session and mark it here."}
           </p>
         </div>
@@ -250,13 +247,13 @@ export default function PaymentsPage() {
 
       {list.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="bg-card rounded-xl p-4">
             <p className="text-xs text-muted-foreground">{isTutor ? "Received" : "Paid"}</p>
-            <p className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">${receivedTotal}</p>
+            <p className="text-2xl font-extrabold text-success">${receivedTotal}</p>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="bg-card rounded-xl p-4">
             <p className="text-xs text-muted-foreground">Outstanding</p>
-            <p className="text-2xl font-extrabold text-amber-700 dark:text-amber-400">${owedTotal}</p>
+            <p className="text-2xl font-extrabold text-warning">${owedTotal}</p>
           </div>
         </div>
       )}
@@ -264,11 +261,11 @@ export default function PaymentsPage() {
       {/* Charges */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="eyebrow">
             {isTutor ? "Payment history" : "Your charges"}
           </p>
           {outstanding.length > 0 && (
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+            <p className="text-xs font-semibold text-warning">
               {isTutor ? `$${outstandingTotal} awaiting confirmation` : `$${outstandingTotal} due`}
             </p>
           )}
@@ -282,7 +279,7 @@ export default function PaymentsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="rounded-xl bg-card overflow-hidden divide-y divide-border">
             {list.map((p) => <ChargeRow key={p.id} p={p} isTutor={isTutor} showStudent={isTutor || user?.role === "parent"} />)}
           </div>
         )}
@@ -295,10 +292,10 @@ export default function PaymentsPage() {
 
       {/* Payment methods */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Payment Methods</p>
+        <p className="eyebrow">Payment Methods</p>
 
         {/* Zelle */}
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+        <div className="bg-card rounded-xl p-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-10 w-10 rounded-xl bg-[#6D1ED4]/10 flex items-center justify-center shrink-0">
               <svg viewBox="0 0 24 24" className="h-5 w-5 fill-[#6D1ED4]" xmlns="http://www.w3.org/2000/svg">
@@ -329,7 +326,7 @@ export default function PaymentsPage() {
         </div>
 
         {/* Venmo */}
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+        <div className="bg-card rounded-xl p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-[#008CFF]/10 flex items-center justify-center shrink-0">
@@ -360,29 +357,29 @@ export default function PaymentsPage() {
 
       {/* Policy */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Pricing &amp; Policy</p>
+        <p className="eyebrow">Pricing &amp; Policy</p>
         <div className="grid sm:grid-cols-3 gap-3">
-          <div className="bg-card border border-border rounded-2xl p-4 flex items-start gap-3 shadow-sm">
-            <div className="bg-emerald-100 dark:bg-emerald-950/40 p-1.5 rounded-lg shrink-0 mt-0.5">
-              <Gift className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
+          <div className="bg-card rounded-xl p-4 flex items-start gap-3">
+            <div className="bg-success-soft p-1.5 rounded-lg shrink-0 mt-0.5">
+              <Gift className="h-3.5 w-3.5 text-success" />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground leading-snug">First session free</p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">No payment needed to get started.</p>
             </div>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-4 flex items-start gap-3 shadow-sm">
-            <div className="bg-amber-100 dark:bg-amber-950/40 p-1.5 rounded-lg shrink-0 mt-0.5">
-              <Clock className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" />
+          <div className="bg-card rounded-xl p-4 flex items-start gap-3">
+            <div className="bg-warning-soft p-1.5 rounded-lg shrink-0 mt-0.5">
+              <Clock className="h-3.5 w-3.5 text-warning" />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground leading-snug">50% refund</p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">If cancelled within 24 hours of session, or missed.</p>
             </div>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-4 flex items-start gap-3 shadow-sm">
-            <div className="bg-blue-100 dark:bg-blue-950/40 p-1.5 rounded-lg shrink-0 mt-0.5">
-              <RefreshCcw className="h-3.5 w-3.5 text-blue-700 dark:text-blue-400" />
+          <div className="bg-card rounded-xl p-4 flex items-start gap-3">
+            <div className="bg-info-soft p-1.5 rounded-lg shrink-0 mt-0.5">
+              <RefreshCcw className="h-3.5 w-3.5 text-info" />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground leading-snug">100% refund</p>

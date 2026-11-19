@@ -14,12 +14,12 @@ export function usePayments() {
 function Banner({ text, tone }: { text: string; tone: "primary" | "amber" }) {
   const cls =
     tone === "amber"
-      ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-200"
+      ? "bg-warning-soft border-warning-border text-warning"
       : "bg-primary/5 border-primary/25 text-foreground";
   return (
     <Link
       href="/payments"
-      className={`flex items-center gap-3 rounded-xl border px-4 py-3 mb-5 text-sm font-medium hover:shadow-sm transition-shadow ${cls}`}
+      className={`flex items-center gap-3 rounded-xl border px-4 py-3 mb-5 text-sm font-medium ${cls}`}
     >
       <AlertCircle className="h-4 w-4 shrink-0" />
       <span className="flex-1">{text}</span>

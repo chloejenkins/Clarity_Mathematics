@@ -50,13 +50,13 @@ function formatDay(date: Date) {
 
 function StatusPill({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    pending:   "bg-amber-100 text-amber-800 border-amber-200",
-    approved:  "bg-emerald-100 text-emerald-800 border-emerald-200",
-    cancelled: "bg-red-100 text-red-800 border-red-200",
-    completed: "bg-blue-100 text-blue-800 border-blue-200",
+    pending:   "bg-warning-soft text-warning border-warning-border",
+    approved:  "bg-success-soft text-success border-success-border",
+    cancelled: "bg-destructive/10 text-destructive border-destructive/30",
+    completed: "bg-info-soft text-info border-info-border",
   };
   return (
-    <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${styles[status] ?? "bg-slate-100 text-slate-700"}`}>
+    <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${styles[status] ?? "bg-muted text-muted-foreground"}`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
@@ -114,7 +114,7 @@ function AddSlotsDialog({ onAdded }: { onAdded: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="lg" className="gap-2 rounded-xl shadow-md">
+        <Button size="lg" className="gap-2 rounded-xl">
           <Plus className="h-5 w-5" /> Add Available Times
         </Button>
       </DialogTrigger>
@@ -248,7 +248,7 @@ function BookSlotDialog({ slot, onBooked, children = [] }: { slot: Slot; onBooke
           <DialogDescription>This session is auto-confirmed once you book.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          <div className="bg-slate-50 rounded-xl p-4 space-y-1.5 text-sm">
+          <div className="bg-muted rounded-xl p-4 space-y-1.5 text-sm">
             <div className="flex items-center gap-2 font-semibold text-base text-foreground">
               <CalendarDays className="h-4 w-4 text-primary" />
               {formatDay(date)}, {format(date, "MMMM d")}
@@ -416,7 +416,7 @@ function LessonNotes({ session, canEdit }: { session: { id: number; notes: strin
         </div>
       ) : session.notes ? (
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+          <p className="eyebrow mb-1 flex items-center gap-1">
             <FileText className="h-3 w-3" /> Lesson notes
           </p>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{session.notes}</p>
@@ -524,10 +524,8 @@ export default function SchedulePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <CalendarDays className="h-8 w-8 text-primary" /> Schedule
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h1 className="page-title">Schedule</h1>
+          <p className="page-subtitle">
             {isTutor
               ? "Post your available times, students book directly, no back and forth."
               : "Pick from available times below. Bookings are instantly confirmed."}
@@ -543,7 +541,7 @@ export default function SchedulePage() {
 
           {/* Unbooked slots */}
           <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h2 className="eyebrow mb-4 flex items-center gap-2">
               <CalendarCheck className="h-4 w-4" /> Open Slots ({unbooked.length})
             </h2>
             {unbooked.length === 0 ? (
@@ -557,7 +555,7 @@ export default function SchedulePage() {
                 {unbooked.map(slot => {
                   const d = new Date(slot.startsAt);
                   return (
-                    <Card key={slot.id} className="border border-border rounded-2xl shadow-sm group hover:shadow-md transition-shadow">
+                    <Card key={slot.id} className="rounded-xl group">
                       <CardContent className="p-4 flex items-center justify-between gap-3">
                         <div className="space-y-0.5 min-w-0">
                           <p className="font-semibold text-sm">{formatDay(d)}, {format(d, "MMM d")}</p>
@@ -584,7 +582,7 @@ export default function SchedulePage() {
 
           {/* Booked sessions */}
           <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h2 className="eyebrow mb-4 flex items-center gap-2">
               <Users className="h-4 w-4" /> Booked Sessions ({upcomingSessions.length})
             </h2>
             {sessionsLoading ? (
@@ -598,8 +596,7 @@ export default function SchedulePage() {
                 {upcomingSessions.map(session => {
                   const d = new Date(session.scheduledAt);
                   return (
-                    <Card key={session.id} className="border-none shadow-md rounded-2xl overflow-hidden relative">
-                      <div className="absolute left-0 top-0 w-1 h-full bg-primary" />
+                    <Card key={session.id} className="rounded-xl overflow-hidden relative">
                       <CardHeader className="pb-2 pt-4 px-5">
                         <div className="flex justify-between items-center">
                           <StatusPill status={session.status} />
@@ -624,7 +621,7 @@ export default function SchedulePage() {
                         </p>
                       </CardHeader>
                       <CardContent className="px-5 pb-4 space-y-3">
-                        <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 text-sm">
+                        <div className="bg-muted rounded-xl p-3 text-sm">
                           <p className="font-semibold">{session.studentName}</p>
                           {session.topic && <p className="text-muted-foreground text-xs mt-0.5">{session.topic}</p>}
                         </div>
@@ -654,12 +651,12 @@ export default function SchedulePage() {
           {/* Past sessions */}
           {pastSessions.length > 0 && (
             <section>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Past Sessions</h2>
+              <h2 className="eyebrow mb-4">Past Sessions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {pastSessions.slice(0, 6).map(session => {
                   const d = new Date(session.scheduledAt);
                   return (
-                    <Card key={session.id} className="border shadow-sm rounded-2xl">
+                    <Card key={session.id} className="rounded-xl">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
@@ -684,7 +681,7 @@ export default function SchedulePage() {
         <div className="space-y-8">
           {/* Available slots to book */}
           <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h2 className="eyebrow mb-4 flex items-center gap-2">
               <CalendarCheck className="h-4 w-4" /> Available Times
             </h2>
             {unbooked.length === 0 ? (
@@ -698,7 +695,7 @@ export default function SchedulePage() {
                 {unbooked.map(slot => {
                   const d = new Date(slot.startsAt);
                   return (
-                    <Card key={slot.id} className="border-none shadow-md rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+                    <Card key={slot.id} className="rounded-xl overflow-hidden">
                       <div className="bg-primary/5 border-b border-border/50 px-5 pt-4 pb-3">
                         <p className="font-bold text-base">{formatDay(d)}</p>
                         <p className="text-sm font-semibold text-primary">{format(d, "MMMM d, yyyy")}</p>
@@ -728,7 +725,7 @@ export default function SchedulePage() {
 
           {/* Student's booked sessions */}
           <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h2 className="eyebrow mb-4 flex items-center gap-2">
               <CalendarDays className="h-4 w-4" /> My Sessions
             </h2>
             {sessionsLoading ? (
@@ -742,8 +739,7 @@ export default function SchedulePage() {
                 {upcomingSessions.map(session => {
                   const d = new Date(session.scheduledAt);
                   return (
-                    <Card key={session.id} className="border-none shadow-md rounded-2xl overflow-hidden relative">
-                      <div className="absolute left-0 top-0 w-1 h-full bg-emerald-500" />
+                    <Card key={session.id} className="rounded-xl overflow-hidden relative">
                       <CardContent className="px-5 py-4 space-y-2">
                         <div className="flex items-center justify-between">
                           <StatusPill status={session.status} />
@@ -779,12 +775,12 @@ export default function SchedulePage() {
           {/* Past */}
           {pastSessions.length > 0 && (
             <section>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Past Sessions</h2>
+              <h2 className="eyebrow mb-4">Past Sessions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {pastSessions.slice(0, 4).map(session => {
                   const d = new Date(session.scheduledAt);
                   return (
-                    <Card key={session.id} className="border shadow-sm rounded-2xl">
+                    <Card key={session.id} className="rounded-xl">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>

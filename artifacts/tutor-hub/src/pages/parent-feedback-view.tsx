@@ -59,10 +59,8 @@ export default function ParentFeedbackViewPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
-            <ClipboardList className="h-6 w-6 text-primary" /> Tutor Feedback
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h1 className="page-title">Tutor Feedback</h1>
+          <p className="page-subtitle">
             Private notes your tutor has written about your child's progress.
           </p>
         </div>
@@ -147,7 +145,7 @@ function LinkedStudentFeedback({
           their feedback, schedule, and payments.
         </div>
       ) : !link.linked ? (
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-200">
+        <div className="bg-warning-soft border border-warning-border rounded-2xl p-4 text-sm text-warning">
           This is a name only, it isn't connected to a real account yet, so no feedback, schedule, or
           payments will show. Unlink it and re-add your child by their email.
         </div>
@@ -177,9 +175,9 @@ function FeedbackHistory({ reports }: { reports: ParentFeedback[] }) {
 
 function FeedbackCard({ feedback }: { feedback: ParentFeedback }) {
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
+    <div className="bg-card rounded-xl p-5 space-y-3">
       {feedback.period && (
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="eyebrow">
           {feedback.period}
         </p>
       )}
