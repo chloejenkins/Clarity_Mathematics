@@ -268,6 +268,12 @@ export interface Conversation {
   participants: ConversationParticipant[];
   lastMessage?: string | null;
   lastMessageAt: string;
+  /** Messages from other people the caller hasn't seen yet */
+  unreadCount: number;
+}
+
+export interface UnreadCount {
+  count: number;
 }
 
 export interface CreateConversationBody {
@@ -277,6 +283,7 @@ export interface CreateConversationBody {
 }
 
 export interface SendConversationMessageBody {
+  /** @maxLength 4000 */
   content: string;
 }
 

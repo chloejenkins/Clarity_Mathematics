@@ -55,6 +55,7 @@ export * from "./syncProfileResponse";
 export * from "./tutoringSession";
 export * from "./tutoringSessionStatus";
 export * from "./tutorSummary";
+export * from "./unreadCount";
 export * from "./updateAssignmentBody";
 export * from "./updatedTutoringSession";
 export * from "./updateSessionBody";

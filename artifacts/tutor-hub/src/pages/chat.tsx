@@ -6,8 +6,10 @@ import {
   useListConversationMessages,
   useSendConversationMessage,
   useCreateConversation,
+  useMarkConversationRead,
   getListConversationsQueryKey,
   getListConversationMessagesQueryKey,
+  getGetUnreadMessageCountQueryKey,
   type Conversation,
   type User,
 } from "@workspace/api-client-react";
@@ -27,6 +29,20 @@ import {
 import { Send, MessageSquare, Plus, Users, Check, ChevronLeft } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+const MAX_MESSAGE_LENGTH = 4000;
+
+/** The server's reason for a failed request, or a friendly fallback. */
+function errorMessage(err: unknown, fallback: string): string {
+  const data = (err as { data?: { error?: unknown } } | null)?.data;
+  return typeof data?.error === "string" ? data.error : fallback;
+}
+
+/** Phones show the list first; wider screens open the latest chat beside it. */
+function isPhoneWidth() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+}
 
 function formatMsgTime(dateStr: string | Date) {
   const date = new Date(dateStr);
@@ -54,6 +70,7 @@ export default function ChatPage() {
   const { user } = useAuth();
   const myId = user?.id;
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: users } = useListUsers();
 
@@ -64,9 +81,14 @@ export default function ChatPage() {
   const [selectedId, setSelectedId] = useState<number | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Auto-select the first conversation once loaded.
+  // On wider screens, open the most recent conversation once the list first
+  // loads. Only once: after that, closing a chat (the back arrow on phones)
+  // must not reopen it.
+  const autoSelected = useRef(false);
   useEffect(() => {
-    if (selectedId === undefined && conversations && conversations.length > 0) {
+    if (autoSelected.current || !conversations) return;
+    autoSelected.current = true;
+    if (selectedId === undefined && conversations.length > 0 && !isPhoneWidth()) {
       setSelectedId(conversations[0].id);
     }
   }, [conversations, selectedId]);
@@ -86,10 +108,51 @@ export default function ChatPage() {
         queryClient.invalidateQueries({ queryKey: getListConversationMessagesQueryKey(id) });
         queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
       },
+      onError: (err) => {
+        // Keep the draft so nothing typed is lost.
+        toast({
+          variant: "destructive",
+          title: "Message not sent",
+          description: errorMessage(err, "Something went wrong. Please try again."),
+        });
+      },
     },
   });
 
+  // Seeing a conversation marks it read, so its unread count and the badge
+  // on Chat clear. The list refreshes every few seconds, so a message that
+  // arrives while the chat is open is marked read on the next refresh.
+  const markRead = useMarkConversationRead({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetUnreadMessageCountQueryKey() });
+      },
+    },
+  });
+  const selectedUnread = conversations?.find((c) => c.id === selectedId)?.unreadCount ?? 0;
+  useEffect(() => {
+    if (selectedId === undefined || selectedUnread === 0) return;
+    if (document.visibilityState !== "visible") return;
+    markRead.mutate({ id: selectedId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, selectedUnread]);
+
+  // Coming back to the tab with a chat open counts as reading it.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && selectedId !== undefined && selectedUnread > 0) {
+        markRead.mutate({ id: selectedId });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, selectedUnread]);
+
   const [draft, setDraft] = useState("");
+  // A half-written message belongs to the chat it was written in.
+  useEffect(() => setDraft(""), [selectedId]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -128,7 +191,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-6rem-env(safe-area-inset-bottom))] min-h-[24rem] md:h-[calc(100dvh-6rem)]">
+    <div className="flex flex-col flex-1 min-h-[24rem]">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Chat</h1>
@@ -172,10 +235,12 @@ export default function ChatPage() {
             {conversations?.map((c) => {
               const isSelected = c.id === selectedId;
               const other = c.participants.find((p) => p.id !== myId);
+              const unread = isSelected ? 0 : c.unreadCount;
               return (
                 <button
                   key={c.id}
                   onClick={() => setSelectedId(c.id)}
+                  aria-label={unread > 0 ? `${convTitle(c)}, ${unread} unread` : undefined}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
                     isSelected
                       ? "bg-primary text-primary-foreground"
@@ -190,18 +255,36 @@ export default function ChatPage() {
                     ) : (
                       <>
                         <AvatarImage src={other?.imageUrl ?? undefined} />
-                        <AvatarFallback className="bg-primary/15 text-primary text-xs font-bold">
+                        <AvatarFallback className={cn(
+                          "text-xs font-bold",
+                          isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/15 text-primary",
+                        )}>
                           {getInitials(other?.name)}
                         </AvatarFallback>
                       </>
                     )}
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">{convTitle(c)}</p>
-                    <p className={`text-xs truncate ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                    <p className={cn("text-sm truncate", unread > 0 ? "font-semibold" : "font-medium")}>{convTitle(c)}</p>
+                    <p className={cn(
+                      "text-xs truncate",
+                      isSelected
+                        ? "text-primary-foreground/70"
+                        : unread > 0
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground",
+                    )}>
                       {c.lastMessage ?? convSubtitle(c)}
                     </p>
                   </div>
+                  {unread > 0 && (
+                    <span
+                      className="ml-1 min-w-5 h-5 px-1.5 rounded-full bg-brand text-white text-[11px] font-semibold leading-5 text-center shrink-0"
+                      aria-hidden
+                    >
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -315,6 +398,7 @@ export default function ChatPage() {
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={`Message ${convTitle(activeConv)}…`}
+                    maxLength={MAX_MESSAGE_LENGTH}
                     className="flex-1 rounded-full px-5 h-11 bg-muted border-transparent focus-visible:ring-primary/50"
                     autoComplete="off"
                   />
@@ -371,7 +455,18 @@ function NewConversationDialog({
 
   const isGroup = selected.size > 1;
 
-  const createMutation = useCreateConversation({ mutation: { onSuccess: onCreated } });
+  const { toast } = useToast();
+  const createMutation = useCreateConversation({
+    mutation: {
+      onSuccess: onCreated,
+      onError: (err) =>
+        toast({
+          variant: "destructive",
+          title: "Couldn't start the chat",
+          description: errorMessage(err, "Something went wrong. Please try again."),
+        }),
+    },
+  });
 
   const toggle = (id: string) => {
     setSelected((prev) => {
