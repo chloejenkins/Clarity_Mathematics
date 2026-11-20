@@ -7,6 +7,7 @@
 // writes it before loading the page. The token sent to the API is
 // `e2e.<base64url identity>`, which the API's fake Clerk accepts.
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { DemoSwitcher } from "./demo-switcher";
 
 interface Identity {
   id: string;
@@ -102,7 +103,12 @@ function useFakeState(): State {
 
 export function ClerkProvider({ children }: { children: ReactNode; [key: string]: unknown }) {
   ensureStarted();
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {import.meta.env.VITE_DEMO === "1" && <DemoSwitcher />}
+    </>
+  );
 }
 
 export function useUser() {

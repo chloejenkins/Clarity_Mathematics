@@ -53,6 +53,20 @@ Outputs:
 Browsers and test code run in `America/New_York` by default (set `TZ` to change it), so date handling is checked the
 way US families see it. Set `CHROMIUM_PATH` if Playwright's own Chromium isn't installed.
 
+## Previewing the site locally with demo data
+
+To click around the whole site as the tutor, a student or a parent, with lessons, homework, chats, reports and
+payments already filled in:
+
+```sh
+pnpm install
+e2e/scripts/demo.sh        # uses postgres://$(whoami)@localhost:5432/clarity_e2e unless DATABASE_URL is set
+```
+
+Then open http://localhost:5173. The "Preview as" button at the top of the page (also opened by Sign in) switches
+between the people `e2e/scripts/seed-demo.ts` creates. Running the script again starts over with fresh data.
+The picker only appears when the site is started with `VITE_DEMO=1`, so the scripted journeys don't see it.
+
 ## Findings versus failures
 
 A failing test means a journey a person relies on is broken. A **finding** is something worth fixing that doesn't
