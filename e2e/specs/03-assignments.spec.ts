@@ -66,8 +66,8 @@ test.describe("assignments: post, submit, review", () => {
     const download = page.waitForEvent("download");
     await page.getByText("practice-sheet.txt").locator("xpath=ancestor::*[@data-card][1]").getByTitle("Download").click();
     expect((await download).suggestedFilename()).toBe("practice-sheet.txt");
-    const expected = dueDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-    const shown = await page.getByText(/^Due:/).first().innerText();
+    const expected = dueDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    const shown = await page.getByText(/^Due /).first().innerText();
     await expectRule(
       "bug",
       "Due dates show one day early in US time zones",
@@ -82,20 +82,25 @@ test.describe("assignments: post, submit, review", () => {
     const page = await open(personas.student);
     await page.goto("/");
     await navigate(page, "Assignments");
-    await page.getByRole("button", { name: /Submit your work/ }).click();
-    await page.getByPlaceholder(/Add a note for your tutor/).fill("Done! I got stuck on #7.");
-    await page.locator('input[type="file"]').last().setInputFiles(fixture("homework.txt"));
+    const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::*[@data-card][1]");
+    await expect(card.getByText("To do", { exact: true })).toBeVisible();
+    await expect(card.getByRole("button", { name: "Hand in", exact: true })).toBeDisabled();
+    await card.locator('input[type="file"]').setInputFiles(fixture("homework.txt"));
     await expectToast(page, "File uploaded");
-    await page.getByRole("button", { name: "Submit", exact: true }).click();
-    await expectToast(page, "Work submitted!");
-    await expect(page.getByText(/^Submitted ·/)).toBeVisible();
+    await expect(card.getByText("homework.txt")).toBeVisible();
+    await card.getByPlaceholder(/Add a note for your tutor/).fill("Done! I got stuck on #7.");
+    await card.getByRole("button", { name: "Hand in", exact: true }).click();
+    await expectToast(page, "Work handed in!");
+    await expect(card.getByText(/^Handed in ·/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Handed in/ }).locator("xpath=..").getByText("Quadratics practice set")).toBeVisible();
   });
 
   test("student sends a file to the tutor outside any assignment", async ({ open }) => {
     const page = await open(personas.student);
     await page.goto("/");
     await navigate(page, "Assignments");
-    await page.locator('input[type="file"]').first().setInputFiles(fixture("worksheet.txt"));
+    await page.getByText("Something else for your tutor?").locator("xpath=ancestor::*[@data-card][1]")
+      .locator('input[type="file"]').setInputFiles(fixture("worksheet.txt"));
     await expectToast(page, "File uploaded");
   });
 
@@ -112,16 +117,19 @@ test.describe("assignments: post, submit, review", () => {
     const file = await download;
     expect(file.suggestedFilename()).toBe("homework.txt");
 
-    await page.getByPlaceholder(/Leave feedback for the student/).fill("Great work. For #7, factor before you divide.");
-    await page.getByRole("button", { name: /Save review|Mark reviewed|Save/ }).first().click();
-    await expectToast(page, "Review saved");
+    const card = page.locator("main").getByText("Quadratics practice set").locator("xpath=ancestor::*[@data-card][1]");
+    await expect(card.getByText("Needs review", { exact: true })).toBeVisible();
+    await card.getByPlaceholder(/Leave feedback for the student/).fill("Great work. For #7, factor before you divide.");
+    await card.getByRole("button", { name: "Send feedback" }).click();
+    await expectToast(page, "Feedback sent");
+    await expect(card.getByText("Reviewed", { exact: true })).toBeVisible();
   });
 
   test("student reads the tutor's review", async ({ open }) => {
     const page = await open(personas.student);
     await page.goto("/");
     await navigate(page, "Assignments");
-    await expect(page.getByText("Reviewed by your tutor")).toBeVisible();
+    await expect(page.getByText("Feedback from your tutor")).toBeVisible();
     await expect(page.getByText("Great work. For #7, factor before you divide.")).toBeVisible();
     await navigate(page, "Progress");
     await expect(page.getByText("1/1")).toBeVisible();
@@ -134,7 +142,7 @@ test.describe("assignments: post, submit, review", () => {
     await expect(page.getByText("Quadratics practice set")).toBeVisible();
     await expect(page.getByText("For Sam Student")).toBeVisible();
     await expect(page.getByText("practice-sheet.txt")).toBeVisible();
-    const parentSeesChildSubmission = await page.getByText(/^Submitted ·/).isVisible();
+    const parentSeesChildSubmission = await page.getByText(/^Handed in ·/).isVisible();
     await expectRule(
       "bug",
       "Parents see a blank 'Submit your work' box on their child's assignments",

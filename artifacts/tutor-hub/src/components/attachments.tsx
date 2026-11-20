@@ -3,7 +3,7 @@ import { customFetch } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Paperclip, Download, FileText, Loader2, Trash2, X } from "lucide-react";
+import { Paperclip, Download, FileText, Loader2, Upload, X } from "lucide-react";
 
 export interface Attachment {
   id: number;
@@ -41,66 +41,95 @@ export async function downloadAttachment(att: Pick<Attachment, "id" | "filename"
   URL.revokeObjectURL(url);
 }
 
-export function FileUploadButton({
-  assignmentId,
-  label = "Attach a file",
-  onUploaded,
-}: {
-  assignmentId?: number;
-  label?: string;
-  onUploaded?: (att: Attachment) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
+/** Uploads one or more files, optionally onto an assignment. */
+function useUploader(assignmentId?: number, onUploaded?: (att: Attachment) => void) {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const handleFile = async (file: File) => {
+  const upload = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploading(true);
+    const done: string[] = [];
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      if (assignmentId != null) fd.append("assignmentId", String(assignmentId));
-      const att = await customFetch<Attachment>("/api/uploads", {
-        method: "POST",
-        body: fd,
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/uploads"] });
-      onUploaded?.(att);
-      toast({ title: "File uploaded", description: file.name });
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        if (assignmentId != null) fd.append("assignmentId", String(assignmentId));
+        const att = await customFetch<Attachment>("/api/uploads", {
+          method: "POST",
+          body: fd,
+        });
+        done.push(file.name);
+        onUploaded?.(att);
+      }
+      toast(
+        done.length === 1
+          ? { title: "File uploaded", description: done[0] }
+          : { title: `${done.length} files uploaded` },
+      );
     } catch (e) {
       const msg = (e as Error)?.message ?? "";
       toast({
-        title: "Upload failed",
+        title: done.length ? `Uploaded ${done.length}, then one failed` : "Upload failed",
         description: msg.toLowerCase().includes("too large")
           ? "File too large (max 15 MB)."
           : "Allowed: PDF, images, Office docs, text, zip, under 15 MB.",
         variant: "destructive",
       });
     } finally {
+      queryClient.invalidateQueries({ queryKey: ["/api/uploads"] });
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
+  return { upload, uploading };
+}
+
+function HiddenFileInput({ inputRef, onFiles }: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onFiles: (files: File[]) => void;
+}) {
+  return (
+    <input
+      ref={inputRef}
+      type="file"
+      multiple
+      className="hidden"
+      onChange={(e) => {
+        const files = Array.from(e.target.files ?? []);
+        e.target.value = "";
+        onFiles(files);
+      }}
+    />
+  );
+}
+
+export function FileUploadButton({
+  assignmentId,
+  label = "Attach a file",
+  onUploaded,
+  quiet = false,
+}: {
+  assignmentId?: number;
+  label?: string;
+  onUploaded?: (att: Attachment) => void;
+  /** A plain text button, for secondary places like the tutor's worksheet link. */
+  quiet?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { upload, uploading } = useUploader(assignmentId, onUploaded);
+
   return (
     <>
-      <input
-        ref={inputRef}
-        type="file"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
+      <HiddenFileInput inputRef={inputRef} onFiles={upload} />
       <Button
         type="button"
-        variant="outline"
+        variant={quiet ? "ghost" : "outline"}
         size="sm"
         disabled={uploading}
         onClick={() => inputRef.current?.click()}
-        className="gap-2 rounded-lg"
+        className={quiet ? "gap-2 rounded-lg text-primary -ml-2" : "gap-2 rounded-lg"}
       >
         {uploading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -109,6 +138,54 @@ export function FileUploadButton({
         )}
         {uploading ? "Uploading…" : label}
       </Button>
+    </>
+  );
+}
+
+/**
+ * A large tap (or drop) target for adding work: photos of written working,
+ * PDFs or documents. Takes several files at once.
+ */
+export function FileDropZone({
+  assignmentId,
+  title = "Add photos or files",
+  hint = "Photos of your working, PDFs or documents, up to 15 MB each",
+}: {
+  assignmentId?: number;
+  title?: string;
+  hint?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { upload, uploading } = useUploader(assignmentId);
+  const [over, setOver] = useState(false);
+
+  return (
+    <>
+      <HiddenFileInput inputRef={inputRef} onFiles={upload} />
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          upload(Array.from(e.dataTransfer.files));
+        }}
+        className={
+          "w-full flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 text-left transition-colors " +
+          (over ? "border-primary bg-primary/5" : "border-border hover:border-primary/60 hover:bg-primary/5")
+        }
+      >
+        <span className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-primary">{uploading ? "Uploading…" : title}</span>
+          <span className="block text-xs text-muted-foreground">{hint}</span>
+        </span>
+      </button>
     </>
   );
 }

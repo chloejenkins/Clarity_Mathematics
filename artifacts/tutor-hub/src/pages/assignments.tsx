@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
   useListAssignments,
@@ -29,10 +29,10 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
-import { BookOpen, Calendar, Trash2, Plus, CheckCircle, ChevronDown, ChevronUp, Paperclip, Pencil, User, FileText } from "lucide-react";
+import { differenceInCalendarDays, endOfDay, format } from "date-fns";
+import { BookOpen, Calendar, Trash2, Plus, CheckCircle, MessageSquare, Paperclip, Pencil, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { FileUploadButton, AttachmentList, useAttachments } from "@/components/attachments";
+import { FileUploadButton, FileDropZone, AttachmentList, useAttachments } from "@/components/attachments";
 
 const createSchema = z.object({
   assignedTo: z.string().min(1, "Choose who this is for"),
@@ -43,10 +43,6 @@ const createSchema = z.object({
 });
 
 const editSchema = createSchema.omit({ assignedTo: true });
-
-const submitSchema = z.object({
-  content: z.string().optional(),
-});
 
 // A due date is a calendar day. Send it as the end of that day in the
 // tutor's time zone; sending the bare "YYYY-MM-DD" made it midnight UTC, which
@@ -67,136 +63,343 @@ function dueDateForDisplay(iso: string): Date {
   return d;
 }
 
-function StudentSubmissionPanel({ assignmentId, readOnly = false, forName }: {
-  assignmentId: number;
-  // A parent looking at their child's assignment sees the child's work and
-  // the tutor's review, but doesn't submit on the child's behalf.
-  readOnly?: boolean;
-  forName?: string | null;
-}) {
+// Where an assignment stands, from the point of view of the person doing it.
+type Status = "todo" | "overdue" | "handedIn" | "reviewed";
+
+function statusOf(a: Assignment, now = new Date()): Status {
+  if (a.reviewed) return "reviewed";
+  if (a.submitted) return "handedIn";
+  if (a.dueDate && endOfDay(dueDateForDisplay(a.dueDate)) < now) return "overdue";
+  return "todo";
+}
+
+const dueTime = (a: Assignment) => (a.dueDate ? dueDateForDisplay(a.dueDate).getTime() : Number.POSITIVE_INFINITY);
+const soonestFirst = (a: Assignment, b: Assignment) => dueTime(a) - dueTime(b) || b.id - a.id;
+const latestFirst = (a: Assignment, b: Assignment) =>
+  (b.dueDate ? dueTime(b) : 0) - (a.dueDate ? dueTime(a) : 0) || b.id - a.id;
+
+// "Due today", "Due tomorrow", "Due Tue, Nov 24" or "Was due Thu, Nov 12".
+function dueLabel(a: Assignment, status: Status): string | null {
+  if (!a.dueDate) return null;
+  const day = dueDateForDisplay(a.dueDate);
+  const diff = differenceInCalendarDays(day, new Date());
+  const date = format(day, "EEE, MMM d");
+  if (status === "overdue") return `Was due ${date}`;
+  if (status === "todo" && diff === 0) return "Due today";
+  if (status === "todo" && diff === 1) return "Due tomorrow";
+  return `Due ${date}`;
+}
+
+const STATUS_STYLE: Record<Status, { className: string; family: string; tutor: string }> = {
+  todo: { className: "bg-muted text-muted-foreground", family: "To do", tutor: "Not handed in" },
+  overdue: { className: "bg-warning-soft text-warning", family: "Overdue", tutor: "Overdue" },
+  handedIn: { className: "bg-info-soft text-info", family: "Handed in", tutor: "Needs review" },
+  reviewed: { className: "bg-success-soft text-success", family: "Reviewed", tutor: "Reviewed" },
+};
+
+function StatusPill({ status, forTutor }: { status: Status; forTutor: boolean }) {
+  const s = STATUS_STYLE[status];
+  return (
+    <span className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ${s.className}`}>
+      {forTutor ? s.tutor : s.family}
+    </span>
+  );
+}
+
+function firstName(name?: string | null) {
+  return name?.split(" ")[0] || "They";
+}
+
+const handedInAt = (iso: string) => format(new Date(iso), "EEE, MMM d 'at' h:mm a");
+
+// The student's note and files, as handed in. Shared by every view.
+function HandedInWork({ assignmentId, content }: { assignmentId: number; content?: string | null }) {
+  return (
+    <div className="space-y-2">
+      {content ? (
+        <p className="text-sm whitespace-pre-wrap bg-muted rounded-xl px-3.5 py-2.5">{content}</p>
+      ) : null}
+      <AttachmentList assignmentId={assignmentId} from="family" emptyText={content ? undefined : "No note or files."} />
+    </div>
+  );
+}
+
+function FeedbackBox({ title, comment }: { title: string; comment: string }) {
+  return (
+    <div className="bg-success-soft rounded-xl px-3.5 py-3">
+      <p className="text-xs font-semibold text-success flex items-center gap-1.5">
+        <MessageSquare className="h-3.5 w-3.5" /> {title}
+      </p>
+      <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{comment}</p>
+    </div>
+  );
+}
+
+// Student (or a parent doing it for a young child): add files and a note,
+// then press one Hand in button. A parent looking at their child's work
+// gets the same panel read-only.
+function FamilySubmissionPanel({ assignment, readOnly }: { assignment: Assignment; readOnly: boolean }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [expanded, setExpanded] = useState(false);
-
-  const { data: existing } = useGetMySubmission(assignmentId);
+  const assignmentId = assignment.id;
+  const { data: existing, isLoading } = useGetMySubmission(assignmentId);
+  const { data: files } = useAttachments(assignmentId);
+  const familyFiles = (files ?? []).filter((f) => f.uploaderRole !== "tutor");
+  const [editing, setEditing] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const noteValue = note ?? existing?.content ?? "";
 
   const submitMutation = useSubmitAssignment({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMySubmissionQueryKey(assignmentId) });
-        toast({ title: existing ? "Submission updated!" : "Work submitted!" });
-        setExpanded(false);
+        queryClient.invalidateQueries({ queryKey: getListAssignmentsQueryKey() });
+        toast({ title: existing ? "Updated and handed in again" : "Work handed in!", description: "Your tutor can see it now." });
+        setEditing(false);
+        setNote(null);
       },
-      onError: () => toast({ title: "Failed to submit", variant: "destructive" }),
+      onError: () => toast({ title: "Couldn't hand in your work", description: "Please try again.", variant: "destructive" }),
     },
   });
 
-  const form = useForm<z.infer<typeof submitSchema>>({
-    resolver: zodResolver(submitSchema),
-    defaultValues: { content: existing?.content ?? "" },
-    values: { content: existing?.content ?? "" },
-  });
+  if (isLoading) return <Skeleton className="h-16 rounded-xl" />;
 
-  const onSubmit = (vals: z.infer<typeof submitSchema>) => submitMutation.mutate({ id: assignmentId, data: { content: vals.content ?? "" } });
+  const feedback = existing?.tutorComment ? (
+    <FeedbackBox title="Feedback from your tutor" comment={existing.tutorComment} />
+  ) : null;
 
+  if (readOnly) {
+    if (!existing) {
+      return <p className="text-sm text-muted-foreground">{firstName(assignment.assignedToName)} hasn't handed this in yet.</p>;
+    }
+    return (
+      <div className="space-y-3">
+        <HandedInLine at={existing.submittedAt} />
+        {feedback}
+        <HandedInWork assignmentId={assignmentId} content={existing.content} />
+      </div>
+    );
+  }
+
+  if (existing && !editing) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <HandedInLine at={existing.submittedAt} />
+          <Button variant="ghost" size="sm" className="rounded-lg text-primary -mr-2 shrink-0" onClick={() => setEditing(true)}>
+            Change
+          </Button>
+        </div>
+        {feedback}
+        <HandedInWork assignmentId={assignmentId} content={existing.content} />
+      </div>
+    );
+  }
+
+  const nothingYet = familyFiles.length === 0 && noteValue.trim() === "";
   return (
-    <div className="mt-4 border-t pt-4">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between text-sm font-semibold text-left gap-2"
-      >
-        <span className="flex items-center gap-2">
-          {existing ? (
-            <CheckCircle className="h-4 w-4 text-success" />
-          ) : (
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          )}
-          {existing ? (
-            <span className="text-success">
-              Submitted · {format(new Date(existing.submittedAt), "MMM d, h:mm a")}
-            </span>
-          ) : readOnly ? (
-            <span className="text-muted-foreground">{forName ? `${forName} hasn't` : "Not"} submitted work yet</span>
-          ) : (
-            <span className="text-muted-foreground">Submit your work <span className="font-normal">(optional)</span></span>
-          )}
-        </span>
-        {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-      </button>
-
-      {existing && (existing.reviewedAt || existing.tutorComment) && (
-        <div className="mt-3 bg-success-soft border border-success-border rounded-xl p-3">
-          <p className="text-xs font-semibold text-success flex items-center gap-1.5">
-            <CheckCircle className="h-3.5 w-3.5" /> Reviewed by your tutor
-          </p>
-          {existing.tutorComment && (
-            <p className="text-sm text-foreground mt-1.5 whitespace-pre-wrap">{existing.tutorComment}</p>
-          )}
-        </div>
-      )}
-
-      {expanded && readOnly && (
-        <div className="mt-3 space-y-4">
-          {existing?.content ? (
-            <p className="text-sm whitespace-pre-wrap bg-muted rounded-xl p-3">{existing.content}</p>
-          ) : (
-            <p className="text-sm text-muted-foreground">No written note.</p>
-          )}
-          <div className="border-t pt-3">
-            <p className="eyebrow mb-2">Attached files</p>
-            <AttachmentList assignmentId={assignmentId} from="family" emptyText="No files attached." />
-          </div>
-        </div>
-      )}
-
-      {expanded && !readOnly && (
-        <div className="mt-3 space-y-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-              <FormField control={form.control} name="content" render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Add a note for your tutor (optional)…"
-                      className="rounded-xl min-h-[100px] resize-none text-sm"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <div className="flex gap-2">
-                <Button type="submit" size="sm" className="rounded-xl" disabled={submitMutation.isPending}>
-                  {submitMutation.isPending ? "Saving…" : existing ? "Update Submission" : "Submit"}
-                </Button>
-                <Button type="button" size="sm" variant="ghost" className="rounded-xl" onClick={() => setExpanded(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </Form>
-
-          <div className="border-t pt-3">
-            <div className="flex items-center justify-between mb-2 gap-2">
-              <p className="eyebrow">Attached files</p>
-              <FileUploadButton assignmentId={assignmentId} label="Attach a file" />
-            </div>
-            <AttachmentList assignmentId={assignmentId} from="family" canDelete emptyText="No files attached yet." />
-          </div>
-        </div>
-      )}
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold">{existing ? "Change your work" : "Hand in your work"}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Add photos or files of your working, and a note if you like, then press Hand in.</p>
+      </div>
+      {feedback}
+      <FileDropZone assignmentId={assignmentId} />
+      <AttachmentList assignmentId={assignmentId} from="family" canDelete />
+      <Textarea
+        value={noteValue}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Add a note for your tutor (optional)…"
+        className="rounded-xl min-h-[80px] resize-none text-sm"
+      />
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
+        {existing && (
+          <Button type="button" variant="ghost" className="rounded-xl" onClick={() => { setEditing(false); setNote(null); }}>
+            Cancel
+          </Button>
+        )}
+        <Button
+          type="button"
+          className="rounded-xl sm:px-8"
+          disabled={submitMutation.isPending || nothingYet}
+          onClick={() => submitMutation.mutate({ id: assignmentId, data: { content: noteValue.trim() } })}
+        >
+          {submitMutation.isPending ? "Handing in…" : existing ? "Hand in again" : "Hand in"}
+        </Button>
+        {nothingYet && <p className="text-xs text-muted-foreground sm:ml-1">Add a file or a note first.</p>}
+      </div>
     </div>
   );
 }
 
+function HandedInLine({ at, who }: { at: string; who?: string }) {
+  return (
+    <p className="text-sm font-semibold text-success flex items-center gap-1.5">
+      <CheckCircle className="h-4 w-4 shrink-0" />
+      <span>{who ? `${who} handed this in` : "Handed in"} <span className="font-normal text-muted-foreground">· {handedInAt(at)}</span></span>
+    </p>
+  );
+}
+
+// Tutor: what the student handed in, and a place to send feedback.
+function TutorSubmissionPanel({ assignment }: { assignment: Assignment }) {
+  const assignmentId = assignment.id;
+  const { data: submissions, isLoading } = useListAssignmentSubmissions(assignmentId);
+  const sub = submissions?.find((s) => s.studentId === assignment.assignedTo) ?? submissions?.[0];
+  const name = firstName(assignment.assignedToName);
+
+  if (isLoading) return <Skeleton className="h-16 rounded-xl" />;
+
+  if (!sub) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">{name} hasn't handed this in yet.</p>
+        <AttachmentList assignmentId={assignmentId} from="family" />
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <HandedInLine at={sub.submittedAt} who={name} />
+      <HandedInWork assignmentId={assignmentId} content={sub.content} />
+      <FeedbackEditor key={`${sub.id}-${sub.reviewedAt ?? ""}`} sub={sub} assignmentId={assignmentId} name={name} />
+    </div>
+  );
+}
+
+function FeedbackEditor({ sub, assignmentId, name }: { sub: AssignmentSubmission; assignmentId: number; name: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(!sub.reviewedAt);
+  const [comment, setComment] = useState(sub.tutorComment ?? "");
+
+  const review = useReviewSubmission({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListAssignmentSubmissionsQueryKey(assignmentId) });
+        queryClient.invalidateQueries({ queryKey: getListAssignmentsQueryKey() });
+        toast({ title: "Feedback sent", description: `${name} can see it now.` });
+      },
+      onError: () => toast({ title: "Couldn't send feedback", variant: "destructive" }),
+    },
+  });
+
+  if (!editing) {
+    return (
+      <div className="space-y-1">
+        {sub.tutorComment ? (
+          <FeedbackBox title="Your feedback" comment={sub.tutorComment} />
+        ) : (
+          <p className="text-sm text-muted-foreground">Marked as reviewed, no written feedback.</p>
+        )}
+        <Button variant="ghost" size="sm" className="rounded-lg text-primary -ml-2" onClick={() => setEditing(true)}>
+          Edit feedback
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2 border-t pt-3">
+      <p className="text-sm font-semibold">Feedback for {name}</p>
+      {sub.tutorComment && sub.reviewedAt == null && (
+        <p className="text-xs text-muted-foreground">{name} changed their work after your last feedback.</p>
+      )}
+      <Textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Leave feedback for the student…"
+        className="rounded-xl min-h-[80px] text-sm"
+      />
+      <div className="flex items-center gap-2">
+        <Button className="rounded-xl" disabled={review.isPending} onClick={() => review.mutate({ id: sub.id, data: { comment } })}>
+          {review.isPending ? "Sending…" : comment.trim() ? "Send feedback" : "Mark as reviewed"}
+        </Button>
+        {sub.reviewedAt && (
+          <Button variant="ghost" className="rounded-xl" onClick={() => { setEditing(false); setComment(sub.tutorComment ?? ""); }}>
+            Cancel
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AssignmentCard({ assignment, isTutor, showFor, readOnly, onDelete }: {
+  assignment: Assignment;
+  isTutor: boolean;
+  showFor: boolean;
+  readOnly: boolean;
+  onDelete: (id: number) => void;
+}) {
+  const status = statusOf(assignment);
+  const due = dueLabel(assignment, status);
+  const meta = [showFor && assignment.assignedToName ? `For ${assignment.assignedToName}` : null, assignment.subject]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <Card className="rounded-xl overflow-hidden group">
+      <div className="px-5 pt-5 pb-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {meta && <p className="text-xs text-muted-foreground mb-1">{meta}</p>}
+            <h3 className="text-lg font-semibold leading-snug">{assignment.title}</h3>
+            {due && (
+              <p className={`text-sm mt-1 flex items-center gap-1.5 ${status === "overdue" ? "text-warning font-medium" : "text-muted-foreground"}`}>
+                <Calendar className="h-3.5 w-3.5 shrink-0" /><span>{due}</span>
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            {isTutor && (
+              <div className="flex [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <EditAssignmentDialog assignment={assignment} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  title="Delete assignment"
+                  onClick={() => onDelete(assignment.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <StatusPill status={status} forTutor={isTutor} />
+          </div>
+        </div>
+
+        {assignment.description && (
+          <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap mt-3">{assignment.description}</p>
+        )}
+
+        {isTutor ? (
+          <div className="mt-3 space-y-2">
+            <AttachmentList assignmentId={assignment.id} from="tutor" canDelete />
+            <FileUploadButton assignmentId={assignment.id} label="Attach worksheet" quiet />
+          </div>
+        ) : (
+          <WorksheetList assignmentId={assignment.id} />
+        )}
+      </div>
+
+      <div className="border-t px-5 py-4 sm:px-6">
+        {isTutor ? (
+          <TutorSubmissionPanel assignment={assignment} />
+        ) : (
+          <FamilySubmissionPanel assignment={assignment} readOnly={readOnly} />
+        )}
+      </div>
+    </Card>
+  );
+}
 
 // Shown to the family only when the tutor attached something.
 function WorksheetList({ assignmentId }: { assignmentId: number }) {
   const { data } = useAttachments(assignmentId);
   if (!data?.some((a) => a.uploaderRole === "tutor")) return null;
   return (
-    <div className="mt-4 border-t pt-3">
+    <div className="mt-3">
       <p className="eyebrow mb-2 flex items-center gap-1.5">
         <FileText className="h-3.5 w-3.5" /> From your tutor
       </p>
@@ -205,19 +408,19 @@ function WorksheetList({ assignmentId }: { assignmentId: number }) {
   );
 }
 
-function AssignmentSubmissionReview({ assignmentId }: { assignmentId: number }) {
-  const { data: submissions = [] } = useListAssignmentSubmissions(assignmentId);
-
+function Section({ title, count, children, empty }: { title: string; count: number; children: ReactNode; empty?: string }) {
+  if (count === 0 && !empty) return null;
   return (
-    <div className="mt-4 border-t pt-3 space-y-3">
-      <p className="eyebrow">Submission &amp; files</p>
-      <AttachmentList assignmentId={assignmentId} from="family" showUploader emptyText="No files submitted yet." />
-      {submissions.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No written submission yet.</p>
+    <section className="space-y-3">
+      <h2 className="eyebrow flex items-center gap-2">
+        {title} <span className="text-muted-foreground font-normal normal-case tracking-normal">{count}</span>
+      </h2>
+      {count === 0 ? (
+        <p className="text-sm text-muted-foreground bg-card rounded-xl px-5 py-4">{empty}</p>
       ) : (
-        submissions.map((s) => <SubmissionReviewRow key={s.id} sub={s} assignmentId={assignmentId} />)
+        <div className="space-y-4">{children}</div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -314,48 +517,6 @@ function EditAssignmentDialog({ assignment }: { assignment: Assignment }) {
   );
 }
 
-function SubmissionReviewRow({ sub, assignmentId }: { sub: AssignmentSubmission; assignmentId: number }) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [comment, setComment] = useState(sub.tutorComment ?? "");
-
-  const review = useReviewSubmission({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListAssignmentSubmissionsQueryKey(assignmentId) });
-        toast({ title: "Review saved" });
-      },
-    },
-  });
-
-  return (
-    <div className="bg-muted/40 rounded-xl p-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold">{sub.studentName}</p>
-        {sub.reviewedAt ? (
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-success-soft text-success">Reviewed</span>
-        ) : (
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-warning-soft text-warning">Awaiting review</span>
-        )}
-      </div>
-      {sub.content ? (
-        <p className="text-sm text-foreground whitespace-pre-wrap">{sub.content}</p>
-      ) : (
-        <p className="text-xs text-muted-foreground italic">No note, see attached files.</p>
-      )}
-      <Textarea
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="Leave feedback for the student…"
-        className="rounded-xl min-h-[70px] text-sm bg-background"
-      />
-      <Button size="sm" className="rounded-lg" disabled={review.isPending} onClick={() => review.mutate({ id: sub.id, data: { comment } })}>
-        {review.isPending ? "Saving…" : sub.reviewedAt ? "Update feedback" : "Save & mark reviewed"}
-      </Button>
-    </div>
-  );
-}
-
 export default function AssignmentsPage() {
   const { user } = useAuth();
   const isTutor = user?.role === "tutor";
@@ -389,7 +550,7 @@ export default function AssignmentsPage() {
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Delete this assignment?")) return;
+    if (!confirm("Delete this assignment? Any work handed in for it is deleted too.")) return;
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListAssignmentsQueryKey() });
@@ -398,19 +559,35 @@ export default function AssignmentsPage() {
     });
   };
 
-  const sorted = [...(assignments ?? [])].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const all = assignments ?? [];
+  const withStatus = (...s: Status[]) => all.filter((a) => s.includes(statusOf(a)));
+  const card = (a: Assignment) => (
+    <AssignmentCard
+      key={a.id}
+      assignment={a}
+      isTutor={isTutor}
+      showFor={isTutor || isParent}
+      readOnly={a.assignedTo !== user?.id}
+      onDelete={handleDelete}
+    />
   );
 
+  const toDo = withStatus("overdue", "todo").sort(soonestFirst);
+  const needsReview = withStatus("handedIn").sort(soonestFirst);
+  const reviewed = withStatus("reviewed").sort(latestFirst);
+  const handedIn = withStatus("handedIn", "reviewed").sort(latestFirst);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-3xl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="page-title">Assignments</h1>
           <p className="page-subtitle">
             {isTutor
-              ? "Post homework and practice materials for your students."
-              : "Your homework and practice materials. Submit your work directly here."}
+              ? "Post homework, then review what your students hand in."
+              : isParent
+                ? "Homework from your tutor, and what's been handed in."
+                : "Your homework. Add your work and press Hand in when you're done."}
           </p>
         </div>
 
@@ -499,124 +676,59 @@ export default function AssignmentsPage() {
         )}
       </div>
 
-      {!isTutor && (
-        <Card className="rounded-xl">
-          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Paperclip className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">Send a file to your tutor</p>
-                <p className="text-xs text-muted-foreground">Share work that isn't tied to a specific assignment.</p>
-              </div>
-            </div>
-            <FileUploadButton label="Choose a file" />
-          </CardContent>
-        </Card>
-      )}
-
-      {isTutor && (
-        <Card className="rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="eyebrow flex items-center gap-2">
-              <Paperclip className="h-4 w-4" /> Files sent to you
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <AttachmentList directOnly showUploader emptyText="No files sent to you yet." />
-          </CardContent>
-        </Card>
-      )}
-
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-40 rounded-2xl" />)}
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
         </div>
-      ) : sorted.length === 0 ? (
+      ) : all.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title="No assignments yet."
           description={isTutor ? "Post your first assignment above." : undefined}
         />
+      ) : isTutor ? (
+        <>
+          <Section title="Needs review" count={needsReview.length} empty="Nothing waiting for you. New work shows up here.">
+            {needsReview.map(card)}
+          </Section>
+          <Section title="Waiting for work" count={toDo.length}>{toDo.map(card)}</Section>
+          <Section title="Reviewed" count={reviewed.length}>{reviewed.map(card)}</Section>
+        </>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {sorted.map(assignment => (
-            <Card key={assignment.id} className="rounded-xl overflow-hidden group">
-              <CardHeader className="border-b px-6 pt-5 pb-4 relative">
-                {isTutor && (
-                  <div className="absolute top-4 right-4 flex gap-1 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                    <EditAssignmentDialog assignment={assignment} />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      title="Delete assignment"
-                      onClick={() => handleDelete(assignment.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 mb-2">
-                  {assignment.subject && (
-                    <span className="px-2.5 py-1 bg-primary/10 text-primary text-xs font-bold rounded-md uppercase tracking-wider">
-                      {assignment.subject}
-                    </span>
-                  )}
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    Posted {format(new Date(assignment.createdAt), "MMM d")}
-                  </span>
-                </div>
-                <CardTitle className="text-xl font-bold leading-tight pr-16">{assignment.title}</CardTitle>
-                {(isTutor || isParent) && assignment.assignedToName && (
-                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                    <User className="h-3 w-3" /> For {assignment.assignedToName}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent className="p-6">
-                {assignment.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {assignment.description}
-                  </p>
-                )}
-                {assignment.dueDate && (
-                  <div className="mt-3 inline-flex items-center gap-2 bg-warning-soft text-warning px-3 py-1.5 rounded-lg border border-warning-border text-sm font-semibold">
-                    <Calendar className="h-4 w-4" />
-                    Due: {format(dueDateForDisplay(assignment.dueDate), "EEE, MMM d, yyyy")}
-                  </div>
-                )}
+        <>
+          <Section title="To do" count={toDo.length} empty="All done. Nothing left to hand in.">
+            {toDo.map(card)}
+          </Section>
+          <Section title="Handed in" count={handedIn.length}>{handedIn.map(card)}</Section>
+        </>
+      )}
 
-                {/* Worksheets the tutor attached for the family to download */}
-                {isTutor ? (
-                  <div className="mt-4 border-t pt-3">
-                    <div className="flex items-center justify-between mb-2 gap-2">
-                      <p className="eyebrow">Worksheets</p>
-                      <FileUploadButton assignmentId={assignment.id} label="Attach worksheet" />
-                    </div>
-                    <AttachmentList assignmentId={assignment.id} from="tutor" canDelete emptyText="No worksheets attached." />
-                  </div>
-                ) : (
-                  <WorksheetList assignmentId={assignment.id} />
-                )}
-
-                {/* Tutor: the student's submission (text + files) and review */}
-                {isTutor && <AssignmentSubmissionReview assignmentId={assignment.id} />}
-
-                {/* Student submission panel */}
-                {!isTutor && (
-                  <StudentSubmissionPanel
-                    assignmentId={assignment.id}
-                    readOnly={assignment.assignedTo !== user?.id}
-                    forName={assignment.assignedToName}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      {isTutor ? (
+        <Card className="rounded-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="eyebrow flex items-center gap-2">
+              <Paperclip className="h-4 w-4" /> Other files sent to you
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <AttachmentList directOnly showUploader emptyText="Files students send outside an assignment show up here." />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="rounded-xl">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Paperclip className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Something else for your tutor?</p>
+                <p className="text-xs text-muted-foreground">Send a file that isn't for one of the assignments above.</p>
+              </div>
+            </div>
+            <FileUploadButton label="Send a file" />
+          </CardContent>
+        </Card>
       )}
     </div>
   );
