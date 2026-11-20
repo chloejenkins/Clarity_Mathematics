@@ -1,7 +1,7 @@
-// Local preview only: a "who am I" picker for the fake Clerk SDK.
+// Preview only: a "who am I" picker for the fake Clerk SDK.
 //
 // Shown when the site runs with VITE_E2E_AUTH=1 and VITE_DEMO=1 (see
-// e2e/scripts/demo.sh). The Sign in button opens it, and a small pill at the
+// e2e/scripts/demo.sh and the hosted preview in preview/Dockerfile). The Sign in button opens it, and a small pill at the
 // top of the page lets you switch between the tutor, students and parent at any time.
 // The people listed here are the ones e2e/scripts/seed-demo.ts creates; keep
 // the two lists in step.
@@ -95,7 +95,7 @@ export function DemoSwitcher() {
           >
             <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>Preview the app as…</div>
             <div style={{ color: "#6e6e73", marginBottom: 14 }}>
-              Local preview only. No password needed; pick a person to see the site as they would.
+              Preview with made-up people. No password needed; pick a person to see the site as they would.
             </div>
             {demoPeople.map((p) => (
               <button

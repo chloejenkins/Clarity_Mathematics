@@ -1,0 +1,22 @@
+# Render Blueprint for the always-on preview site (separate from render.yaml,
+# which is the live site). Setup steps: docs/preview-site.md
+#
+# The preview is the whole app with made-up demo people and the "Preview as"
+# picker instead of real sign-in. It runs its own throwaway database inside
+# the container (preview/Dockerfile), so it has no access to real data, and it
+# resets to the same demo data whenever it restarts.
+
+services:
+  - type: web
+    name: clarity-preview
+    runtime: docker
+    # Free: sleeps after 15 minutes without visitors and takes about two
+    # minutes to wake. Change to "starter" ($7/month) to keep it always awake.
+    plan: free
+    region: virginia
+    dockerfilePath: ./preview/Dockerfile
+    dockerContext: .
+    # Updates itself when a pull request is merged into main and the GitHub
+    # checks (typecheck + tests) pass.
+    autoDeployTrigger: checksPass
+    healthCheckPath: /api/healthz

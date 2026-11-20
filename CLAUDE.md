@@ -139,3 +139,13 @@ vs. expecting a parse failure accordingly.
 The live site (claritymathematics.com) is described by `render.yaml`: one Node web service (frontend
 build + API server with `STATIC_DIR`), a persistent disk for `UPLOADS_DIR`, and Render Postgres, with
 `pnpm --filter db run push` as the pre-deploy step. Setup steps and env vars: `docs/hosting.md`.
+
+### Preview site (Render, demo data)
+
+`render-preview.yaml` describes a separate always-on preview (`clarity-preview`, free Docker service)
+that auto-deploys from `main` and, with Render service previews on, gets one copy per pull request.
+`preview/Dockerfile` builds the site with the fake Clerk + "Preview as" picker (`VITE_E2E_AUTH`,
+`VITE_DEMO`, `E2E_AUTH_BYPASS`); `preview/start.sh` starts a throwaway Postgres inside the container,
+pushes the schema and runs `e2e/scripts/seed-demo.ts` on every start. It shares nothing with the live
+site. Setup steps: `docs/preview-site.md`. Test locally with
+`docker build -f preview/Dockerfile -t clarity-preview . && docker run -p 10000:10000 clarity-preview`.
