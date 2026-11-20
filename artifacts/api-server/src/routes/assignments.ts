@@ -214,7 +214,9 @@ router.post("/assignments/:id/submit", async (req: Request, res: Response) => {
   if (existing.length > 0) {
     const [updated] = await db
       .update(submissionsTable)
-      .set({ content })
+      // Changing work after it was handed in hands it in again: it goes back
+      // to the tutor's "Needs review" list. Earlier feedback stays visible.
+      .set({ content, submittedAt: new Date(), reviewedAt: null })
       .where(and(eq(submissionsTable.assignmentId, assignmentId), eq(submissionsTable.studentId, req.user.id)))
       .returning();
     res.json(updated);
