@@ -27,7 +27,7 @@ export TUTOR_EMAILS="${TUTOR_EMAILS:-tutor@claritymathematics.com}"
   nohup node --enable-source-maps dist/index.mjs >"$RUN_DIR/api.log" 2>&1 & echo $! >"$RUN_DIR/api.pid")
 
 (cd "$ROOT/artifacts/tutor-hub" && \
-  PORT=5173 BASE_PATH=/ VITE_E2E_AUTH=1 VITE_CLERK_PUBLISHABLE_KEY=pk_test_e2e \
+  PORT=5173 BASE_PATH=/ VITE_E2E_AUTH=1 VITE_DEMO="${VITE_DEMO:-}" VITE_CLERK_PUBLISHABLE_KEY=pk_test_e2e \
   nohup pnpm exec vite --config vite.config.ts --host 127.0.0.1 >"$RUN_DIR/web.log" 2>&1 & echo $! >"$RUN_DIR/web.pid")
 
 for _ in $(seq 1 60); do
