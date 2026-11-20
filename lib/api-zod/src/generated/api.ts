@@ -458,6 +458,9 @@ export const ListConversationsResponseItem = zod.object({
   ),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.date(),
+  unreadCount: zod
+    .number()
+    .describe("Messages from other people the caller hasn't seen yet"),
 });
 export const ListConversationsResponse = zod.array(
   ListConversationsResponseItem,
@@ -486,6 +489,27 @@ export const CreateConversationResponse = zod.object({
   ),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.date(),
+  unreadCount: zod
+    .number()
+    .describe("Messages from other people the caller hasn't seen yet"),
+});
+
+/**
+ * @summary How many messages from other people the caller hasn't seen yet
+ */
+export const GetUnreadMessageCountResponse = zod.object({
+  count: zod.number(),
+});
+
+/**
+ * @summary Mark every message in a conversation as seen by the caller
+ */
+export const MarkConversationReadParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const MarkConversationReadResponse = zod.object({
+  success: zod.boolean(),
 });
 
 /**
@@ -516,8 +540,10 @@ export const SendConversationMessageParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const sendConversationMessageBodyContentMax = 4000;
+
 export const SendConversationMessageBody = zod.object({
-  content: zod.string(),
+  content: zod.string().max(sendConversationMessageBodyContentMax),
 });
 
 /**

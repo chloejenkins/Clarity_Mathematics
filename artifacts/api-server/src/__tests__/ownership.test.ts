@@ -179,8 +179,10 @@ describe("conversation participation", () => {
   it("lets a participant post", async () => {
     fakeDb.queue(
       [{ conversationId: 9, userId: studentA.id }], // isParticipant
+      [{ id: 9, type: "group" }], // conversation lookup
       [{ id: 1, conversationId: 9, senderId: studentA.id, content: "hi" }], // insert
       [], // touch conversation
+      [], // mark read for the sender
       [{ id: studentA.id, firstName: "Sam" }], // sender lookup
     );
     const res = await request(testApp(conversationsRouter, studentA))

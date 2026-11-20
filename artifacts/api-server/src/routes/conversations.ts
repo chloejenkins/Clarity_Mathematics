@@ -6,7 +6,7 @@ import {
   messagesTable,
   usersTable,
 } from "@workspace/db";
-import { eq, and, inArray, desc } from "drizzle-orm";
+import { eq, and, inArray, desc, ne } from "drizzle-orm";
 import { z } from "zod";
 import { strictRateLimiter } from "../middlewares/rateLimit";
 import { canContactAll } from "../lib/contacts";
@@ -25,8 +25,20 @@ function displayName(u: UserRow | undefined): string {
   );
 }
 
-/** Build the client-facing shape for a set of conversations. */
-async function hydrateConversations(convIds: number[]) {
+type ParticipantRow = typeof conversationParticipantsTable.$inferSelect;
+type MessageRow = typeof messagesTable.$inferSelect;
+
+/** Messages from other people that arrived after `me` last read the conversation. */
+function countUnread(msgs: MessageRow[], myRow: ParticipantRow | undefined, me: string): number {
+  if (!myRow) return 0;
+  const since = myRow.lastReadAt ? new Date(myRow.lastReadAt).getTime() : -Infinity;
+  return msgs.filter(
+    (m) => m.senderId !== me && new Date(m.createdAt).getTime() > since,
+  ).length;
+}
+
+/** Build the client-facing shape for a set of conversations, as seen by `me`. */
+async function hydrateConversations(convIds: number[], me: string) {
   if (convIds.length === 0) return [];
 
   const [convs, allParts, users, msgs] = await Promise.all([
@@ -44,11 +56,14 @@ async function hydrateConversations(convIds: number[]) {
   ]);
 
   const userMap = new Map(users.map((u) => [u.id, u]));
-  const lastByConv = new Map<number, (typeof msgs)[number]>();
+  const lastByConv = new Map<number, MessageRow>();
+  const msgsByConv = new Map<number, MessageRow[]>();
   for (const m of msgs) {
-    if (m.conversationId != null && !lastByConv.has(m.conversationId)) {
-      lastByConv.set(m.conversationId, m);
-    }
+    if (m.conversationId == null) continue;
+    if (!lastByConv.has(m.conversationId)) lastByConv.set(m.conversationId, m);
+    const list = msgsByConv.get(m.conversationId) ?? [];
+    list.push(m);
+    msgsByConv.set(m.conversationId, list);
   }
 
   const result = convs.map((c) => {
@@ -71,6 +86,11 @@ async function hydrateConversations(convIds: number[]) {
       participants,
       lastMessage: last?.content ?? null,
       lastMessageAt: last?.createdAt ?? c.createdAt,
+      unreadCount: countUnread(
+        msgsByConv.get(c.id) ?? [],
+        allParts.find((p) => p.conversationId === c.id && p.userId === me),
+        me,
+      ),
     };
   });
 
@@ -108,7 +128,7 @@ async function isParticipant(convId: number, userId: string): Promise<boolean> {
 router.get("/conversations", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const ids = await conversationIdsFor(req.user.id);
-  res.json(await hydrateConversations(ids));
+  res.json(await hydrateConversations(ids, req.user.id));
 });
 
 const CreateConversationBody = z.object({
@@ -163,7 +183,7 @@ router.post("/conversations", strictRateLimiter, async (req: Request, res: Respo
           .from(conversationParticipantsTable)
           .where(eq(conversationParticipantsTable.conversationId, c.id));
         if (parts.length === 2) {
-          const [existing] = await hydrateConversations([c.id]);
+          const [existing] = await hydrateConversations([c.id], me);
           res.json(existing);
           return;
         }
@@ -180,8 +200,52 @@ router.post("/conversations", strictRateLimiter, async (req: Request, res: Respo
     .insert(conversationParticipantsTable)
     .values(ids.map((userId) => ({ conversationId: conv.id, userId })));
 
-  const [created] = await hydrateConversations([conv.id]);
+  const [created] = await hydrateConversations([conv.id], me);
   res.status(201).json(created);
+});
+
+// GET /conversations/unread, total unread messages across all my conversations
+// (drives the badge on Chat in the sidebar and tab bar).
+router.get("/conversations/unread", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const me = req.user.id;
+  const mine = await db
+    .select()
+    .from(conversationParticipantsTable)
+    .where(eq(conversationParticipantsTable.userId, me));
+  if (mine.length === 0) { res.json({ count: 0 }); return; }
+  const msgs = await db
+    .select()
+    .from(messagesTable)
+    .where(
+      and(
+        inArray(messagesTable.conversationId, mine.map((p) => p.conversationId)),
+        ne(messagesTable.senderId, me),
+      ),
+    );
+  let count = 0;
+  for (const p of mine) {
+    count += countUnread(msgs.filter((m) => m.conversationId === p.conversationId), p, me);
+  }
+  res.json({ count });
+});
+
+// POST /conversations/:id/read, the caller has now seen everything in it.
+router.post("/conversations/:id/read", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const convId = Number(req.params.id);
+  if (!Number.isInteger(convId)) { res.status(400).json({ error: "Invalid conversation id" }); return; }
+  if (!(await isParticipant(convId, req.user.id))) { res.status(403).json({ error: "Not a participant" }); return; }
+  await db
+    .update(conversationParticipantsTable)
+    .set({ lastReadAt: new Date() })
+    .where(
+      and(
+        eq(conversationParticipantsTable.conversationId, convId),
+        eq(conversationParticipantsTable.userId, req.user.id),
+      ),
+    );
+  res.json({ success: true });
 });
 
 // GET /conversations/:id/messages
@@ -212,7 +276,8 @@ router.get("/conversations/:id/messages", async (req: Request, res: Response) =>
   res.json(result);
 });
 
-const SendBody = z.object({ content: z.string().trim().min(1) });
+export const MAX_MESSAGE_LENGTH = 4000;
+const SendBody = z.object({ content: z.string().trim().min(1).max(MAX_MESSAGE_LENGTH) });
 
 // POST /conversations/:id/messages
 router.post("/conversations/:id/messages", strictRateLimiter, async (req: Request, res: Response) => {
@@ -222,18 +287,56 @@ router.post("/conversations/:id/messages", strictRateLimiter, async (req: Reques
   if (!(await isParticipant(convId, req.user.id))) { res.status(403).json({ error: "Not a participant" }); return; }
 
   const parsed = SendBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "content is required" }); return; }
+  if (!parsed.success) {
+    const tooLong = typeof req.body?.content === "string" && req.body.content.trim().length > MAX_MESSAGE_LENGTH;
+    res.status(400).json({
+      error: tooLong
+        ? `Messages can be up to ${MAX_MESSAGE_LENGTH} characters`
+        : "content is required",
+    });
+    return;
+  }
+
+  // In a one-to-one chat, both people must still be connected: if a parent
+  // link is removed or a student moves to another tutor, the old chat stays
+  // readable but no new messages can be sent into it.
+  const [conv] = await db
+    .select()
+    .from(conversationsTable)
+    .where(eq(conversationsTable.id, convId))
+    .limit(1);
+  if (conv?.type === "direct") {
+    const parts = await db
+      .select()
+      .from(conversationParticipantsTable)
+      .where(eq(conversationParticipantsTable.conversationId, convId));
+    const others = parts.map((p) => p.userId).filter((id) => id !== req.user.id);
+    if (others.length > 0 && !(await canContactAll(req.user, others))) {
+      res.status(403).json({ error: "You're no longer connected to this person, so you can't message them" });
+      return;
+    }
+  }
 
   const [message] = await db
     .insert(messagesTable)
     .values({ conversationId: convId, senderId: req.user.id, content: parsed.data.content })
     .returning();
 
-  // Touch the conversation so it sorts to the top of the list.
+  // Touch the conversation so it sorts to the top of the list, and count it
+  // as read by the sender (they've clearly seen it if they're replying).
   await db
     .update(conversationsTable)
     .set({ updatedAt: new Date() })
     .where(eq(conversationsTable.id, convId));
+  await db
+    .update(conversationParticipantsTable)
+    .set({ lastReadAt: message.createdAt })
+    .where(
+      and(
+        eq(conversationParticipantsTable.conversationId, convId),
+        eq(conversationParticipantsTable.userId, req.user.id),
+      ),
+    );
 
   const sender = await db
     .select()

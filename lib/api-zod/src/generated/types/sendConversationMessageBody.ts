@@ -7,5 +7,6 @@
  */
 
 export interface SendConversationMessageBody {
+  /** @maxLength 4000 */
   content: string;
 }

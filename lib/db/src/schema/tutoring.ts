@@ -28,6 +28,9 @@ export const conversationParticipantsTable = pgTable("conversation_participants"
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id").notNull(),
   userId: varchar("user_id").notNull(),
+  // When this person last looked at the conversation; messages from others
+  // after this count as unread. Null means they haven't opened it yet.
+  lastReadAt: timestamp("last_read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

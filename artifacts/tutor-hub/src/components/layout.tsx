@@ -26,6 +26,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@workspace/replit-auth-web";
+import {
+  useGetUnreadMessageCount,
+  getGetUnreadMessageCountQueryKey,
+} from "@workspace/api-client-react";
 import { useClerk } from "@clerk/clerk-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,6 +54,17 @@ export function AppLayout({ children }: LayoutProps) {
   const isTutor = user?.role === "tutor";
 
   const isParent = user?.role === "parent";
+
+  // New messages from other people, shown as a badge on Chat. Checked every
+  // 15 seconds; opening a chat clears its share of the count.
+  const { data: unread } = useGetUnreadMessageCount({
+    query: {
+      queryKey: getGetUnreadMessageCountQueryKey(),
+      refetchInterval: 15000,
+      enabled: Boolean(user),
+    },
+  });
+  const unreadChats = unread?.count ?? 0;
 
   const tutorNav = [
     { title: "Schedule", url: "/", icon: CalendarDays },
@@ -133,6 +148,9 @@ export function AppLayout({ children }: LayoutProps) {
                                 aria-hidden
                               />
                               <span>{item.title}</span>
+                              {item.url === "/chat" && unreadChats > 0 && (
+                                <UnreadBadge count={unreadChats} className="ml-auto" />
+                              )}
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -203,7 +221,9 @@ export function AppLayout({ children }: LayoutProps) {
             </div>
           </header>
           <main className="flex-1 overflow-auto bg-background px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:px-8 md:pt-2 md:pb-10 lg:px-10">
-            <div className="max-w-5xl mx-auto h-full">
+            {/* Chat fills the space left under any banners, so its message box
+                is always on screen. */}
+            <div className={cn("max-w-5xl mx-auto h-full", location === "/chat" && "flex flex-col")}>
               <ParentLinkRequestsBanner />
               <SessionReminderBanner />
               <PastSessionsBanner />
@@ -213,7 +233,7 @@ export function AppLayout({ children }: LayoutProps) {
           </main>
         </div>
 
-        <MobileTabBar items={navigationItems} location={location} />
+        <MobileTabBar items={navigationItems} location={location} unreadChats={unreadChats} />
       </div>
     </SidebarProvider>
   );
@@ -236,7 +256,15 @@ function CloseSidebarOnNavigate({ location }: { location: string }) {
  * navigation stays visible and in reach on compact widths; tabs
  * navigate, never act). Hidden from md up, where the sidebar shows.
  */
-function MobileTabBar({ items, location }: { items: NavItem[]; location: string }) {
+function MobileTabBar({
+  items,
+  location,
+  unreadChats,
+}: {
+  items: NavItem[];
+  location: string;
+  unreadChats: number;
+}) {
   const { setOpenMobile, openMobile } = useSidebar();
   const primary = items.slice(0, 3).concat(items.filter((i) => i.url === "/payments"));
   const inPrimary = primary.some((i) => i.url === location);
@@ -259,7 +287,12 @@ function MobileTabBar({ items, location }: { items: NavItem[]; location: string 
                   active ? "text-brand" : "text-muted-foreground",
                 )}
               >
-                <item.icon className="h-6 w-6" aria-hidden />
+                <span className="relative">
+                  <item.icon className="h-6 w-6" aria-hidden />
+                  {item.url === "/chat" && unreadChats > 0 && (
+                    <UnreadBadge count={unreadChats} className="absolute -top-1.5 left-4" />
+                  )}
+                </span>
                 <span className="max-w-full truncate px-0.5">{tabLabel(item.title)}</span>
               </Link>
             </li>
@@ -281,6 +314,22 @@ function MobileTabBar({ items, location }: { items: NavItem[]; location: string 
         </li>
       </ul>
     </nav>
+  );
+}
+
+/** Red-dot style count of unread messages (iOS badge). */
+function UnreadBadge({ count, className }: { count: number; className?: string }) {
+  const label = count > 99 ? "99+" : String(count);
+  return (
+    <span
+      className={cn(
+        "min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF3B30] text-white text-[11px] font-semibold leading-[18px] text-center",
+        className,
+      )}
+      aria-label={`${count} unread ${count === 1 ? "message" : "messages"}`}
+    >
+      {label}
+    </span>
   );
 }
 

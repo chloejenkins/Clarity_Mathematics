@@ -15,4 +15,6 @@ export interface Conversation {
   participants: ConversationParticipant[];
   lastMessage?: string | null;
   lastMessageAt: Date;
+  /** Messages from other people the caller hasn't seen yet */
+  unreadCount: number;
 }
